@@ -32,7 +32,7 @@ interface ReferencePose {
 }
 
 // Extended Taekwondo techniques and forms data with reference images
-const taekwondoMoves: Array<{
+const defaultTaekwondoMovesData: Array<{ // Renamed from taekwondoMoves
   id: number;
   name: string;
   category: string;
@@ -166,6 +166,210 @@ const taekwondoMoves: Array<{
     description: 'Advanced sparring combination with feints and spinning kicks.',
     videoUrl: '/moves/sparring-combo-2.mp4',
     thumbnailUrl: '/moves/sparring-combo-2-thumb.jpg'
+  },
+  // Basic Techniques (Green)
+  {
+    id: 13,
+    name: 'Low Block (Arae Makki)',
+    category: 'Basic Techniques',
+    difficulty: 'Beginner',
+    description: 'A defensive technique to block low attacks, typically aimed at the lower body.',
+    videoUrl: '/moves/low-block.mp4',
+    thumbnailUrl: '/moves/low-block-thumb.jpg',
+    tip: 'Keep your blocking arm strong and ensure your stance is stable.'
+  },
+  {
+    id: 14,
+    name: 'High Block (Eolgul Makki)',
+    category: 'Basic Techniques',
+    difficulty: 'Beginner',
+    description: 'A block where the arm is raised above the head to defend against high attacks.',
+    videoUrl: '/moves/high-block.mp4',
+    thumbnailUrl: '/moves/high-block-thumb.jpg',
+    tip: 'Focus on a strong finishing position with your arm at a 45-degree angle above your head.'
+  },
+  {
+    id: 15,
+    name: 'Middle Punch (Momtong Jireugi)',
+    category: 'Basic Techniques',
+    difficulty: 'Beginner',
+    description: 'A straight punch aimed at the middle section (solar plexus) of an opponent.',
+    videoUrl: '/moves/middle-punch.mp4',
+    thumbnailUrl: '/moves/middle-punch-thumb.jpg',
+    tip: 'Rotate your hip and shoulder to generate power, keeping your non-punching hand at your hip.'
+  },
+  {
+    id: 16,
+    name: 'Knifehand Strike (Sonnal Chigi)',
+    category: 'Basic Techniques',
+    difficulty: 'Beginner',
+    description: 'A strike performed with the side of the open hand, often targeting the neck.',
+    videoUrl: '/moves/knifehand-strike.mp4',
+    thumbnailUrl: '/moves/knifehand-strike-thumb.jpg',
+    tip: 'Keep your hand straight and tense, with thumb tucked in, focusing on striking with the edge of your hand.'
+  },
+  {
+    id: 17,
+    name: 'Palm Block (Batangson Makki)',
+    category: 'Basic Techniques',
+    difficulty: 'Beginner',
+    description: 'A blocking technique using the palm of the hand in a downward pushing motion.',
+    videoUrl: '/moves/palm-block.mp4',
+    thumbnailUrl: '/moves/palm-block-thumb.jpg',
+    tip: 'Use the heel of your palm for power and keep your fingers tightly together.'
+  },
+  // Intermediate Techniques (Blue)
+  {
+    id: 18,
+    name: 'Double Roundhouse Kick (Dollyo Chagi x2)',
+    category: 'Advanced Kicks',
+    difficulty: 'Intermediate',
+    description: 'Two consecutive roundhouse kicks performed with the same leg without putting the foot down.',
+    videoUrl: '/moves/double-roundhouse.mp4',
+    thumbnailUrl: '/moves/double-roundhouse-thumb.jpg',
+    tip: 'Chamber your leg quickly after the first kick to set up the second one efficiently.'
+  },
+  {
+    id: 19,
+    name: 'Twist Kick (Bituro Chagi)',
+    category: 'Advanced Kicks',
+    difficulty: 'Intermediate',
+    description: 'A kick where the leg is twisted during execution, usually targeting the face.',
+    videoUrl: '/moves/twist-kick.mp4',
+    thumbnailUrl: '/moves/twist-kick-thumb.jpg',
+    tip: 'The twisting motion comes from rotating your hips and pivoting on your supporting foot.'
+  },
+  {
+    id: 20,
+    name: 'Push Kick (Meereo Chagi)',
+    category: 'Basic Kicks',
+    difficulty: 'Intermediate',
+    description: 'A front kick that pushes the opponent away rather than striking through them.',
+    videoUrl: '/moves/push-kick.mp4',
+    thumbnailUrl: '/moves/push-kick-thumb.jpg',
+    tip: 'Push through with the heel of your foot and keep your knee bent slightly on impact.'
+  },
+  {
+    id: 21,
+    name: 'Elbow Strike (Palkup Chigi)',
+    category: 'Basic Techniques',
+    difficulty: 'Intermediate',
+    description: 'A close-range strike using the point or edge of the elbow.',
+    videoUrl: '/moves/elbow-strike.mp4',
+    thumbnailUrl: '/moves/elbow-strike-thumb.jpg',
+    tip: 'Generate power by rotating your torso and keeping your elbow tensed at impact.'
+  },
+  {
+    id: 22,
+    name: 'Twin Forearm Block (Sang Palmok Makki)',
+    category: 'Basic Techniques',
+    difficulty: 'Intermediate',
+    description: 'A defensive technique using both forearms in an X-shape to block attacks.',
+    videoUrl: '/moves/twin-forearm-block.mp4',
+    thumbnailUrl: '/moves/twin-forearm-block-thumb.jpg',
+    tip: 'Cross your arms in front of your body and extend forcefully to execute the block.'
+  },
+  // Advanced Techniques (Red)
+  {
+    id: 23,
+    name: 'Jumping Side Kick (Twimyeo Yeop Chagi)',
+    category: 'Advanced Kicks',
+    difficulty: 'Advanced',
+    description: 'A side kick performed while jumping, increasing its height and power.',
+    videoUrl: '/moves/jumping-side-kick.mp4',
+    thumbnailUrl: '/moves/jumping-side-kick-thumb.jpg',
+    tip: 'Push off strongly with your non-kicking leg and maintain proper side kick form in the air.'
+  },
+  {
+    id: 24,
+    name: 'Jumping Back Kick (Twimyeo Dwi Chagi)',
+    category: 'Advanced Kicks',
+    difficulty: 'Advanced',
+    description: 'A back kick executed while jumping, combining height with the power of a back kick.',
+    videoUrl: '/moves/jumping-back-kick.mp4',
+    thumbnailUrl: '/moves/jumping-back-kick-thumb.jpg',
+    tip: 'Look over your shoulder to spot your target before executing the kick in the air.'
+  },
+  {
+    id: 25,
+    name: 'Spinning Crescent Kick (Bandal Chagi)',
+    category: 'Advanced Kicks',
+    difficulty: 'Advanced',
+    description: 'A kick that traces a crescent moon shape, performed with a spinning motion.',
+    videoUrl: '/moves/spinning-crescent-kick.mp4',
+    thumbnailUrl: '/moves/spinning-crescent-kick-thumb.jpg',
+    tip: 'Pivot on your supporting foot and maintain height throughout the kick\'s arc.'
+  },
+  {
+    id: 26,
+    name: 'Reverse Turning Kick (Bandae Dollyo Chagi)',
+    category: 'Advanced Kicks',
+    difficulty: 'Advanced',
+    description: 'A roundhouse kick performed in the opposite direction of a standard turning kick.',
+    videoUrl: '/moves/reverse-turning-kick.mp4',
+    thumbnailUrl: '/moves/reverse-turning-kick-thumb.jpg',
+    tip: 'Turn your head quickly to spot your target and pivot fully on your supporting foot.'
+  },
+  {
+    id: 27,
+    name: 'Downward Knifehand Block (Naeryeo Sonnal Makki)',
+    category: 'Basic Techniques',
+    difficulty: 'Advanced',
+    description: 'A blocking technique using the knifehand in a downward diagonal motion.',
+    videoUrl: '/moves/downward-knifehand-block.mp4',
+    thumbnailUrl: '/moves/downward-knifehand-block-thumb.jpg',
+    tip: 'Keep your arm strong throughout the motion and end with a tense, straight hand.'
+  },
+  // Expert Techniques (Black)
+  {
+    id: 28,
+    name: '540 Hook Kick (540 Huryeo Chagi)',
+    category: 'Advanced Kicks',
+    difficulty: 'Expert',
+    description: 'An advanced jumping spinning hook kick involving a 540-degree rotation in the air.',
+    videoUrl: '/moves/540-hook-kick.mp4',
+    thumbnailUrl: '/moves/540-hook-kick-thumb.jpg',
+    tip: 'Focus on generating height in your jump before initiating the spin to complete the full rotation.'
+  },
+  {
+    id: 29,
+    name: 'Jumping Axe Kick (Twimyeo Naeryeo Chagi)',
+    category: 'Advanced Kicks',
+    difficulty: 'Expert',
+    description: 'An axe kick performed while jumping, increasing its impact and reach.',
+    videoUrl: '/moves/jumping-axe-kick.mp4',
+    thumbnailUrl: '/moves/jumping-axe-kick-thumb.jpg',
+    tip: 'Raise your kicking leg as high as possible before bringing it down with force.'
+  },
+  {
+    id: 30,
+    name: 'Spinning Elbow Strike (Dwi Palkup Chigi)',
+    category: 'Basic Techniques',
+    difficulty: 'Expert',
+    description: 'An elbow strike delivered with a spinning motion to increase power and surprise.',
+    videoUrl: '/moves/spinning-elbow-strike.mp4',
+    thumbnailUrl: '/moves/spinning-elbow-strike-thumb.jpg',
+    tip: 'Keep your core tight during the spin and focus on accuracy in targeting.'
+  },
+  {
+    id: 31,
+    name: 'Double Jump Kick (E Dan Chagi)',
+    category: 'Advanced Kicks',
+    difficulty: 'Expert',
+    description: 'A technique where two different kicks are executed during a single jump.',
+    videoUrl: '/moves/double-jump-kick.mp4',
+    thumbnailUrl: '/moves/double-jump-kick-thumb.jpg',
+    tip: 'Time your kicks carefully and aim to hit the first target before transitioning to the second kick.'
+  },
+  {
+    id: 32,
+    name: 'Tornado Kick (Huryeo Dollyo Chagi)',
+    category: 'Advanced Kicks',
+    difficulty: 'Expert',
+    description: 'A complex kick combining a spinning motion with a roundhouse kick execution.',
+    videoUrl: '/moves/tornado-kick.mp4',
+    thumbnailUrl: '/moves/tornado-kick-thumb.jpg',
+    tip: 'Begin with a strong pivot on your supporting leg and maintain momentum throughout the spin.'
   }
 ];
 
@@ -235,6 +439,8 @@ export default function Practice() {
   const { user, logoutMutation } = useAuth();
   const { theme, setTheme } = useTheme();
   
+  const [taekwondoMoves, setTaekwondoMoves] = useState(defaultTaekwondoMovesData); // Added state initialization
+  
   // Filter and search state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -242,7 +448,7 @@ export default function Practice() {
   const [isDarkMode, setIsDarkMode] = useState(theme === 'dark');
   
   // Selected move for detail view
-  const [selectedMove, setSelectedMove] = useState<typeof taekwondoMoves[0] | null>(null);
+  const [selectedMove, setSelectedMove] = useState<typeof defaultTaekwondoMovesData[0] | null>(null); // Use renamed type
   
   // Developer mode states
   const [isDeveloperMode, setIsDeveloperMode] = useState(false);
@@ -1161,33 +1367,38 @@ export default function Practice() {
       try {
         const response = await fetch('/api/reference-moves');
         if (response.ok) {
-          const data = await response.json();
-          console.log("Fetched reference moves:", data);
+          const fetchedReferenceData = await response.json();
+          console.log("Fetched reference moves:", fetchedReferenceData);
           
-          // Update the taekwondoMoves array with reference data from the database
-          if (data && data.length > 0) {
-            const updatedMoves = [...taekwondoMoves];
-            
-            // Update any moves that have references in the database
-            data.forEach((refMove: any) => {
-              const moveIndex = updatedMoves.findIndex(m => m.id === refMove.moveId);
-              if (moveIndex > -1) {
-                updatedMoves[moveIndex] = {
-                  ...updatedMoves[moveIndex],
+          if (fetchedReferenceData && fetchedReferenceData.length > 0) {
+            const hydratedMoves = defaultTaekwondoMovesData.map(defaultMove => {
+              const matchingRefData = fetchedReferenceData.find((refData: any) => refData.moveId === defaultMove.id);
+              if (matchingRefData) {
+                return {
+                  ...defaultMove,
                   referencePose: {
-                    imageUrl: refMove.imageUrl,
-                    angles: refMove.jointAngles || {},
+                    imageUrl: matchingRefData.imageUrl,
+                    angles: matchingRefData.jointAngles || {},
                     processed: true
                   }
                 };
               }
+              return defaultMove;
             });
             
-            // If we have a selected move, update it too
+            setTaekwondoMoves(hydratedMoves); // Update the main list of moves
+
+            // If we have a selected move, update its state from the newly hydrated list
             if (selectedMove) {
-              const updatedSelectedMove = updatedMoves.find(m => m.id === selectedMove.id);
+              const updatedSelectedMove = hydratedMoves.find(m => m.id === selectedMove.id);
               if (updatedSelectedMove) {
                 setSelectedMove(updatedSelectedMove);
+              } else {
+                // If the previously selected move is no longer in the list (e.g., filtered out or removed)
+                // or its data changed such that it's effectively a new object,
+                // it might be safer to clear it or re-evaluate.
+                // For now, this ensures `selectedMove` refers to an item from `hydratedMoves`.
+                setSelectedMove(null); // Or find by ID again if critical
               }
             }
           }
@@ -1199,12 +1410,11 @@ export default function Practice() {
       }
     };
     
-    // Call the fetch function
     fetchReferenceMoves();
-  }, []);
+  }, []); // Keep dependency array empty to run once on mount. selectedMove updates will re-render.
   
   // Filter moves based on search and filters
-  const filteredMoves = taekwondoMoves.filter(move => {
+  const filteredMoves = taekwondoMoves.filter(move => { // Uses the state taekwondoMoves
     const matchesSearch = move.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           move.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || move.category === selectedCategory;
@@ -2534,8 +2744,8 @@ export default function Practice() {
               
               <button
                 onClick={startPractice}
-                className={`px-4 py-2 ${selectedMove?.referencePose && (isPublicImageUrl(selectedMove.referencePose.imageUrl) || selectedMove.referencePose.jointAngles || selectedMove.referencePose.angles) ? 'bg-red-700 hover:bg-red-600' : 'bg-gray-700 cursor-not-allowed'} text-white rounded flex items-center`}
-                disabled={!(selectedMove?.referencePose && (isPublicImageUrl(selectedMove.referencePose.imageUrl) || selectedMove.referencePose.jointAngles || selectedMove.referencePose.angles))}
+                className={`px-4 py-2 ${selectedMove?.referencePose && (selectedMove.referencePose.imageUrl || selectedMove.referencePose.jointAngles || selectedMove.referencePose.angles) ? 'bg-red-700 hover:bg-red-600' : 'bg-gray-700 cursor-not-allowed'} text-white rounded flex items-center`}
+                disabled={!(selectedMove?.referencePose && (selectedMove.referencePose.imageUrl || selectedMove.referencePose.jointAngles || selectedMove.referencePose.angles))}
               >
                 <span className="material-icons text-sm mr-1">fitness_center</span>
                 Practice this move
