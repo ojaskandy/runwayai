@@ -1,0 +1,47 @@
+✅ Tell the Replit Agent to Make These Improvements
+1. Add Time-Tolerant Matching Window (±300ms)
+“Modify comparePoses to find the closest matching reference pose within a ±300ms window around each user timestamp instead of requiring exact timestamp alignment.”
+
+Why: Slight timing offsets (a user doing the same motion 200ms later) shouldn't result in a 0 score.
+
+How: Use binary search or a simple sliding window to find the best-matching reference pose within the window.
+
+2. Clamp or Floor Scores Instead of Zeroing
+“Update the scoring function to floor similarity scores at a minimum of 30 instead of letting them drop to 0 for imperfect but recognizable movements.”
+
+Why: A single bad joint shouldn't tank the whole result, especially if the user is close.
+
+How: In comparePoses, wrap final joint score like:
+
+ts
+Copy
+Edit
+const score = Math.max(30, Math.exp(-distance * 2.5) * 100);
+3. Add Timing Buffer Before Penalty
+“Don’t apply timing penalties unless delay is greater than 750ms (instead of 500ms). Add a buffer so small delays don’t lead to 10% score drops.”
+
+Why: Human reaction time varies naturally by 300–600ms. Be generous at first.
+
+4. Weight Form Higher Than Timing (e.g., 70:30)
+“Adjust the final score to weight form 70% and timing 30%, instead of applying fixed 10% penalties.”
+
+Why: A user doing the perfect kick a bit late is still training well.
+
+How:
+
+ts
+Copy
+Edit
+finalScore = 0.7 * positionScore + 0.3 * timingScore;
+5. Add Grace Period at Start
+“Ignore pose scoring for the first 1 second after test starts to give the user time to react.”
+
+How: In comparePoses, skip comparisons for poses with timestamp < testStartTime + 1000
+
+6. Log Timing Offset Per Pose
+“Log the delay (userTimestamp - closestReferenceTimestamp) for each comparison to later add adaptive DTW or machine learning-based scoring.”
+
+Why: You can build a smarter comparison model later with this data.
+
+7. Optional: Add Visual Score Overlay
+“Overlay the joint-wise score as color-coded skeleton (green = 85+, yellow = 70-84, red = <70) to give visual feedback per frame.”

@@ -1,0 +1,4079 @@
+import { useRef, useEffect, useState } from 'react';
+import { detectPoses, getJointConnections } from '@/lib/poseDetection';
+import GreenGuideOverlay from './GreenGuideOverlay';
+
+// Helper function to detect video URLs
+const isVideoUrl = (url: string): boolean => {
+  // Case 1: If it has our #video flag
+  if (url?.includes('#video')) {
+    return true;
+  }
+  
+  // Case 2: If it's a blob URL with 'video' in it
+  if (url?.startsWith('blob:') && url?.includes('video')) {
+    return true;
+  }
+  
+  // Case 3: If it has a video file extension
+  if (url?.match(/\.(mp4|mov|webm|avi|wmv|flv|mkv)$/i)) {
+    return true;
+  }
+  
+  return false;
+};
+
+// Get connected joints for angle calculation
+const getConnectedJoint = (jointName: string, position: 'start' | 'end'): string => {
+  const jointMap: Record<string, { start: string; end: string }> = {
+    // Arms
+    'left_elbow': { start: 'left_shoulder', end: 'left_wrist' },
+    'right_elbow': { start: 'right_shoulder', end: 'right_wrist' },
+    'left_shoulder': { start: 'left_hip', end: 'left_elbow' },
+    'right_shoulder': { start: 'right_hip', end: 'right_elbow' },
+    'left_wrist': { start: 'left_elbow', end: 'left_index' },
+    'right_wrist': { start: 'right_elbow', end: 'right_index' },
+    
+    // Legs
+    'left_knee': { start: 'left_hip', end: 'left_ankle' },
+    'right_knee': { start: 'right_hip', end: 'right_ankle' },
+    'left_ankle': { start: 'left_knee', end: 'left_foot_index' },
+    'right_ankle': { start: 'right_knee', end: 'right_foot_index' },
+    
+    // Torso
+    'left_hip': { start: 'left_knee', end: 'left_shoulder' },
+    'right_hip': { start: 'right_knee', end: 'right_shoulder' }
+  };
+  
+  return jointMap[jointName]?.[position] || jointName;
+}
+
+interface CameraViewProps {
+  stream: MediaStream | null;
+  isTracking: boolean;
+  confidenceThreshold: number;
+  modelSelection: string;
+  maxPoses: number;
+  skeletonColor: string;
+  showSkeleton: boolean;
+  showPoints: boolean;
+  showBackground: boolean;
+  backgroundOpacity: number;
+  backgroundBlur: number;
+  sourceType: 'camera' | 'image' | 'video';
+  imageElement?: HTMLImageElement | null;
+  videoElement?: HTMLVideoElement | null;
+  mediaUrl?: string;
+  showReferenceOverlay?: boolean; // New prop for toggling skeleton on reference media
+  isFullscreenMode?: boolean; // Flag for fullscreen/focus mode
+  onScreenshot: (dataUrl: string) => void;
+  toggleTracking?: () => void; // Optional because we have a default implementation
+  toggleReferenceOverlay?: () => void; // For toggling skeleton on reference media
+}
+
+export default function CameraView({
+  stream,
+  isTracking,
+  confidenceThreshold,
+  modelSelection,
+  maxPoses,
+  skeletonColor,
+  showSkeleton,
+  showPoints,
+  showBackground,
+  backgroundOpacity,
+  backgroundBlur,
+  sourceType,
+  imageElement,
+  videoElement: externalVideoElement,
+  mediaUrl,
+  showReferenceOverlay = false,
+  isFullscreenMode = false,
+  onScreenshot,
+  toggleTracking: externalToggleTracking,
+  toggleReferenceOverlay: externalToggleReferenceOverlay
+}: CameraViewProps) {
+  
+  // Default toggle tracking implementation if none is provided
+  const toggleTracking = externalToggleTracking || (() => {
+    console.log("Toggle tracking clicked, but no handler was provided");
+  });
+  
+  // Default toggle reference overlay implementation if none is provided
+  const toggleReferenceOverlay = externalToggleReferenceOverlay || (() => {
+    console.log("Toggle reference overlay clicked, but no handler was provided");
+  });
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const recordingCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const recordingStream = useRef<MediaStream | null>(null);
+  const animationRef = useRef<number | null>(null);
+  const referenceVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [mediaLoaded, setMediaLoaded] = useState<boolean>(false);
+  const [isSplitView, setIsSplitView] = useState<boolean>(false);
+  const [isVideoPaused, setIsVideoPaused] = useState<boolean>(false);
+  const [showMediaSelector, setShowMediaSelector] = useState<boolean>(false);
+  const [routineNotes, setRoutineNotes] = useState<string>('');
+  
+  // Load routine notes from localStorage when component mounts
+  useEffect(() => {
+    const savedNotes = localStorage.getItem('routineNotes');
+    if (savedNotes) {
+      setRoutineNotes(savedNotes);
+    }
+  }, []);
+  
+  // Save routine notes to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('routineNotes', routineNotes);
+  }, [routineNotes]);
+  const [testResults, setTestResults] = useState<{
+    isRunning: boolean;
+    processing: boolean; // Add processing state to show loading indicator after test
+    scores: JointScore[];
+    overallScore: number;
+    feedback: string;
+    timing?: {
+      delays: boolean;
+      gaps: boolean;
+      speed: 'good' | 'slow' | 'fast';
+    };
+  }>({
+    isRunning: false,
+    processing: false,
+    scores: [],
+    overallScore: 0,
+    feedback: ''
+  });
+  
+  // State for test results modal
+  const [showResultsModal, setShowResultsModal] = useState<boolean>(false);
+  // State for clipboard notification toast
+  const [showCopyToast, setShowCopyToast] = useState<boolean>(false);
+  
+  // Screen recording state
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+  const [recordedVideo, setRecordedVideo] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [showRecordingPopup, setShowRecordingPopup] = useState<boolean>(false);
+  
+  // Store the latest user pose and reference pose for comparison
+  const [userPose, setUserPose] = useState<any>(null);
+  const [referencePose, setReferencePose] = useState<any>(null);
+  
+  // Store pose history for sequence analysis
+  const [userPoseHistory, setUserPoseHistory] = useState<Array<{pose: any, timestamp: number}>>([]);
+  const [referencePoseHistory, setReferencePoseHistory] = useState<Array<{pose: any, timestamp: number}>>([]);
+  
+  // Track significant movements for sequence comparison
+  const [referenceMovementSequence, setReferenceMovementSequence] = useState<string[]>([]);
+  const [userMovementSequence, setUserMovementSequence] = useState<string[]>([]);
+  
+  // Track joints that have changed the most (priority joints for comparison)
+  const [priorityJoints, setPriorityJoints] = useState<string[]>([]);
+  
+  // Store distance information for the distance meter
+  const [distanceInfo, setDistanceInfo] = useState<{
+    scale: number,
+    isCorrect: boolean,
+    message: string,
+    showMeter: boolean
+  }>({
+    scale: 1,
+    isCorrect: false,
+    message: '',
+    showMeter: false
+  });
+  
+  // Store recorded reference poses for replays
+  const [referenceFrames, setReferenceFrames] = useState<any[]>([]);
+  const [isRecordingReference, setIsRecordingReference] = useState(false);
+  
+  // Track test start time for grace period
+  const [testStartTime, setTestStartTime] = useState<number>(0);
+  const [graceTimeRemaining, setGraceTimeRemaining] = useState<number>(1);
+  
+  // Effect to update grace period countdown timer
+  useEffect(() => {
+    if (testStartTime > 0 && testResults.isRunning) {
+      // Calculate remaining time in the grace period (1 second)
+      const updateGraceTime = () => {
+        const elapsed = Date.now() - testStartTime;
+        if (elapsed < 1000) {
+          const remaining = Math.ceil((1000 - elapsed) / 1000);
+          setGraceTimeRemaining(remaining);
+          // Schedule next update
+          requestAnimationFrame(updateGraceTime);
+        } else {
+          setGraceTimeRemaining(0);
+        }
+      };
+      
+      // Start the timer
+      const timerId = requestAnimationFrame(updateGraceTime);
+      
+      // Clean up
+      return () => cancelAnimationFrame(timerId);
+    }
+  }, [testStartTime, testResults.isRunning]);
+  
+  // Store timing offsets for each pose comparison
+  const [timingOffsets, setTimingOffsets] = useState<number[]>([]);
+  
+  // Store calculated joint angles for display
+  const [jointAngles, setJointAngles] = useState<Record<string, number>>({});
+  
+  // Define important joints to calculate angles for (excluding face)
+  const angleJoints = [
+    // Arms
+    'left_elbow', 'right_elbow',
+    'left_shoulder', 'right_shoulder', 
+    'left_wrist', 'right_wrist',
+    // Torso
+    'left_hip', 'right_hip',
+    // Legs
+    'left_knee', 'right_knee',
+    'left_ankle', 'right_ankle'
+  ];
+  
+  // Function to calculate angle between three points
+  const calculateAngle = (
+    a: { x: number, y: number }, 
+    b: { x: number, y: number }, 
+    c: { x: number, y: number }
+  ): number => {
+    // Calculate vectors BA and BC
+    const vectorBA = {x: a.x - b.x, y: a.y - b.y};
+    const vectorBC = {x: c.x - b.x, y: c.y - b.y};
+    
+    // Calculate dot product
+    const dotProduct = (vectorBA.x * vectorBC.x) + (vectorBA.y * vectorBC.y);
+    
+    // Calculate magnitudes
+    const magnitudeBA = Math.sqrt(vectorBA.x * vectorBA.x + vectorBA.y * vectorBA.y);
+    const magnitudeBC = Math.sqrt(vectorBC.x * vectorBC.x + vectorBC.y * vectorBC.y);
+    
+    // Calculate angle in radians
+    let angleRadians = Math.acos(dotProduct / (magnitudeBA * magnitudeBC));
+    
+    // Convert to degrees
+    let angleDegrees = (angleRadians * 180) / Math.PI;
+    
+    // Handle NaN cases (when points are too close or aligned)
+    if (isNaN(angleDegrees)) {
+      return 0;
+    }
+    
+    // Round to nearest integer
+    return Math.round(angleDegrees);
+  };
+  
+  // Function to calculate joint angles for a pose
+  const calculateJointAngles = (pose: any) => {
+    if (!pose || !pose.keypoints) return {};
+    
+    // Create a map for easy keypoint lookup
+    const keypointMap = new Map();
+    pose.keypoints.forEach((kp: any) => {
+      // Use a lower threshold to ensure we capture more angles
+      if (kp.score > 0.3) {
+        keypointMap.set(kp.name, kp);
+      }
+    });
+    
+    // Calculate angles for each important joint
+    const angles: Record<string, number> = {};
+    
+    angleJoints.forEach(jointName => {
+      // Get joint and its connected points
+      const joint = keypointMap.get(jointName);
+      if (!joint) return;
+      
+      const startJointName = getConnectedJoint(jointName, 'start');
+      const endJointName = getConnectedJoint(jointName, 'end');
+      
+      const startJoint = keypointMap.get(startJointName);
+      const endJoint = keypointMap.get(endJointName);
+      
+      // Use a lower confidence threshold to ensure more angles are displayed
+      if (joint && startJoint && endJoint && 
+          joint.score > 0.3 && startJoint.score > 0.3 && endJoint.score > 0.3) {
+        const angle = calculateAngle(
+          { x: startJoint.x, y: startJoint.y }, 
+          { x: joint.x, y: joint.y }, 
+          { x: endJoint.x, y: endJoint.y }
+        );
+        angles[jointName] = angle;
+      }
+    });
+    
+    return angles;
+  };
+  
+  // Setup video stream
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+    
+    // Handle different media sources
+    if ((isSplitView || sourceType === 'camera') && stream) {
+      // In split view, always show camera feed in the left panel
+      videoElement.srcObject = stream;
+      videoElement.play().catch(err => {
+        console.error("Error playing camera stream:", err);
+      });
+      setMediaLoaded(true);
+    } 
+    else if (!isSplitView && sourceType === 'video' && externalVideoElement && mediaUrl) {
+      // Only use video as source if not in split view
+      videoElement.srcObject = null; // Clear camera stream if any
+      videoElement.src = mediaUrl;
+      videoElement.loop = true;
+      videoElement.muted = true;
+      
+      if (!isVideoPaused) {
+        videoElement.play().catch(err => {
+          console.error("Error playing video file:", err);
+        });
+      } else {
+        videoElement.pause();
+      }
+      
+      setMediaLoaded(true);
+    }
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      
+      // Clean up video source if needed
+      if (videoElement && !videoElement.srcObject) {
+        videoElement.pause();
+        videoElement.src = '';
+        videoElement.load();
+      }
+    };
+  }, [stream, sourceType, mediaUrl, externalVideoElement, isVideoPaused, isSplitView]);
+  
+  // Handle tracking
+  useEffect(() => {
+    // Log detection parameters for debugging
+    console.log("Running pose detection with parameters:", { 
+      sourceType,
+      modelSelection, 
+      confidenceThreshold, 
+      showSkeleton, 
+      maxPoses,
+      isFullscreenMode
+    });
+    
+    // Get the appropriate source element and verify it's ready
+    let sourceElement: HTMLImageElement | HTMLVideoElement | null = null;
+    
+    if (sourceType === 'image' && imageElement) {
+      sourceElement = imageElement;
+      console.log(`Using image source: ${imageElement.naturalWidth}x${imageElement.naturalHeight}, loaded: ${imageElement.complete}`);
+      
+      // For image source, we set loaded state
+      setMediaLoaded(imageElement.complete && imageElement.naturalWidth > 0);
+      
+      // If the image is not ready yet, wait for it to load
+      if (!imageElement.complete || imageElement.naturalWidth === 0) {
+        console.log("Image not fully loaded, waiting...");
+        return;
+      }
+    } else if (sourceType === 'camera' && videoRef.current) {
+      sourceElement = videoRef.current;
+      
+      // Check if video has dimensions
+      const hasValidDimensions = sourceElement.videoWidth > 0 && sourceElement.videoHeight > 0;
+      console.log(`Using camera source: ${sourceElement.videoWidth}x${sourceElement.videoHeight}, ready state: ${sourceElement.readyState}`);
+      
+      // For video, we need to check readyState (2=enough data to render current frame)
+      setMediaLoaded(sourceElement.readyState >= 2 && hasValidDimensions);
+      
+      // If video is not ready, wait but don't exit completely as it might still be initializing
+      if (sourceElement.readyState < 1) {
+        console.log("Camera not ready yet, waiting for more data");
+        return;
+      }
+    } else if ((sourceType === 'video' || isSplitView) && videoRef.current) {
+      sourceElement = videoRef.current;
+      
+      // Check if video has dimensions
+      const hasValidDimensions = sourceElement.videoWidth > 0 && sourceElement.videoHeight > 0;
+      console.log(`Using video source: ${sourceElement.videoWidth}x${sourceElement.videoHeight}, ready state: ${sourceElement.readyState}`);
+      
+      // For video, we need to check readyState (2=enough data to render current frame)
+      setMediaLoaded(sourceElement.readyState >= 2 && hasValidDimensions);
+      
+      // If video is not ready, wait
+      if (sourceElement.readyState < 2 || !hasValidDimensions) {
+        console.log("Video not ready yet, waiting for more data");
+        return;
+      }
+    } else {
+      console.log("No valid source element found");
+      return;
+    }
+    
+    const canvasElement = canvasRef.current;
+    if (!sourceElement || !canvasElement) {
+      console.log("Source or canvas element not available");
+      return;
+    }
+    
+    // In fullscreen mode, we need to adjust how the canvas is displayed
+    if (isFullscreenMode) {
+      const container = document.getElementById('cameraContainer');
+      if (container) {
+        console.log("Adjusting canvas for fullscreen mode");
+        
+        // Force the camera container to maintain proper aspect ratio
+        // This ensures the detection canvas aligns correctly with the video
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        
+        // Ensure the canvas display size matches the container
+        canvasElement.style.width = '100%';
+        canvasElement.style.height = '100%';
+        canvasElement.style.objectFit = 'contain';
+        
+        // Important: in fullscreen mode, make sure the canvas is properly aligned
+        // with its parent video element
+        const cameraContainer = document.querySelector('.camera-container');
+        if (cameraContainer) {
+          // Set the container to use flexbox centering
+          (cameraContainer as HTMLElement).style.display = 'flex';
+          (cameraContainer as HTMLElement).style.justifyContent = 'center';
+          (cameraContainer as HTMLElement).style.alignItems = 'center';
+        }
+      }
+    }
+    
+    let animationFrameId: number | null = null;
+    
+    const detect = async () => {
+      if (!sourceElement || !canvasElement) return;
+      
+      const ctx = canvasElement.getContext('2d', { alpha: !showBackground });
+      if (!ctx) return;
+      
+      // Set canvas dimensions to match source
+      let width = 0;
+      let height = 0;
+      
+      if (sourceType === 'image' && imageElement) {
+        width = imageElement.naturalWidth;
+        height = imageElement.naturalHeight;
+      } else if (sourceElement instanceof HTMLVideoElement) {
+        width = sourceElement.videoWidth;
+        height = sourceElement.videoHeight;
+      }
+      
+      // Make sure we have valid dimensions
+      if (width === 0 || height === 0) {
+        console.log("Source has zero dimensions, skipping detection");
+        if (animationFrameId) {
+          animationFrameId = requestAnimationFrame(detect);
+        }
+        return;
+      }
+      
+      // Get container dimensions for potential scaling in fullscreen mode
+      const container = document.getElementById('cameraContainer');
+      let containerWidth = width;
+      let containerHeight = height;
+      let scaleX = 1;
+      let scaleY = 1;
+      
+      if (container && isFullscreenMode) {
+        containerWidth = container.clientWidth;
+        containerHeight = container.clientHeight;
+        
+        // Calculate scaling ratios to fit video in container
+        const videoRatio = width / height;
+        const containerRatio = containerWidth / containerHeight;
+        
+        if (videoRatio > containerRatio) {
+          // Video is wider than container
+          scaleX = containerWidth / width;
+          scaleY = scaleX;
+        } else {
+          // Video is taller than container
+          scaleY = containerHeight / height;
+          scaleX = scaleY;
+        }
+        
+        console.log("Fullscreen scaling:", { width, height, containerWidth, containerHeight, scaleX, scaleY });
+      }
+      
+      // Only update dimensions if they've changed or if it's an image (one-time)
+      if (canvasElement.width !== width || canvasElement.height !== height) {
+        // Always set the canvas's internal drawing dimensions to match the video
+        canvasElement.width = width;
+        canvasElement.height = height;
+      }
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      
+      // Conditional background rendering
+      if (showBackground) {
+        // Apply background with opacity
+        ctx.globalAlpha = backgroundOpacity;
+        
+        // Apply blur filter if needed
+        if (backgroundBlur > 0) {
+          ctx.filter = `blur(${backgroundBlur}px)`;
+        }
+        
+        // Draw source to canvas
+        ctx.drawImage(
+          sourceElement,
+          0,
+          0,
+          canvasElement.width,
+          canvasElement.height
+        );
+        
+        // Reset filters and alpha
+        ctx.filter = 'none';
+        ctx.globalAlpha = 1.0;
+      }
+      
+      if (isTracking) {
+        try {
+          // Detect poses
+          const poses = await detectPoses(
+            sourceElement,
+            maxPoses,
+            confidenceThreshold
+          );
+          
+          // Store the user pose if tracking is active on camera
+          if (sourceElement === videoRef.current && poses && poses.length > 0) {
+            setUserPose(poses[0]);
+            
+            // Angle calculation now happens in the main drawing loop for real-time updates
+            
+            // When in split view with reference video, try to detect poses on it
+            if (isSplitView && referenceVideoRef.current && 
+                referenceVideoRef.current.readyState >= 2) {
+              
+              // Only do this if we're not already in test mode (to avoid duplicate detection)
+              if (!testResults.isRunning) {
+                try {
+                  const refPoses = await detectPoses(
+                    referenceVideoRef.current,
+                    1,
+                    confidenceThreshold
+                  );
+                  
+                  if (refPoses && refPoses.length > 0) {
+                    setReferencePose(refPoses[0]);
+                    
+                    // Update the distance meter
+                    // Only show distance meter if we're in split view with a reference video
+                    if (isSplitView && referenceVideoRef.current) {
+                      updateDistanceMeter(poses[0], refPoses[0]);
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error detecting pose on reference video:", error);
+                }
+              }
+            }
+            
+            // If we're in test mode and we have a reference video, also detect poses on it
+            if (testResults.isRunning && referenceVideoRef.current && 
+                referenceVideoRef.current.readyState >= 2) {
+              
+              // Try to detect poses on the reference video
+              try {
+                const refPoses = await detectPoses(
+                  referenceVideoRef.current,
+                  1,
+                  confidenceThreshold
+                );
+                
+                if (refPoses && refPoses.length > 0) {
+                  console.log("Setting reference pose with keypoints:", refPoses[0].keypoints.length);
+                  setReferencePose(refPoses[0]);
+                  
+                  // If we're recording reference frames for later comparison
+                  if (isRecordingReference) {
+                    setReferenceFrames(prev => [...prev, refPoses[0]]);
+                  }
+                  
+                  // Store current timestamp for reference
+                  const timestamp = Date.now();
+                  
+                  // Check if we're still in the grace period (first second of the test)
+                  const inGracePeriod = testStartTime > 0 && (timestamp - testStartTime < 1000);
+                  
+                  // Only process comparisons after grace period
+                  if (!inGracePeriod) {
+                    // Find best matching reference pose within time window (±300ms)
+                    // If there are already recorded reference poses, use those
+                    // Otherwise, use the current reference pose
+                    let bestRefPose = refPoses[0];
+                    
+                    if (referencePoseHistory.length > 0) {
+                      const bestMatchingPose = findBestMatchingPose(timestamp, referencePoseHistory);
+                      if (bestMatchingPose) {
+                        bestRefPose = bestMatchingPose;
+                      }
+                    }
+                    
+                    // Compare the poses with time-tolerant matching
+                    const comparison = comparePoses(poses[0], bestRefPose);
+                    
+                    // Update test results with the current score
+                    setTestResults(prev => ({
+                      ...prev,
+                      scores: comparison.jointScores,
+                      overallScore: comparison.overallScore
+                    }));
+                  } else {
+                    console.log(`In grace period: ${Math.round((timestamp - testStartTime) / 100) / 10}s elapsed, pausing comparisons`);
+                  }
+                }
+              } catch (err) {
+                console.error("Error detecting poses on reference video:", err);
+              }
+            }
+          }
+          
+          // Draw skeleton
+          if (poses && poses.length > 0) {
+            poses.forEach(pose => {
+              const keypoints = pose.keypoints;
+              
+              // Define connections between joints for skeleton lines
+              const connections = [
+                // Torso
+                ['left_shoulder', 'right_shoulder'],
+                ['left_shoulder', 'left_hip'],
+                ['right_shoulder', 'right_hip'],
+                ['left_hip', 'right_hip'],
+                // Arms
+                ['left_shoulder', 'left_elbow'],
+                ['left_elbow', 'left_wrist'],
+                ['right_shoulder', 'right_elbow'],
+                ['right_elbow', 'right_wrist'],
+                // Legs
+                ['left_hip', 'left_knee'],
+                ['left_knee', 'left_ankle'],
+                ['right_hip', 'right_knee'],
+                ['right_knee', 'right_ankle'],
+                // Face
+                ['nose', 'left_eye'],
+                ['nose', 'right_eye'],
+                ['left_eye', 'left_ear'],
+                ['right_eye', 'right_ear'],
+              ];
+              
+              // In test mode, directly display the exact same skeleton from reference video onto the camera view
+              if (testResults.isRunning && sourceType === 'camera') {
+                console.log("TEST MODE ACTIVE - Should draw green skeleton");
+                
+                // Try to directly detect the pose from the reference video for immediate display
+                if (referenceVideoRef.current && referenceVideoRef.current.readyState >= 2) {
+                  // Use the reference video directly if possible
+                  console.log("Using reference video for overlay - video is ready");
+                } else if (referencePose) {
+                  console.log("Using cached reference pose with keypoints:", referencePose.keypoints.length);
+                } else {
+                  console.log("NO REFERENCE POSE AVAILABLE YET");
+                }
+                
+                // Add overlay text with instruction to follow green guide
+                ctx.font = "bold 24px system-ui";
+                ctx.textAlign = "center";
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeText("FOLLOW THE GREEN GUIDE", canvasElement.width / 2, 40);
+                ctx.fillStyle = '#10B981'; // Emerald-500 (green)
+                ctx.fillText("FOLLOW THE GREEN GUIDE", canvasElement.width / 2, 40);
+                
+                // Draw the reference skeleton overlay on the user's camera feed
+                if (referencePose && referencePose.keypoints) {
+                  const refKeypoints = referencePose.keypoints;
+                  if (refKeypoints && refKeypoints.length > 0) {
+                    console.log("Reference keypoints found:", refKeypoints.length);
+                    
+                    // Create a clean copy of reference pose for direct drawing
+                    const cleanRefPose = {
+                      keypoints: JSON.parse(JSON.stringify(refKeypoints))
+                    };
+                    
+                    // Use a green color for reference skeleton with high visibility
+                    ctx.strokeStyle = '#10B981'; // Emerald-500 (green)
+                    ctx.lineWidth = 6; // Extra thick lines for better visibility
+                    ctx.globalAlpha = 0.85; // More opaque
+                    
+                    // Create stronger glow effect in green
+                    ctx.shadowColor = 'rgba(16, 185, 129, 0.9)';
+                    ctx.shadowBlur = 15;
+                    
+                    // Draw the reference skeleton lines with exactly the same dimensions as the reference
+                    connections.forEach((connection) => {
+                      const fromName = connection[0];
+                      const toName = connection[1];
+                      const fromRef = cleanRefPose.keypoints.find((kp: any) => kp.name === fromName);
+                      const toRef = cleanRefPose.keypoints.find((kp: any) => kp.name === toName);
+                      
+                      if (fromRef && toRef && 
+                          typeof fromRef.score === 'number' && 
+                          typeof toRef.score === 'number' && 
+                          fromRef.score > confidenceThreshold && 
+                          toRef.score > confidenceThreshold) {
+                        
+                        // Draw guide line directly copying the reference pose
+                        ctx.beginPath();
+                        ctx.moveTo(fromRef.x, fromRef.y);
+                        ctx.lineTo(toRef.x, toRef.y);
+                        ctx.stroke();
+                      }
+                    });
+                    
+                    // Draw joint points for reference pose
+                    cleanRefPose.keypoints.forEach((refPoint: any) => {
+                      if (typeof refPoint.score === 'number' && refPoint.score > confidenceThreshold) {
+                        // Draw a larger filled circle with brighter green
+                        ctx.fillStyle = '#4ADE80'; // Emerald-300 (brighter)
+                        ctx.beginPath();
+                        ctx.arc(refPoint.x, refPoint.y, 10, 0, 2 * Math.PI);
+                        ctx.fill();
+                      }
+                    });
+                    
+                    // Reset shadow and opacity
+                    ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 1.0;
+                    
+                    // Calculate and display angles on the green reference skeleton
+                    // Calculate angles for the reference pose
+                    const refAngles = calculateJointAngles(referencePose);
+                    
+                    // Set text styling for angle display
+                    ctx.font = 'bold 16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.lineWidth = 2;
+                    
+                    // Draw each angle with improved visibility
+                    Object.entries(refAngles).forEach(([jointName, angle]) => {
+                      // Skip face-related joints
+                      if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
+                        return;
+                      }
+                      
+                      const joint = referencePose.keypoints.find((kp: any) => kp.name === jointName);
+                      if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
+                        // Create a larger offset for the angle display
+                        // This ensures it doesn't overlap with the joint point
+                        const offsetX = (joint.x > canvasElement.width / 2) ? -30 : 30;
+                        const offsetY = (joint.y > canvasElement.height / 2) ? -30 : 30;
+                        
+                        // Draw flashier background with border for better visibility
+                        // Use green color theme to match the skeleton
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                        ctx.beginPath();
+                        ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
+                        ctx.fill();
+                        
+                        // Add border with glow effect (green theme)
+                        ctx.strokeStyle = '#10B981'; // Green color
+                        ctx.lineWidth = 2;
+                        ctx.shadowColor = '#10B981';
+                        ctx.shadowBlur = 5;
+                        ctx.beginPath();
+                        ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
+                        ctx.stroke();
+                        
+                        // Reset shadow for text
+                        ctx.shadowBlur = 0;
+                        ctx.shadowColor = 'transparent';
+                        
+                        // Draw angle text with degree symbol
+                        ctx.fillStyle = 'white';
+                        ctx.fillText(`${angle}°`, joint.x + offsetX/2, joint.y + offsetY/2);
+                        
+                        // Add subtle connecting line to the joint
+                        ctx.strokeStyle = '#10B981';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(joint.x, joint.y);
+                        ctx.lineTo(joint.x + offsetX/2, joint.y + offsetY/2);
+                        ctx.stroke();
+                      }
+                    });
+                  }
+                }
+              }
+              
+              // Draw user skeleton lines in red theme
+              if (showSkeleton) {
+                ctx.strokeStyle = skeletonColor || '#B91C1C';
+                ctx.lineWidth = 3; // Thicker lines for better visibility
+                
+                connections.forEach((connection) => {
+                  const fromName = connection[0];
+                  const toName = connection[1];
+                  const from = keypoints.find(kp => kp.name === fromName);
+                  const to = keypoints.find(kp => kp.name === toName);
+                  
+                  if (from && to && 
+                      typeof from.score === 'number' && 
+                      typeof to.score === 'number' && 
+                      from.score > confidenceThreshold && 
+                      to.score > confidenceThreshold) {
+                    // Create glow effect in red theme
+                    ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
+                    ctx.shadowBlur = 10;
+                    
+                    ctx.beginPath();
+                    // Default behavior - no scaling needed as we're drawing directly on the canvas
+                    // which has the same dimensions as the source video/image
+                    ctx.moveTo(from.x, from.y);
+                    ctx.lineTo(to.x, to.y);
+                    ctx.stroke();
+                    
+                    // Reset shadow
+                    ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                  }
+                });
+              }
+              
+              // Draw keypoints
+              if (showPoints) {
+                keypoints.forEach(keypoint => {
+                  if (typeof keypoint.score === 'number' && keypoint.score > confidenceThreshold) {
+                    const { x, y } = keypoint;
+                    
+                    // Draw glow effect in theme color (red)
+                    ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
+                    ctx.shadowBlur = 15;
+                    
+                    // Draw circle for each keypoint in theme color
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath();
+                    
+                    // Default behavior - draw directly on the canvas at native coordinates
+                    ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                    
+                    ctx.fill();
+                    
+                    // Reset shadow
+                    ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                  }
+                });
+              }
+              
+              // Draw joint angles - always do this when tracking is active
+              if (showSkeleton && isTracking) {
+                // Set text styling for angle display
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.lineWidth = 2;
+                
+                // Calculate angles for the current frame directly
+                const currentAngles = calculateJointAngles(poses[0]);
+                
+                // Update the stored angles state with each frame (for real-time updates)
+                setJointAngles(currentAngles);
+                
+                // Draw each angle with improved visibility
+                Object.entries(currentAngles).forEach(([jointName, angle]) => {
+                  // Skip face-related joints
+                  if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
+                    return;
+                  }
+                  
+                  const joint = keypoints.find(kp => kp.name === jointName);
+                  if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
+                    // Draw angle arc to visualize the actual angle
+                    const startJointName = getConnectedJoint(jointName, 'start');
+                    const endJointName = getConnectedJoint(jointName, 'end');
+                    
+                    const startJoint = keypoints.find(kp => kp.name === startJointName);
+                    const endJoint = keypoints.find(kp => kp.name === endJointName);
+                    
+                    if (startJoint && endJoint) {
+                      // Create a larger offset for the angle display
+                      // This ensures it doesn't overlap with the joint point
+                      const offsetX = (joint.x > canvasElement.width / 2) ? -30 : 30;
+                      const offsetY = (joint.y > canvasElement.height / 2) ? -30 : 30;
+                      
+                      // Draw flashier background with border for better visibility
+                      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                      ctx.beginPath();
+                      ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
+                      ctx.fill();
+                      
+                      // Add border with glow effect
+                      ctx.strokeStyle = '#ef4444';
+                      ctx.lineWidth = 2;
+                      ctx.shadowColor = '#ef4444';
+                      ctx.shadowBlur = 5;
+                      ctx.beginPath();
+                      ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
+                      ctx.stroke();
+                      
+                      // Reset shadow for text
+                      ctx.shadowBlur = 0;
+                      ctx.shadowColor = 'transparent';
+                      
+                      // Draw angle text with degree symbol
+                      ctx.fillStyle = 'white';
+                      ctx.fillText(`${angle}°`, joint.x + offsetX/2, joint.y + offsetY/2);
+                      
+                      // Add subtle connecting line to the joint
+                      ctx.strokeStyle = '#ef4444';
+                      ctx.lineWidth = 1.5;
+                      ctx.beginPath();
+                      ctx.moveTo(joint.x, joint.y);
+                      ctx.lineTo(joint.x + offsetX/2, joint.y + offsetY/2);
+                      ctx.stroke();
+                    }
+                  }
+                });
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error during pose detection:', error);
+        }
+      } else if (!isTracking && showBackground) {
+        // Just show the source frame without skeleton when not tracking
+        ctx.drawImage(
+          sourceElement,
+          0,
+          0,
+          canvasElement.width,
+          canvasElement.height
+        );
+      }
+      
+      // Continue detection loop
+      animationFrameId = requestAnimationFrame(detect);
+    };
+    
+    // Start detection loop
+    detect();
+    
+    // Cleanup
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [
+    stream,
+    isTracking,
+    confidenceThreshold,
+    maxPoses,
+    skeletonColor,
+    showSkeleton,
+    showPoints,
+    sourceType,
+    imageElement,
+    showBackground,
+    backgroundOpacity,
+    backgroundBlur,
+    isFullscreenMode,
+    modelSelection,
+    testResults.isRunning // Added to re-run detection when test state changes
+  ]);
+  
+  // Effect for rendering skeleton on reference media
+  useEffect(() => {
+    // Run when showing reference overlay and tracking is on (either in split view or fullscreen)
+    if (!showReferenceOverlay || !isTracking || !mediaUrl) return;
+    
+    // Get the reference media element - needs to work in both split view and fullscreen mode
+    let refElement: HTMLImageElement | HTMLVideoElement | null = null;
+    
+    if (isVideoUrl(mediaUrl)) {
+      // Try to find reference video in either mode
+      refElement = document.querySelector('.reference-video') as HTMLVideoElement;
+    } else {
+      // Find the reference image in either split view or fullscreen
+      const refImages = document.querySelectorAll('img[alt="Reference image"]');
+      if (refImages.length > 0) {
+        refElement = refImages[0] as HTMLImageElement;
+      }
+    }
+    
+    if (!refElement) {
+      console.error('Could not find reference media element for skeleton overlay');
+      return;
+    }
+    
+    // Create a canvas for overlay if it doesn't exist
+    let overlayCanvas = document.querySelector('.reference-skeleton-canvas') as HTMLCanvasElement;
+    if (!overlayCanvas) {
+      overlayCanvas = document.createElement('canvas');
+      overlayCanvas.className = 'reference-skeleton-canvas absolute top-0 left-0 w-full h-full z-10';
+      const referencePanel = refElement.parentElement;
+      if (referencePanel) {
+        referencePanel.appendChild(overlayCanvas);
+      } else {
+        console.error('Could not find reference panel to append skeleton canvas');
+        return;
+      }
+    }
+    
+    // Set up animation frame for skeleton detection
+    let animationFrameId: number | null = null;
+    
+    const detectReferencePose = async () => {
+      if (!refElement || !overlayCanvas) return;
+      
+      // Wait until reference element is loaded
+      if (refElement instanceof HTMLImageElement && !refElement.complete) {
+        animationFrameId = requestAnimationFrame(detectReferencePose);
+        return;
+      }
+      
+      if (refElement instanceof HTMLVideoElement && 
+          (refElement.readyState < 2 || refElement.videoWidth === 0)) {
+        animationFrameId = requestAnimationFrame(detectReferencePose);
+        return;
+      }
+      
+      // Get natural dimensions
+      const width = refElement instanceof HTMLImageElement 
+        ? refElement.naturalWidth 
+        : refElement.videoWidth;
+        
+      const height = refElement instanceof HTMLImageElement 
+        ? refElement.naturalHeight 
+        : refElement.videoHeight;
+      
+      // Set canvas dimensions relative to the container
+      const container = overlayCanvas.parentElement;
+      if (container) {
+        overlayCanvas.width = container.clientWidth;
+        overlayCanvas.height = container.clientHeight;
+      } else {
+        // Fallback to element dimensions
+        overlayCanvas.width = width;
+        overlayCanvas.height = height;
+      }
+      
+      const ctx = overlayCanvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Clear previous frame
+      ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      
+      try {
+        // Detect poses in reference media
+        const poses = await detectPoses(
+          refElement,
+          maxPoses,
+          confidenceThreshold
+        );
+        
+        // Draw skeleton on overlay
+        if (poses && poses.length > 0) {
+          poses.forEach(pose => {
+            const keypoints = pose.keypoints;
+            
+            // Define connections between joints for skeleton lines
+            const connections = [
+              // Torso
+              ['left_shoulder', 'right_shoulder'],
+              ['left_shoulder', 'left_hip'],
+              ['right_shoulder', 'right_hip'],
+              ['left_hip', 'right_hip'],
+              // Arms
+              ['left_shoulder', 'left_elbow'],
+              ['left_elbow', 'left_wrist'],
+              ['right_shoulder', 'right_elbow'],
+              ['right_elbow', 'right_wrist'],
+              // Legs
+              ['left_hip', 'left_knee'],
+              ['left_knee', 'left_ankle'],
+              ['right_hip', 'right_knee'],
+              ['right_knee', 'right_ankle'],
+              // Face
+              ['nose', 'left_eye'],
+              ['nose', 'right_eye'],
+              ['left_eye', 'left_ear'],
+              ['right_eye', 'right_ear'],
+            ];
+            
+            // Scale keypoints to match the canvas size
+            const scaleX = overlayCanvas.width / width;
+            const scaleY = overlayCanvas.height / height;
+            
+            // Draw skeleton lines in dark red theme
+            ctx.strokeStyle = skeletonColor || '#B91C1C';
+            ctx.lineWidth = 3; // Thicker lines for better visibility
+            
+            connections.forEach((connection) => {
+              const fromName = connection[0];
+              const toName = connection[1];
+              const from = keypoints.find(kp => kp.name === fromName);
+              const to = keypoints.find(kp => kp.name === toName);
+              
+              if (from && to && 
+                  typeof from.score === 'number' && 
+                  typeof to.score === 'number' && 
+                  from.score > confidenceThreshold && 
+                  to.score > confidenceThreshold) {
+                // Create glow effect in red theme
+                ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
+                ctx.shadowBlur = 10;
+                
+                ctx.beginPath();
+                ctx.moveTo(from.x * scaleX, from.y * scaleY);
+                ctx.lineTo(to.x * scaleX, to.y * scaleY);
+                ctx.stroke();
+                
+                // Reset shadow
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+              }
+            });
+            
+            // Draw keypoints
+            if (showPoints) {
+              keypoints.forEach(keypoint => {
+                if (typeof keypoint.score === 'number' && keypoint.score > confidenceThreshold) {
+                  const { x, y } = keypoint;
+                  
+                  // Draw glow effect in theme color (red)
+                  ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
+                  ctx.shadowBlur = 15;
+                  
+                  // Draw circle for each keypoint in theme color
+                  ctx.fillStyle = '#ef4444';
+                  ctx.beginPath();
+                  ctx.arc(x * scaleX, y * scaleY, 6, 0, 2 * Math.PI);
+                  ctx.fill();
+                  
+                  // Reset shadow
+                  ctx.shadowColor = 'transparent';
+                  ctx.shadowBlur = 0;
+                }
+              });
+            }
+            
+            // Calculate and display joint angles for reference skeleton
+            // Only if skeleton is visible
+            if (showSkeleton) {
+              // Calculate angles for the reference pose
+              const refAngles = calculateJointAngles(pose);
+              
+              // Set text styling for angle display
+              ctx.font = 'bold 16px Arial';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.lineWidth = 2;
+              
+              // Draw each angle with improved visibility
+              Object.entries(refAngles).forEach(([jointName, angle]) => {
+                // Skip face-related joints
+                if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
+                  return;
+                }
+                
+                const joint = keypoints.find(kp => kp.name === jointName);
+                if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
+                  // Draw angle arc to visualize the actual angle
+                  const startJointName = getConnectedJoint(jointName, 'start');
+                  const endJointName = getConnectedJoint(jointName, 'end');
+                  
+                  const startJoint = keypoints.find(kp => kp.name === startJointName);
+                  const endJoint = keypoints.find(kp => kp.name === endJointName);
+                  
+                  if (startJoint && endJoint) {
+                    // Create a larger offset for the angle display
+                    // This ensures it doesn't overlap with the joint point
+                    const offsetX = (joint.x > width / 2) ? -30 : 30;
+                    const offsetY = (joint.y > height / 2) ? -30 : 30;
+                    
+                    // Apply scaling to position angles correctly
+                    const scaledX = joint.x * scaleX;
+                    const scaledY = joint.y * scaleY;
+                    
+                    // Draw flashier background with border for better visibility
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    ctx.beginPath();
+                    ctx.arc(scaledX + offsetX/2, scaledY + offsetY/2, 22, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Add border with glow effect
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2;
+                    ctx.shadowColor = '#ef4444';
+                    ctx.shadowBlur = 5;
+                    ctx.beginPath();
+                    ctx.arc(scaledX + offsetX/2, scaledY + offsetY/2, 22, 0, 2 * Math.PI);
+                    ctx.stroke();
+                    
+                    // Reset shadow for text
+                    ctx.shadowBlur = 0;
+                    ctx.shadowColor = 'transparent';
+                    
+                    // Draw angle text with degree symbol
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(`${angle}°`, scaledX + offsetX/2, scaledY + offsetY/2);
+                    
+                    // Add subtle connecting line to the joint
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(scaledX, scaledY);
+                    ctx.lineTo(scaledX + offsetX/2, scaledY + offsetY/2);
+                    ctx.stroke();
+                  }
+                }
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error during reference pose detection:', error);
+      }
+      
+      // Continue detection loop for videos, or just once for images
+      if (refElement instanceof HTMLVideoElement && !isVideoPaused) {
+        animationFrameId = requestAnimationFrame(detectReferencePose);
+      } else if (refElement instanceof HTMLImageElement) {
+        // For images, we only need to run once
+        // But sometimes the first detection might fail, so we'll try a few times
+        setTimeout(() => {
+          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+          animationFrameId = requestAnimationFrame(detectReferencePose);
+        }, 500);
+      }
+    };
+    
+    // Start detection
+    detectReferencePose();
+    
+    // Cleanup
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      
+      // Remove canvas if reference overlay is turned off
+      const canvas = document.querySelector('.reference-skeleton-canvas');
+      if (canvas) {
+        canvas.remove();
+      }
+    };
+  }, [
+    isSplitView,
+    showReferenceOverlay,
+    isTracking,
+    mediaUrl,
+    isVideoPaused,
+    confidenceThreshold,
+    maxPoses,
+    skeletonColor,
+    showPoints,
+    isFullscreenMode,
+    modelSelection,
+    testResults.isRunning // Added to update when test mode changes
+  ]);
+
+  // Handle play/pause toggle
+  const togglePlayPause = () => {
+    // Always handle reference video if it exists
+    if (mediaUrl && isVideoUrl(mediaUrl) && referenceVideoRef.current) {
+      const refVideoElement = referenceVideoRef.current;
+      
+      console.log("Toggling reference video playback", isVideoPaused ? "playing" : "pausing");
+      
+      if (isVideoPaused) {
+        refVideoElement.play().catch(e => console.error("Error playing reference video:", e));
+      } else {
+        refVideoElement.pause();
+      }
+      
+      // Toggle state after action
+      setIsVideoPaused(!isVideoPaused);
+      return;
+    }
+    
+    // Handle main video if no reference video is present
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+    
+    if (isVideoPaused) {
+      videoElement.play().catch(e => console.error("Error playing main video:", e));
+    } else {
+      videoElement.pause();
+    }
+    
+    setIsVideoPaused(!isVideoPaused);
+  };
+  
+  // Store pose history for timing analysis
+  const [timingIssues, setTimingIssues] = useState<{
+    delays: boolean;
+    gaps: boolean;
+    speed: 'good' | 'slow' | 'fast';
+  }>({
+    delays: false,
+    gaps: false,
+    speed: 'good'
+  });
+  
+  // Note: timingOffsets state is declared elsewhere
+  
+  // Helper function to detect significant movements in pose history
+  // Enhanced to detect movement patterns by tracking joint angle changes
+  const detectSignificantMovements = (poseHistory: any[]): number[] => {
+    if (poseHistory.length < 3) return [];
+    
+    const movementTimes: number[] = [];
+    const threshold = 0.08; // Slightly more sensitive movement threshold
+    
+    // Track angles to identify pose transitions better
+    const angleHistory: {[joint: string]: number[]} = {};
+    const significantAngleChange = 15; // Degrees
+    
+    // Helper function to calculate angle between 3 points
+    const calculateAngle = (a: {x: number, y: number}, b: {x: number, y: number}, c: {x: number, y: number}): number => {
+      const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+      let angle = Math.abs(radians * 180.0 / Math.PI);
+      if (angle > 180.0) angle = 360.0 - angle;
+      return angle;
+    };
+    
+    // First, calculate angle history for key joints
+    for (let i = 0; i < poseHistory.length; i++) {
+      const pose = poseHistory[i].pose;
+      if (!pose?.keypoints) continue;
+      
+      // Key joints for Taekwondo: shoulders, elbows, knees, ankles
+      const keyJoints = [
+        // Right arm
+        {joint: "right_arm", points: ["right_shoulder", "right_elbow", "right_wrist"]},
+        // Left arm
+        {joint: "left_arm", points: ["left_shoulder", "left_elbow", "left_wrist"]},
+        // Right leg
+        {joint: "right_leg", points: ["right_hip", "right_knee", "right_ankle"]},
+        // Left leg
+        {joint: "left_leg", points: ["left_hip", "left_knee", "left_ankle"]}
+      ];
+      
+      // Calculate and store angles for each joint
+      keyJoints.forEach(jointConfig => {
+        const points = jointConfig.points.map(name => 
+          pose.keypoints.find((kp: any) => kp.name === name)
+        );
+        
+        // Only calculate angle if all points are detected with good confidence
+        if (points.every(p => p && p.score > 0.4)) {
+          const angle = calculateAngle(
+            {x: points[0].x, y: points[0].y},
+            {x: points[1].x, y: points[1].y},
+            {x: points[2].x, y: points[2].y}
+          );
+          
+          if (!angleHistory[jointConfig.joint]) {
+            angleHistory[jointConfig.joint] = [];
+          }
+          
+          angleHistory[jointConfig.joint][i] = angle;
+        }
+      });
+    }
+    
+    // Now detect significant movements by combining position and angle changes
+    for (let i = 2; i < poseHistory.length; i++) {
+      const prevPose = poseHistory[i-2].pose;
+      const currentPose = poseHistory[i].pose;
+      let significantMovement = false;
+      
+      // Check position changes
+      if (prevPose?.keypoints && currentPose?.keypoints) {
+        let totalMovement = 0;
+        let validPoints = 0;
+        
+        currentPose.keypoints.forEach((kp: any) => {
+          const prevKp = prevPose.keypoints.find((p: any) => p.name === kp.name);
+          if (prevKp && kp.score > 0.4 && prevKp.score > 0.4) {
+            const xDiff = kp.x - prevKp.x;
+            const yDiff = kp.y - prevKp.y;
+            totalMovement += Math.sqrt(xDiff * xDiff + yDiff * yDiff);
+            validPoints++;
+          }
+        });
+        
+        const avgMovement = validPoints > 0 ? totalMovement / validPoints : 0;
+        
+        if (avgMovement > threshold) {
+          significantMovement = true;
+        }
+      }
+      
+      // Check angle changes
+      if (!significantMovement) {
+        // Look for significant angle changes in any of the tracked joints
+        for (const jointName in angleHistory) {
+          if (i >= 2 && angleHistory[jointName][i] && angleHistory[jointName][i-2]) {
+            const currentAngle = angleHistory[jointName][i];
+            const prevAngle = angleHistory[jointName][i-2];
+            
+            // If angle changed by more than our threshold, that's a significant movement
+            if (Math.abs(currentAngle - prevAngle) > significantAngleChange) {
+              significantMovement = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      // Record significant movement timestamps
+      if (significantMovement) {
+        movementTimes.push(poseHistory[i].timestamp);
+      }
+    }
+    
+    return movementTimes;
+  };
+  
+  // Helper function to detect gaps (pauses) in movement
+  const detectMovementGaps = (poseHistory: any[]): {start: number, end: number}[] => {
+    if (poseHistory.length < 5) return [];
+    
+    const gaps: {start: number, end: number}[] = [];
+    const stillnessThreshold = 0.05;
+    let gapStart = -1;
+    
+    for (let i = 2; i < poseHistory.length - 2; i++) {
+      const prevPose = poseHistory[i-2].pose;
+      const currentPose = poseHistory[i].pose;
+      
+      // Calculate movement magnitude
+      let totalMovement = 0;
+      let validPoints = 0;
+      
+      if (prevPose.keypoints && currentPose.keypoints) {
+        currentPose.keypoints.forEach((kp: any) => {
+          const prevKp = prevPose.keypoints.find((p: any) => p.name === kp.name);
+          if (prevKp && kp.score > 0.5 && prevKp.score > 0.5) {
+            const xDiff = kp.x - prevKp.x;
+            const yDiff = kp.y - prevKp.y;
+            totalMovement += Math.sqrt(xDiff * xDiff + yDiff * yDiff);
+            validPoints++;
+          }
+        });
+      }
+      
+      const avgMovement = validPoints > 0 ? totalMovement / validPoints : 0;
+      
+      // Detect start of a gap (stillness period)
+      if (avgMovement < stillnessThreshold && gapStart === -1) {
+        gapStart = poseHistory[i].timestamp;
+      } 
+      // Detect end of a gap
+      else if (avgMovement >= stillnessThreshold && gapStart !== -1) {
+        gaps.push({
+          start: gapStart,
+          end: poseHistory[i-1].timestamp
+        });
+        gapStart = -1;
+      }
+    }
+    
+    // Close any open gap at the end
+    if (gapStart !== -1) {
+      gaps.push({
+        start: gapStart,
+        end: poseHistory[poseHistory.length - 1].timestamp
+      });
+    }
+    
+    // Only count gaps longer than 500ms
+    return gaps.filter(gap => gap.end - gap.start > 500);
+  };
+  
+  // Perform timing analysis if we have sufficient history
+  const analyzeSequenceMatch = () => {
+    if (userPoseHistory.length > 10 && referencePoseHistory.length > 10) {
+      // Check for delays (consistent lag in movements)
+      const userMovementTimes = detectSignificantMovements(userPoseHistory);
+      const refMovementTimes = detectSignificantMovements(referencePoseHistory);
+      
+      // Detect if user consistently moves after reference (improved algorithm)
+      let delaySum = 0;
+      let matchedMovements = 0;
+      const matchedDelays: number[] = [];
+      
+      // TIME-TOLERANT MATCHING WINDOW (300ms)
+      // This matches each user movement to the closest reference movement within a 300ms window
+      // This prevents false delay detections when movements aren't exactly matched
+      const matchingWindow = 300; // milliseconds
+      
+      // Process each user movement
+      for (let i = 0; i < userMovementTimes.length; i++) {
+        // Find the closest reference movement time
+        let closestRefIdx = -1;
+        let minTimeDiff = Number.MAX_VALUE;
+        
+        for (let j = 0; j < refMovementTimes.length; j++) {
+          const timeDiff = Math.abs(userMovementTimes[i] - refMovementTimes[j]);
+          
+          // If this reference movement is closer than the current closest
+          if (timeDiff < minTimeDiff) {
+            minTimeDiff = timeDiff;
+            closestRefIdx = j;
+          }
+        }
+        
+        // Only count as matched if within our matching window
+        if (closestRefIdx >= 0 && minTimeDiff <= matchingWindow) {
+          // Calculate actual delay (can be negative if user is ahead)
+          const delay = userMovementTimes[i] - refMovementTimes[closestRefIdx];
+          matchedDelays.push(delay);
+          delaySum += delay;
+          matchedMovements++;
+          
+          // Save this timing offset for visualization
+          setTimingOffsets(prev => [...prev, delay]);
+        }
+      }
+      
+      const avgDelay = matchedMovements > 0 ? delaySum / matchedMovements : 0;
+      
+      // Only consider it a consistent delay issue if:
+      // 1. The average delay is significant (>300ms)
+      // 2. At least 70% of the matched movements show a delay in the same direction
+      const significantDelay = Math.abs(avgDelay) > 300;
+      
+      // Calculate consistency of delay direction
+      let positiveDelayCount = 0;
+      let negativeDelayCount = 0;
+      
+      matchedDelays.forEach(delay => {
+        if (delay > 0) positiveDelayCount++;
+        else if (delay < 0) negativeDelayCount++;
+      });
+      
+      const delayPercentage = matchedDelays.length > 0 ? 
+        Math.max(positiveDelayCount, negativeDelayCount) / matchedDelays.length : 0;
+      
+      const hasConsistentDirection = delayPercentage >= 0.7; // 70% threshold for consistency
+      
+      // Determine if there's a consistent timing problem
+      const hasDelays = significantDelay && hasConsistentDirection;
+      
+      // Detect gaps (pauses in movement)
+      const userGaps = detectMovementGaps(userPoseHistory);
+      const refGaps = detectMovementGaps(referencePoseHistory);
+      const hasExtraGaps = userGaps.length > refGaps.length + 1;
+      
+      // Detect overall speed differences
+      const userDuration = userPoseHistory.length > 1 ? 
+        userPoseHistory[userPoseHistory.length - 1].timestamp - userPoseHistory[0].timestamp : 0;
+      const refDuration = referencePoseHistory.length > 1 ? 
+        referencePoseHistory[referencePoseHistory.length - 1].timestamp - referencePoseHistory[0].timestamp : 0;
+      
+      let speedAssessment: 'good' | 'slow' | 'fast' = 'good';
+      if (refDuration > 0) {
+        const speedRatio = userDuration / refDuration;
+        if (speedRatio > 1.25) {
+          speedAssessment = 'slow';
+        } else if (speedRatio < 0.75) {
+          speedAssessment = 'fast';
+        }
+      }
+      
+      // Update timing issues state
+      setTimingIssues({
+        delays: hasDelays,
+        gaps: hasExtraGaps,
+        speed: speedAssessment
+      });
+      
+      return {
+        delays: hasDelays ? (avgDelay > 0 ? 'behind' : 'ahead') : null,
+        gaps: hasExtraGaps,
+        speed: speedAssessment,
+        matchQuality: matchedMovements / Math.max(userMovementTimes.length, refMovementTimes.length, 1)
+      };
+    }
+    
+    return null;
+  };
+  
+  // Function to check and update the distance meter
+  const updateDistanceMeter = (userPose: any, refPose: any) => {
+    if (!userPose || !refPose) return;
+    
+    try {
+      // Get user and reference shoulder keypoints
+      const userLeftShoulder = userPose.keypoints.find((kp: any) => kp.name === 'left_shoulder');
+      const userRightShoulder = userPose.keypoints.find((kp: any) => kp.name === 'right_shoulder');
+      
+      const refLeftShoulder = refPose.keypoints.find((kp: any) => kp.name === 'left_shoulder');
+      const refRightShoulder = refPose.keypoints.find((kp: any) => kp.name === 'right_shoulder');
+      
+      // Check if all shoulders are detected with sufficient confidence
+      if (!userLeftShoulder?.score || !userRightShoulder?.score || 
+          !refLeftShoulder?.score || !refRightShoulder?.score ||
+          userLeftShoulder.score < 0.5 || userRightShoulder.score < 0.5 ||
+          refLeftShoulder.score < 0.5 || refRightShoulder.score < 0.5) {
+        
+        setDistanceInfo({
+          scale: 1,
+          isCorrect: false,
+          message: "Position yourself clearly in view",
+          showMeter: isSplitView && !testResults.isRunning
+        });
+        return;
+      }
+      
+      // Calculate shoulder widths
+      const userShoulderWidth = Math.abs(userLeftShoulder.x - userRightShoulder.x);
+      const refShoulderWidth = Math.abs(refLeftShoulder.x - refRightShoulder.x);
+      
+      // Calculate scale ratio (how much bigger/smaller the user appears compared to reference)
+      const scale = userShoulderWidth / refShoulderWidth;
+      
+      // Set acceptable range (within 30% of reference size)
+      const tooClose = scale > 1.3;
+      const tooFar = scale < 0.7;
+      const perfectRange = scale > 0.9 && scale < 1.1;
+      
+      let message = '';
+      let isCorrect = false;
+      
+      if (tooClose) {
+        message = "Step back";
+        isCorrect = false;
+      } else if (tooFar) {
+        message = "Step closer";
+        isCorrect = false;
+      } else if (perfectRange) {
+        message = "Perfect distance";
+        isCorrect = true;
+      } else {
+        message = "Good distance";
+        isCorrect = true;
+      }
+      
+      setDistanceInfo({
+        scale,
+        isCorrect,
+        message,
+        showMeter: isSplitView && !testResults.isRunning
+      });
+      
+    } catch (error) {
+      console.error("Error updating distance meter:", error);
+    }
+  };
+
+  // Function to find the best matching reference pose within a time window
+  const findBestMatchingPose = (
+    timestamp: number, 
+    referencePoseHistory: Array<{pose: any, timestamp: number}>, 
+    windowSize: number = 300 // ±300ms window by default
+  ): any | null => {
+    if (!referencePoseHistory.length) return null;
+    
+    // Get reference poses within the time window
+    const startTime = timestamp - windowSize;
+    const endTime = timestamp + windowSize;
+    
+    const candidatePoses = referencePoseHistory.filter(item => 
+      item.timestamp >= startTime && item.timestamp <= endTime
+    );
+    
+    if (!candidatePoses.length) {
+      // If no poses in window, return the closest one
+      let closestPose = referencePoseHistory[0];
+      let minTimeDiff = Math.abs(referencePoseHistory[0].timestamp - timestamp);
+      
+      for (let i = 1; i < referencePoseHistory.length; i++) {
+        const timeDiff = Math.abs(referencePoseHistory[i].timestamp - timestamp);
+        if (timeDiff < minTimeDiff) {
+          minTimeDiff = timeDiff;
+          closestPose = referencePoseHistory[i];
+        }
+      }
+      
+      // Log the timing offset for analysis
+      const offset = closestPose.timestamp - timestamp;
+      setTimingOffsets(prev => [...prev, offset]);
+      
+      return closestPose.pose;
+    }
+    
+    // For now, simply return the closest pose by timestamp
+    // Could be improved with pose similarity metrics in the future
+    let closestPose = candidatePoses[0];
+    let minTimeDiff = Math.abs(candidatePoses[0].timestamp - timestamp);
+    
+    for (let i = 1; i < candidatePoses.length; i++) {
+      const timeDiff = Math.abs(candidatePoses[i].timestamp - timestamp);
+      if (timeDiff < minTimeDiff) {
+        minTimeDiff = timeDiff;
+        closestPose = candidatePoses[i];
+      }
+    }
+    
+    // Log the timing offset for analysis
+    const offset = closestPose.timestamp - timestamp;
+    setTimingOffsets(prev => [...prev, offset]);
+    
+    return closestPose.pose;
+  };
+
+  // Function to compare poses and calculate scores with improved algorithms
+  // Define score type with severity property for heatmap
+  type JointScore = {
+    joint: string;
+    score: number;
+    severity?: 'good' | 'fair' | 'poor' | 'bad';
+    direction?: {
+      x: string;
+      y: string;
+      xMagnitude: number;
+      yMagnitude: number;
+    };
+  };
+
+  const comparePoses = (userPose: any, referencePose: any): {
+    jointScores: JointScore[],
+    overallScore: number
+  } => {
+    console.log('=== Starting Pose Comparison ===');
+    console.log('User Pose:', userPose?.keypoints?.length, 'keypoints');
+    console.log('Reference Pose:', referencePose?.keypoints?.length, 'keypoints');
+    
+    // Check if poses are valid
+    if (!userPose || !referencePose) {
+      return { jointScores: [], overallScore: 0 };
+    }
+    
+    const timestamp = Date.now();
+    // Skip the first second after test starts to give the user time to react
+    if (testStartTime > 0 && timestamp < testStartTime + 1000) {
+      return { jointScores: [], overallScore: 0 };
+    }
+    
+    // Add poses to history for chronological sequence analysis
+    // We'll use this for analyzing timing patterns - not just individual poses
+    setUserPoseHistory(prev => [...prev.slice(-50), { pose: userPose, timestamp }]);
+    setReferencePoseHistory(prev => [...prev.slice(-50), { pose: referencePose, timestamp }]);
+    
+    // Get keypoints from both poses
+    const userKeypoints = userPose.keypoints || [];
+    const referenceKeypoints = referencePose.keypoints || [];
+    
+    // Map keypoints by name for easy access
+    const userKeypointMap = new Map();
+    const referenceKeypointMap = new Map();
+    
+    userKeypoints.forEach((kp: any) => {
+      if (kp.score > 0.3) { // Lower threshold to match the angle display threshold
+        userKeypointMap.set(kp.name, kp);
+      }
+    });
+    
+    referenceKeypoints.forEach((kp: any) => {
+      if (kp.score > 0.3) { // Lower threshold to match the angle display threshold
+        referenceKeypointMap.set(kp.name, kp);
+      }
+    });
+    
+    // Important joints to evaluate for Taekwondo (excluding face joints)
+    const taekwondoJoints = [
+      'left_knee', 'right_knee', 'left_ankle', 'right_ankle', 
+      'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+      'left_wrist', 'right_wrist', 'left_hip', 'right_hip'
+    ];
+    
+    // Calculate joint-by-joint angle scores
+    const jointScores: JointScore[] = [];
+    let totalScore = 0;
+    let validJoints = 0;
+    
+    console.log('=== Joint Angle Comparisons ===');
+    // Loop through important taekwondo joints for scoring
+    taekwondoJoints.forEach(jointName => {
+      const userJoint = userKeypointMap.get(jointName);
+      const referenceJoint = referenceKeypointMap.get(jointName);
+      
+      // Get connected joints
+      const startJointName = getConnectedJoint(jointName, 'start');
+      const endJointName = getConnectedJoint(jointName, 'end');
+      
+      const userStartJoint = userKeypointMap.get(startJointName);
+      const userEndJoint = userKeypointMap.get(endJointName);
+      
+      const refStartJoint = referenceKeypointMap.get(startJointName);
+      const refEndJoint = referenceKeypointMap.get(endJointName);
+      
+      // Check if we have all the necessary joints to calculate angles
+      if (userJoint && referenceJoint && 
+          userStartJoint && userEndJoint && 
+          refStartJoint && refEndJoint) {
+        
+        console.log(`\nComparing angles for ${jointName}:`);
+        
+        // Calculate angles for both poses
+        const userAngle = calculateAngle(
+          { x: userStartJoint.x, y: userStartJoint.y },
+          { x: userJoint.x, y: userJoint.y },
+          { x: userEndJoint.x, y: userEndJoint.y }
+        );
+        
+        const refAngle = calculateAngle(
+          { x: refStartJoint.x, y: refStartJoint.y },
+          { x: referenceJoint.x, y: referenceJoint.y },
+          { x: refEndJoint.x, y: refEndJoint.y }
+        );
+        
+        console.log(`${jointName} angles: User=${userAngle}°, Reference=${refAngle}°`);
+        
+        // Calculate angular difference (handling 360-degree wraparound)
+        let angleDiff = Math.abs(refAngle - userAngle);
+        if (angleDiff > 180) angleDiff = 360 - angleDiff;
+        
+        console.log(`${jointName} angle difference: ${angleDiff}°`);
+        
+        // Calculate score using exponential decay formula
+        // 100 * Math.exp(-angleDiff / 10)
+        // This gives:
+        // 0° difference = 100 score
+        // 10° difference ≈ 37 score
+        // 20° difference ≈ 14 score
+        // 30° difference ≈ 5 score
+        const score = Math.round(100 * Math.exp(-angleDiff / 10));
+        
+        console.log(`${jointName} score (from angle diff): ${score}`);
+        
+        // Determine severity for the heatmap
+        const severity = 
+          score >= 85 ? 'good' : 
+          score >= 70 ? 'fair' : 
+          score >= 50 ? 'poor' : 'bad';
+        
+        // Calculate direction guidance based on angle difference
+        // This helps the user know which way to adjust their body part
+        const isClockwise = ((userAngle - refAngle + 360) % 360) < 180;
+        const directionX = isClockwise ? 'left' : 'right';
+        const directionY = Math.abs(angleDiff) > 45 ? 'major' : 'minor';
+        
+        // Calculate magnitude of correction needed (0-3 scale)
+        // 0: minimal adjustment, 3: large adjustment
+        const magnitude = Math.min(3, Math.floor(angleDiff / 30));
+        
+        jointScores.push({
+          joint: jointName,
+          score: score,
+          severity,
+          // Include direction data for guidance
+          direction: {
+            x: directionX,
+            y: directionY === 'major' ? 'major' : 'minor',
+            xMagnitude: magnitude,
+            yMagnitude: magnitude
+          }
+        });
+        
+        totalScore += score;
+        validJoints++;
+      }
+    });
+    
+    // Run the timing analysis and enhanced sequence matching
+    const sequenceData = analyzeSequenceMatch();
+    
+    // Add sequence data to the results if available
+    if (sequenceData) {
+      console.log('Sequence analysis:', sequenceData);
+      
+      // Add timing-based feedback
+      if (sequenceData.delays === 'behind') {
+        console.log('User is consistently behind the reference');
+      } else if (sequenceData.delays === 'ahead') {
+        console.log('User is consistently ahead of the reference');
+      }
+      
+      if (sequenceData.gaps) {
+        console.log('User has extra pauses in their movements');
+      }
+      
+      if (sequenceData.speed !== 'good') {
+        console.log(`User is moving ${sequenceData.speed} compared to reference`);
+      }
+    }
+    
+    return {
+      jointScores,
+      overallScore: totalScore
+    };
+  };
+  
+  // Perform timing analysis if we have sufficient history (at least 10 frames)
+  const performTimingAnalysis = () => {
+    if (userPoseHistory.length > 10 && referencePoseHistory.length > 10) {
+      // Check for delays (consistent lag in movements)
+      const userMovementTimes = detectSignificantMovements(userPoseHistory);
+      const refMovementTimes = detectSignificantMovements(referencePoseHistory);
+      
+      // Detect if user consistently moves after reference (improved algorithm)
+      let delaySum = 0;
+      let matchedMovements = 0;
+      const matchedDelays: number[] = [];
+      
+      // TIME-TOLERANT MATCHING WINDOW (300ms)
+      // This matches each user movement to the closest reference movement within a 300ms window
+      // This prevents false delay detections when movements aren't exactly matched
+      const matchingWindow = 300; // milliseconds
+      
+      // Process each user movement
+      for (let i = 0; i < userMovementTimes.length; i++) {
+        // Find the closest reference movement time
+        let closestRefIdx = -1;
+        let minTimeDiff = Number.MAX_VALUE;
+        
+        for (let j = 0; j < refMovementTimes.length; j++) {
+          const timeDiff = Math.abs(userMovementTimes[i] - refMovementTimes[j]);
+          
+          // If this reference movement is closer than the current closest
+          if (timeDiff < minTimeDiff) {
+            minTimeDiff = timeDiff;
+            closestRefIdx = j;
+          }
+        }
+        
+        // Only count as matched if within our matching window
+        if (closestRefIdx >= 0 && minTimeDiff <= matchingWindow) {
+          // Calculate actual delay (can be negative if user is ahead)
+          const delay = userMovementTimes[i] - refMovementTimes[closestRefIdx];
+          matchedDelays.push(delay);
+          delaySum += delay;
+          matchedMovements++;
+          
+          // Save this timing offset for visualization
+          setTimingOffsets(prev => [...prev, delay]);
+        }
+      }
+      
+      const avgDelay = matchedMovements > 0 ? delaySum / matchedMovements : 0;
+      
+      // Only consider it a consistent delay issue if:
+      // 1. The average delay is significant (>300ms)
+      // 2. At least 70% of the matched movements show a delay in the same direction
+      const significantDelay = Math.abs(avgDelay) > 300;
+      
+      // Calculate consistency of delay direction
+      let positiveDelayCount = 0;
+      let negativeDelayCount = 0;
+      
+      matchedDelays.forEach(delay => {
+        if (delay > 0) positiveDelayCount++;
+        else if (delay < 0) negativeDelayCount++;
+      });
+      
+      const delayPercentage = matchedDelays.length > 0 ? 
+        Math.max(positiveDelayCount, negativeDelayCount) / matchedDelays.length : 0;
+      
+      const hasConsistentDirection = delayPercentage >= 0.7; // 70% threshold for consistency
+      
+      // Determine if there's a consistent timing problem
+      const hasDelays = significantDelay && hasConsistentDirection;
+      
+      // Detect gaps (pauses in movement)
+      const userGaps = detectMovementGaps(userPoseHistory);
+      const refGaps = detectMovementGaps(referencePoseHistory);
+      const hasExtraGaps = userGaps.length > refGaps.length + 1;
+      
+      // Detect overall speed differences
+      const userDuration = userPoseHistory.length > 1 ? 
+        userPoseHistory[userPoseHistory.length - 1].timestamp - userPoseHistory[0].timestamp : 0;
+      const refDuration = referencePoseHistory.length > 1 ? 
+        referencePoseHistory[referencePoseHistory.length - 1].timestamp - referencePoseHistory[0].timestamp : 0;
+      
+      let speedAssessment: 'good' | 'slow' | 'fast' = 'good';
+      if (refDuration > 0) {
+        const speedRatio = userDuration / refDuration;
+        if (speedRatio > 1.25) {
+          speedAssessment = 'slow';
+        } else if (speedRatio < 0.75) {
+          speedAssessment = 'fast';
+        }
+      }
+      
+      // Update timing issues state
+      setTimingIssues({
+        delays: hasDelays,
+        gaps: hasExtraGaps,
+        speed: speedAssessment
+      });
+      
+      // Calculate timingScore (out of 100)
+      let timingScore = 100;
+      
+      // Only apply significant deductions if timing is way off
+      if (hasDelays) {
+        const severePenalty = Math.abs(avgDelay) > 1500;
+        timingScore -= severePenalty ? 25 : 15; 
+      }
+      
+      if (hasExtraGaps) {
+        const manyExtraGaps = userGaps.length > refGaps.length + 3;
+        timingScore -= manyExtraGaps ? 25 : 15;
+      }
+      
+      if (speedAssessment !== 'good') {
+        const speedRatio = userDuration / Math.max(refDuration, 1);
+        const severeSpeedIssue = speedRatio > 1.5 || speedRatio < 0.5;
+        timingScore -= severeSpeedIssue ? 20 : 10;
+      }
+      
+      // Ensure timing score has a minimum floor
+      timingScore = Math.max(40, timingScore);
+      
+      // Calculate form score (average of joint scores)
+      const formScore = validJoints > 0 ? totalScore / validJoints : 0;
+      
+      // Weight form higher than timing (70% form, 30% timing)
+      totalScore = 0.7 * formScore + 0.3 * timingScore;
+    }
+    
+    // Log valid joint count for debugging
+    console.log('Valid joints in frame:', validJoints);
+    
+    // Calculate final overall score 
+    let calculatedScore = Math.round(validJoints > 0 ? totalScore / validJoints : 0);
+    
+    // Apply minimum score floor for encouragement
+    // If we have valid joints but score is very low, provide a baseline
+    if (validJoints > 0 && calculatedScore < 30) {
+      console.log('Score was too low, applying baseline of 30');
+      calculatedScore = 30;
+    }
+    
+    // Return the results
+    return {
+      jointScores: jointScores,
+      overallScore: calculatedScore
+    };
+  };
+  
+  // Helper function to detect significant movements in pose history
+  // Enhanced to detect movement patterns by tracking joint angle changes
+  const detectSignificantMovements = (poseHistory: any[]): number[] => {
+    if (poseHistory.length < 3) return [];
+    
+    const movementTimes: number[] = [];
+    const threshold = 0.08; // Slightly more sensitive movement threshold
+    
+    // Track angles to identify pose transitions better
+    const angleHistory: {[joint: string]: number[]} = {};
+    const significantAngleChange = 15; // Degrees
+    
+    // Helper function to calculate angle between 3 points
+    const calculateAngle = (a: {x: number, y: number}, b: {x: number, y: number}, c: {x: number, y: number}): number => {
+      const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+      let angle = Math.abs(radians * 180.0 / Math.PI);
+      if (angle > 180.0) angle = 360.0 - angle;
+      return angle;
+    };
+    
+    // First, calculate angle history for key joints
+    for (let i = 0; i < poseHistory.length; i++) {
+      const pose = poseHistory[i].pose;
+      if (!pose?.keypoints) continue;
+      
+      // Key joints for Taekwondo: shoulders, elbows, knees, ankles
+      const keyJoints = [
+        // Right arm
+        {joint: "right_arm", points: ["right_shoulder", "right_elbow", "right_wrist"]},
+        // Left arm
+        {joint: "left_arm", points: ["left_shoulder", "left_elbow", "left_wrist"]},
+        // Right leg
+        {joint: "right_leg", points: ["right_hip", "right_knee", "right_ankle"]},
+        // Left leg
+        {joint: "left_leg", points: ["left_hip", "left_knee", "left_ankle"]}
+      ];
+      
+      // Calculate and store angles for each joint
+      keyJoints.forEach(jointConfig => {
+        const points = jointConfig.points.map(name => 
+          pose.keypoints.find((kp: any) => kp.name === name)
+        );
+        
+        // Only calculate angle if all points are detected with good confidence
+        if (points.every(p => p && p.score > 0.4)) {
+          const angle = calculateAngle(
+            {x: points[0].x, y: points[0].y},
+            {x: points[1].x, y: points[1].y},
+            {x: points[2].x, y: points[2].y}
+          );
+          
+          if (!angleHistory[jointConfig.joint]) {
+            angleHistory[jointConfig.joint] = [];
+          }
+          
+          angleHistory[jointConfig.joint][i] = angle;
+        }
+      });
+    }
+    
+    // Now detect significant movements by combining position and angle changes
+    for (let i = 2; i < poseHistory.length; i++) {
+      const prevPose = poseHistory[i-2].pose;
+      const currentPose = poseHistory[i].pose;
+      let significantMovement = false;
+      
+      // Check position changes
+      if (prevPose?.keypoints && currentPose?.keypoints) {
+        let totalMovement = 0;
+        let validPoints = 0;
+        
+        currentPose.keypoints.forEach((kp: any) => {
+          const prevKp = prevPose.keypoints.find((p: any) => p.name === kp.name);
+          if (prevKp && kp.score > 0.4 && prevKp.score > 0.4) {
+            const xDiff = kp.x - prevKp.x;
+            const yDiff = kp.y - prevKp.y;
+            totalMovement += Math.sqrt(xDiff * xDiff + yDiff * yDiff);
+            validPoints++;
+          }
+        });
+        
+        const avgMovement = validPoints > 0 ? totalMovement / validPoints : 0;
+        
+        if (avgMovement > threshold) {
+          significantMovement = true;
+        }
+      }
+      
+      // Check angle changes
+      if (!significantMovement) {
+        // Look for significant angle changes in any of the tracked joints
+        for (const jointName in angleHistory) {
+          if (i >= 2 && angleHistory[jointName][i] && angleHistory[jointName][i-2]) {
+            const currentAngle = angleHistory[jointName][i];
+            const prevAngle = angleHistory[jointName][i-2];
+            
+            // If angle changed by more than our threshold, that's a significant movement
+            if (Math.abs(currentAngle - prevAngle) > significantAngleChange) {
+              significantMovement = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      // Record significant movement timestamps
+      if (significantMovement) {
+        movementTimes.push(poseHistory[i].timestamp);
+      }
+    }
+    
+    return movementTimes;
+  };
+  
+  // Helper function to detect gaps (pauses) in movement
+  const detectMovementGaps = (poseHistory: any[]): {start: number, end: number}[] => {
+    if (poseHistory.length < 5) return [];
+    
+    const gaps: {start: number, end: number}[] = [];
+    const stillnessThreshold = 0.05;
+    let gapStart = -1;
+    
+    for (let i = 2; i < poseHistory.length - 2; i++) {
+      const prevPose = poseHistory[i-2].pose;
+      const currentPose = poseHistory[i].pose;
+      
+      // Calculate movement magnitude
+      let totalMovement = 0;
+      let validPoints = 0;
+      
+      if (prevPose.keypoints && currentPose.keypoints) {
+        currentPose.keypoints.forEach((kp: any) => {
+          const prevKp = prevPose.keypoints.find((p: any) => p.name === kp.name);
+          if (prevKp && kp.score > 0.5 && prevKp.score > 0.5) {
+            const xDiff = kp.x - prevKp.x;
+            const yDiff = kp.y - prevKp.y;
+            totalMovement += Math.sqrt(xDiff * xDiff + yDiff * yDiff);
+            validPoints++;
+          }
+        });
+      }
+      
+      const avgMovement = validPoints > 0 ? totalMovement / validPoints : 0;
+      
+      // Detect start of a gap (stillness period)
+      if (avgMovement < stillnessThreshold && gapStart === -1) {
+        gapStart = poseHistory[i].timestamp;
+      } 
+      // Detect end of a gap
+      else if (avgMovement >= stillnessThreshold && gapStart !== -1) {
+        gaps.push({
+          start: gapStart,
+          end: poseHistory[i-1].timestamp
+        });
+        gapStart = -1;
+      }
+    }
+    
+    // Close any open gap at the end
+    if (gapStart !== -1) {
+      gaps.push({
+        start: gapStart,
+        end: poseHistory[poseHistory.length - 1].timestamp
+      });
+    }
+    
+    // Only count gaps longer than 500ms
+    return gaps.filter(gap => gap.end - gap.start > 500);
+  };
+
+  // Handle split view toggle
+  const toggleSplitView = () => {
+    if (!isSplitView) {
+      // When activating split view, show media selector
+      setIsSplitView(true);
+      setShowMediaSelector(true);
+    } else {
+      // When deactivating, hide everything
+      setIsSplitView(false);
+      setShowMediaSelector(false);
+    }
+  };
+  
+  // Manual recording toggle
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startManualRecording();
+    }
+  };
+
+  // Start recording manually using screen capture API
+  const startManualRecording = async () => {
+    try {
+      // Use screen capture API to let user select what to record
+      console.log('Starting screen capture - select the browser window');
+      
+      // TypeScript doesn't fully support all getDisplayMedia options yet
+      // But we can cast to any to avoid errors while preserving functionality
+      const displayStream = await (navigator.mediaDevices as any).getDisplayMedia({
+        video: {
+          cursor: "always",
+          displaySurface: "browser"
+        },
+        audio: false
+      });
+      
+      console.log('Screen capture started successfully');
+      
+      // Create a media recorder
+      const recorder = new MediaRecorder(displayStream, { 
+        mimeType: 'video/webm; codecs=vp9',
+        videoBitsPerSecond: 3000000 // 3 Mbps for better quality
+      });
+      
+      // Store recorded chunks
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+      
+      // When recording stops
+      recorder.onstop = () => {
+        // Stop all tracks in the display stream to release permissions
+        displayStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+        
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        setRecordedVideo(url);
+        setRecordedChunks(chunks);
+        setShowRecordingPopup(true);
+        console.log('Recording finished, showing popup with playback');
+      };
+      
+      // Start recording
+      recorder.start(1000); // Capture in 1-second chunks
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      console.log('Recording started - capturing what you see on screen');
+    } catch (err) {
+      console.error('Screen capture failed:', err);
+      alert('Screen recording was denied or failed. Please try again and select the browser window to record.');
+    }
+  };
+  
+  // Start recording for test mode
+  const startRecording = () => {
+    if (!canvasRef.current) return;
+    
+    try {
+      // Get the stream from the canvas
+      const stream = canvasRef.current.captureStream(30); // 30 fps
+      recordingStream.current = stream;
+      
+      // Create a media recorder
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+      
+      // Store recorded chunks
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+      
+      // When recording stops, create a downloadable video
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        setRecordedVideo(url);
+        setRecordedChunks(chunks);
+        console.log('Test recording finished, playback available in results modal');
+      };
+      
+      // Start recording
+      recorder.start(1000); // Capture in 1-second chunks
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      console.log('Test recording started');
+    } catch (err) {
+      console.error('Error starting recording:', err);
+    }
+  };
+  
+  // Stop recording function
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      console.log('Recording stopped');
+    }
+  };
+
+  // Function to close the recording popup
+  const closeRecordingPopup = () => {
+    setShowRecordingPopup(false);
+  };
+  
+  // Using the primary calculateAngle function defined earlier
+
+  return (
+    <div className="m-0 p-0">
+      {/* Record button - floating on the side, now much larger and more visible */}
+      <button
+        onClick={toggleRecording}
+        className={`fixed top-1/3 right-4 z-[9999] w-24 h-24 rounded-full flex flex-col items-center justify-center shadow-2xl transition-all 
+          ${isRecording 
+            ? 'bg-red-600 animate-pulse shadow-red-500/50 border-4 border-white/70' 
+            : 'bg-black border-4 border-red-600 hover:bg-red-900 hover:scale-110'
+          }
+          hover:shadow-red-500/20`}
+        title={isRecording ? "Stop Recording" : "Start Recording"}
+        style={{ 
+          transform: 'translateZ(0)', /* Ensures the button renders on top */
+          boxShadow: isRecording ? '0 0 15px 5px rgba(239, 68, 68, 0.5)' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}
+      >
+        <span className="material-icons text-white text-4xl mb-1">
+          {isRecording ? 'stop' : 'videocam'}
+        </span>
+        <span className={`text-white text-xs font-bold ${isRecording ? 'animate-pulse' : ''}`}>
+          {isRecording ? 'RECORDING' : 'RECORD'}
+        </span>
+        {isRecording && (
+          <span className="absolute -top-3 -right-3 w-8 h-8 bg-red-600 rounded-full text-xs font-bold text-white flex items-center justify-center border-2 border-white animate-pulse">
+            REC
+          </span>
+        )}
+      </button>
+
+      {/* Recording popup */}
+      {showRecordingPopup && recordedVideo && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-black border border-red-800 rounded-lg w-full max-w-2xl overflow-hidden shadow-2xl">
+            <div className="p-4 bg-gradient-to-r from-red-900 to-red-800">
+              <h3 className="text-white font-bold text-lg flex items-center">
+                <span className="material-icons mr-2">movie</span>
+                Recording Complete
+              </h3>
+            </div>
+            
+            <div className="p-4">
+              {/* Video playback */}
+              <video 
+                src={recordedVideo} 
+                className="w-full rounded border border-red-900/30 mb-4" 
+                controls
+                autoPlay 
+              ></video>
+              
+              {/* Action buttons */}
+              <div className="grid grid-cols-3 gap-3">
+                <button 
+                  className="p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex flex-col items-center transition-all hover:shadow-lg"
+                  onClick={() => {
+                    // Create download link
+                    const a = document.createElement('a');
+                    a.href = recordedVideo;
+                    a.download = `coacht-recording-${Date.now()}.webm`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                  }}
+                >
+                  <span className="material-icons mb-1">download</span>
+                  <span className="text-xs">Download</span>
+                </button>
+                
+                <button 
+                  className="p-3 rounded-lg bg-green-600 hover:bg-green-700 text-white flex flex-col items-center transition-all hover:shadow-lg"
+                  onClick={() => {
+                    const text = `Check out my Taekwondo practice recorded with CoachT!`;
+                    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                  }}
+                >
+                  <span className="material-icons mb-1">share</span>
+                  <span className="text-xs">Share</span>
+                </button>
+                
+                <button 
+                  className="p-3 rounded-lg bg-gray-700 hover:bg-gray-800 text-white flex flex-col items-center transition-all hover:shadow-lg"
+                  onClick={closeRecordingPopup}
+                >
+                  <span className="material-icons mb-1">close</span>
+                  <span className="text-xs">Close</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div id="cameraContainer" className={`${isFullscreenMode ? 'border-0 rounded-none shadow-none h-[calc(100vh-72px)] w-screen' : 'border-0 border-red-900 overflow-hidden relative h-[calc(80vh-100px)]'}`}>
+        <div className={`relative w-full ${isFullscreenMode ? 'h-full' : ''} flex flex-col`}>
+          {/* Container for main content with relative sizing and no gaps */}
+          <div className={`flex ${isSplitView ? 'md:flex-row flex-col' : ''} ${isFullscreenMode ? 'h-full' : ''} h-full gap-0`}>
+            {/* Main tracking view (Processed feed) - Always shown, positioned first in split view */}
+            <div className={`camera-container relative ${isSplitView ? 'md:w-1/2 w-full' : 'w-full'} ${isFullscreenMode ? 'h-full' : isSplitView ? '' : 'aspect-[16/12]'}`}>
+              {/* In split view, always show camera regardless of source type */}
+              {(isSplitView || sourceType === 'camera') && stream && (
+                <video 
+                  ref={videoRef} 
+                  className={`absolute top-0 left-0 w-full h-full ${isFullscreenMode ? 'object-contain mx-auto' : 'object-contain'}`}
+                  playsInline 
+                  muted
+                  style={isFullscreenMode ? { display: 'block', maxHeight: '100%', maxWidth: '100%' } : {}}
+                ></video>
+              )}
+              
+              {/* For video source when not in split view */}
+              {!isSplitView && sourceType === 'video' && (
+                <video 
+                  ref={videoRef} 
+                  className={`absolute top-0 left-0 w-full h-full ${isFullscreenMode ? 'object-contain mx-auto' : 'object-contain'}`}
+                  playsInline 
+                  muted
+                  style={isFullscreenMode ? { display: 'block', maxHeight: '100%', maxWidth: '100%' } : {}}
+                ></video>
+              )}
+              
+              {/* For image source when not in split view */}
+              {!isSplitView && sourceType === 'image' && imageElement && (
+                <div className={`absolute top-0 left-0 w-full h-full flex items-center justify-center ${isFullscreenMode ? 'flex-grow' : ''}`}>
+                  <img 
+                    src={mediaUrl} 
+                    alt="Uploaded for pose detection" 
+                    className={`max-h-full max-w-full object-contain invisible ${isFullscreenMode ? 'mx-auto' : ''}`}
+                    style={isFullscreenMode ? { display: 'block' } : {}}
+                  />
+                </div>
+              )}
+              
+              {/* Canvas for pose detection */}
+              <canvas 
+                id="outputCanvas"
+                ref={canvasRef} 
+                className={`absolute top-0 left-0 w-full h-full ${isFullscreenMode ? 'object-contain mx-auto my-auto' : 'object-contain'}`}
+                style={isFullscreenMode ? { display: 'block', maxHeight: '100%', maxWidth: '100%' } : {}}
+              ></canvas>
+              
+              {/* Green Guide Overlay - visible during test mode */}
+              {testResults.isRunning && (
+                <GreenGuideOverlay 
+                  videoRef={referenceVideoRef} 
+                  isTestMode={testResults.isRunning} 
+                  confidenceThreshold={confidenceThreshold} 
+                />
+              )}
+              
+              {/* Live Distance Meter */}
+              {distanceInfo.showMeter && userPose && referencePose && !testResults.isRunning && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-black/80 border border-red-900/40 shadow-lg">
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="text-white text-sm font-medium">Position yourself at proper distance</div>
+                    
+                    {/* Distance meter bar */}
+                    <div className="w-64 h-8 bg-gray-900 rounded-full overflow-hidden flex items-center relative">
+                      {/* Current position indicator */}
+                      <div className={`absolute h-full w-1 bg-white ${distanceInfo.isCorrect ? 'bg-opacity-100' : 'bg-opacity-70'} z-20`} 
+                        style={{ left: `${Math.min(Math.max(distanceInfo.scale * 50, 5), 95)}%` }}>
+                      </div>
+                      
+                      {/* "Good zone" indicator */}
+                      <div className="absolute left-1/2 h-full w-24 -translate-x-1/2 bg-green-600/30 z-10"></div>
+                      
+                      {/* Scale indicators */}
+                      <div className="absolute inset-0 flex justify-between px-1">
+                        <div className="border-l-2 border-white/50 h-full"></div>
+                        <div className="border-l-2 border-white/20 h-full"></div>
+                        <div className="border-l-2 border-white h-full"></div>
+                        <div className="border-l-2 border-white/20 h-full"></div>
+                        <div className="border-l-2 border-white/50 h-full"></div>
+                      </div>
+                      
+                      {/* Too close / too far markers */}
+                      <div className="absolute inset-0 flex justify-between items-center px-2 pointer-events-none text-[9px] font-bold text-white">
+                        <span>Too Far</span>
+                        <span>Perfect</span>
+                        <span>Too Close</span>
+                      </div>
+                    </div>
+                    
+                    {/* Instruction */}
+                    <div className={`text-sm font-bold flex items-center ${
+                      distanceInfo.isCorrect ? 'text-green-500' : 'text-yellow-500'
+                    }`}>
+                      <span className="material-icons mr-1 text-sm">
+                        {distanceInfo.isCorrect ? 'check_circle' : 'warning'}
+                      </span>
+                      {distanceInfo.message}
+                    </div>
+                  </div>
+                </div>
+              )}
+            
+              {/* Placeholder when media not loaded */}
+              {!mediaLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/70">
+                  <div className="text-center p-4 bg-black/80 rounded border border-red-900/30">
+                    <div className="loader mx-auto mb-3 border-t-red-500"></div>
+                    <p className="text-red-100 font-medium">Loading media...</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Placeholder for skeleton visualization when not active */}
+              {mediaLoaded && !isTracking && (
+                <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/70">
+                  <div className="text-center p-3 backdrop-blur-sm bg-black/80 rounded-lg border border-red-900/30">
+                    <span className="material-icons text-4xl text-red-500 mb-2">sports_martial_arts</span>
+                    <p className="text-white font-medium">Start tracking to begin pose analysis</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Status overlay when tracking is active */}
+              {isTracking && !testResults.isRunning && (
+                <div className="absolute top-2 right-2 bg-gradient-to-r from-red-800 to-red-700 text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center shadow-lg">
+                  <span className="inline-block w-2 h-2 rounded-full bg-white animate-pulse mr-1.5"></span>
+                  Tracking Active
+                </div>
+              )}
+              
+              {/* Test status indicator */}
+              {testResults.isRunning && (
+                <div className="absolute top-2 right-2 bg-gradient-to-r from-red-900 to-red-600 text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center shadow-lg">
+                  <span className="inline-block w-2 h-2 rounded-full bg-white animate-pulse mr-1.5"></span>
+                  {graceTimeRemaining > 0 ? (
+                    <>Get ready... ({graceTimeRemaining}s)</>
+                  ) : (
+                    <>Test in progress</>
+                  )}
+                </div>
+              )}
+              
+              {/* Green skeleton guide indicator */}
+              {testResults.isRunning && referencePose && (isSplitView || sourceType === 'camera') && (
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/80 border border-emerald-600/50 text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center shadow-lg">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>
+                  Follow the green guide
+                </div>
+              )}
+              
+              {/* Source type badge */}
+              <div className="absolute top-2 left-2 bg-black/70 border border-red-900/50 text-red-100 px-2 py-1 rounded-md text-xs font-medium shadow-md">
+                {(isSplitView || sourceType === 'camera') && (
+                  <span className="flex items-center">
+                    <span className="material-icons text-xs mr-1 text-red-500">videocam</span>
+                    Camera Feed
+                  </span>
+                )}
+                {!isSplitView && sourceType === 'image' && (
+                  <span className="flex items-center">
+                    <span className="material-icons text-xs mr-1 text-red-500">image</span>
+                    Image
+                  </span>
+                )}
+                {!isSplitView && sourceType === 'video' && (
+                  <span className="flex items-center">
+                    <span className="material-icons text-xs mr-1 text-red-500">movie</span>
+                    Video
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            {/* Reference image/video - Can be shown in split view or fullscreen mode */}
+            {!showMediaSelector && mediaUrl && (
+              <div className={`reference-panel bg-black/90 relative ${
+                isSplitView 
+                  ? 'md:w-1/2 w-full' 
+                  : isFullscreenMode 
+                    ? 'fixed bottom-14 right-2 w-40 h-40 rounded-lg border border-red-900/50 shadow-lg z-40' 
+                    : 'hidden'
+              }`}>
+                {/* Show reference video */}
+                {isVideoUrl(mediaUrl) && (
+                  <video 
+                    ref={referenceVideoRef}
+                    className="w-full h-full object-cover reference-video"
+                    playsInline 
+                    src={mediaUrl.split('#')[0]} // Remove our #video flag if present
+                    autoPlay={!isVideoPaused}
+                    loop
+                    muted
+                    onError={(e) => console.error("Video error:", e)}
+                    onLoadedData={() => console.log("Video loaded successfully in reference panel")}
+                  ></video>
+                )}
+                
+                {/* Show reference image */}
+                {!isVideoUrl(mediaUrl) && (
+                  <img 
+                    src={mediaUrl} 
+                    alt="Reference image" 
+                    className="w-full h-full object-cover" 
+                  />
+                )}
+                
+                {/* Reference panel controls - more compact in fullscreen mode */}
+                <div className={`absolute bottom-0 left-0 right-0 ${isFullscreenMode ? 'p-1' : 'p-2'} flex justify-between items-center bg-black/90 border-t border-red-900/30`}>
+                  {!isFullscreenMode && (
+                    <div className="bg-red-900/40 text-white px-2 py-1 rounded-md text-xs font-medium shadow-md border border-red-900/30">
+                      <span className="flex items-center">
+                        <span className="material-icons text-xs mr-1 text-red-500">compare</span>
+                        Reference
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className={`flex gap-1 ${isFullscreenMode ? 'w-full justify-evenly' : ''}`}>
+                    {/* Play/Pause button for videos */}
+                    {isVideoUrl(mediaUrl) && (
+                      <button
+                        onClick={togglePlayPause}
+                        className={`bg-red-600 hover:bg-red-700 text-white rounded shadow-md ${
+                          isFullscreenMode ? 'px-1 py-0.5 text-[10px]' : 'px-2 py-1 text-xs font-medium'
+                        }`}
+                      >
+                        <span className={`material-icons align-middle ${isFullscreenMode ? 'text-[10px]' : 'text-xs mr-1'}`}>
+                          {isVideoPaused ? 'play_arrow' : 'pause'}
+                        </span>
+                        {!isFullscreenMode && (isVideoPaused ? 'Play' : 'Pause')}
+                      </button>
+                    )}
+                    
+                    {/* Skeleton overlay toggle for reference media */}
+                    <button
+                      onClick={toggleReferenceOverlay}
+                      className={`text-white rounded shadow-md ${
+                        showReferenceOverlay 
+                          ? 'bg-red-600 hover:bg-red-700' 
+                          : 'bg-gray-900 hover:bg-gray-800'
+                      } ${
+                        isFullscreenMode ? 'px-1 py-0.5 text-[10px]' : 'px-2 py-1 text-xs font-medium'
+                      }`}
+                    >
+                      <span className={`material-icons align-middle ${isFullscreenMode ? 'text-[10px]' : 'text-xs mr-1'}`}>
+                        {showReferenceOverlay ? 'filter_alt' : 'filter_alt_off'}
+                      </span>
+                      {!isFullscreenMode && (showReferenceOverlay ? 'Skeleton On' : 'Skeleton Off')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Media Selector Panel - Shown when user clicks + button */}
+            {isSplitView && showMediaSelector && (
+              <div className="bg-black/90 border border-red-900/40 relative md:w-1/2 w-full flex flex-col items-center justify-center p-4">
+                <h3 className="text-xl font-bold text-red-500 mb-3">Select Reference Media</h3>
+                <p className="text-red-100 text-sm mb-4 text-center">Upload an image or video to compare with your live tracking</p>
+                
+                <div className="grid grid-cols-1 gap-3 w-full max-w-xs">
+                  <button
+                    onClick={() => {
+                      // Show image upload input
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = 'image/*';
+                      input.onchange = (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                          const url = URL.createObjectURL(file);
+                          const img = new Image();
+                          img.src = url;
+                          img.onload = () => {
+                            // When in split view, pass the URL to parent component
+                            // This lets Home.tsx update the mediaUrl for the reference panel
+                            if (onScreenshot) onScreenshot(url);
+                            setShowMediaSelector(false);
+                          };
+                        }
+                      };
+                      input.click();
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg flex items-center justify-center shadow-lg"
+                  >
+                    <span className="material-icons mr-2">add_photo_alternate</span>
+                    Upload Image
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      // Show video upload input
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = 'video/mp4,video/webm,video/ogg,video/*';
+                      input.onchange = (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                          // Make sure it's actually a video by checking MIME type
+                          if (!file.type.startsWith('video/')) {
+                            console.error("Not a video file:", file.type);
+                            return;
+                          }
+                          
+                          console.log("Selected video file:", file.name, file.type);
+                          const url = URL.createObjectURL(file);
+                          
+                          // Force the UI to treat this as a video by adding a flag to the URL
+                          // This is a workaround for the detection issue
+                          const flaggedUrl = url + '#video';
+                          
+                          if (onScreenshot) {
+                            console.log("Sending video URL to parent:", flaggedUrl);
+                            onScreenshot(flaggedUrl);
+                          }
+                          
+                          setShowMediaSelector(false);
+                        }
+                      };
+                      input.click();
+                    }}
+                    className="bg-red-700 hover:bg-red-800 text-white p-3 rounded-lg flex items-center justify-center shadow-lg"
+                  >
+                    <span className="material-icons mr-2">video_library</span>
+                    Upload Video
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowMediaSelector(false)}
+                    className="bg-gray-900 hover:bg-gray-800 text-white p-3 rounded-lg flex items-center justify-center shadow-lg border border-red-900/20"
+                  >
+                    <span className="material-icons mr-2">close</span>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* "+" button to toggle split view - always visible */}
+          {!isSplitView && (
+            <button
+              onClick={toggleSplitView}
+              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-gradient-to-r from-red-700 to-red-600 text-white p-2 rounded-full shadow-lg hover:from-red-800 hover:to-red-700 z-20"
+              title="Add reference media"
+            >
+              <span className="material-icons">add</span>
+            </button>
+          )}
+        </div>
+      </div>
+      
+      {/* Notes section - Immediately below camera view, no gap */}
+      <div className="bg-black border-t border-red-900/50 py-1 px-3 mt-0 w-full">
+        <div className="flex items-center justify-between py-1">
+          <div className="flex items-center">
+            <span className="material-icons text-red-600 mr-2 text-sm">edit_note</span>
+            <h3 className="text-red-100 text-sm font-semibold">Routine Notes</h3>
+          </div>
+          <div className="flex items-center space-x-1 text-formatting-controls">
+            <button 
+              onClick={() => {
+                // Bold - wrap selected text with **text** or toggle off if already bold
+                const textArea = document.getElementById('routineNotesTextarea') as HTMLTextAreaElement;
+                if (!textArea) return;
+                
+                const start = textArea.selectionStart;
+                const end = textArea.selectionEnd;
+                const selectedText = routineNotes.substring(start, end);
+                
+                if (selectedText) {
+                  // Check if already bold
+                  if (selectedText.startsWith('**') && selectedText.endsWith('**')) {
+                    // Remove bold formatting
+                    const newText = routineNotes.substring(0, start) + 
+                      selectedText.substring(2, selectedText.length - 2) + 
+                      routineNotes.substring(end);
+                    setRoutineNotes(newText);
+                    // Place cursor correctly
+                    setTimeout(() => {
+                      textArea.selectionStart = start;
+                      textArea.selectionEnd = end - 4;
+                      textArea.focus();
+                    }, 0);
+                  } else {
+                    // Add bold formatting
+                    const newText = routineNotes.substring(0, start) + 
+                      `**${selectedText}**` + 
+                      routineNotes.substring(end);
+                    setRoutineNotes(newText);
+                    // Place cursor correctly
+                    setTimeout(() => {
+                      textArea.selectionStart = start + 2;
+                      textArea.selectionEnd = end + 2;
+                      textArea.focus();
+                    }, 0);
+                  }
+                }
+              }}
+              className="bg-gray-800 hover:bg-gray-700 text-gray-300 rounded p-1" 
+              title="Bold"
+            >
+              <span className="material-icons text-xs">format_bold</span>
+            </button>
+            <button 
+              onClick={() => {
+                // Italic - wrap selected text with *text* or toggle off if already italic
+                const textArea = document.getElementById('routineNotesTextarea') as HTMLTextAreaElement;
+                if (!textArea) return;
+                
+                const start = textArea.selectionStart;
+                const end = textArea.selectionEnd;
+                const selectedText = routineNotes.substring(start, end);
+                
+                if (selectedText) {
+                  // Check if already italic
+                  if (selectedText.startsWith('*') && selectedText.endsWith('*') && 
+                      !(selectedText.startsWith('**') && selectedText.endsWith('**'))) {
+                    // Remove italic formatting
+                    const newText = routineNotes.substring(0, start) + 
+                      selectedText.substring(1, selectedText.length - 1) + 
+                      routineNotes.substring(end);
+                    setRoutineNotes(newText);
+                    // Place cursor correctly
+                    setTimeout(() => {
+                      textArea.selectionStart = start;
+                      textArea.selectionEnd = end - 2;
+                      textArea.focus();
+                    }, 0);
+                  } else {
+                    // Add italic formatting
+                    const newText = routineNotes.substring(0, start) + 
+                      `*${selectedText}*` + 
+                      routineNotes.substring(end);
+                    setRoutineNotes(newText);
+                    // Place cursor correctly
+                    setTimeout(() => {
+                      textArea.selectionStart = start + 1;
+                      textArea.selectionEnd = end + 1;
+                      textArea.focus();
+                    }, 0);
+                  }
+                }
+              }}
+              className="bg-gray-800 hover:bg-gray-700 text-gray-300 rounded p-1" 
+              title="Italic"
+            >
+              <span className="material-icons text-xs">format_italic</span>
+            </button>
+            <button 
+              onClick={() => {
+                // Increase font size by adding # heading
+                const textArea = document.getElementById('routineNotesTextarea') as HTMLTextAreaElement;
+                if (!textArea) return;
+                
+                const start = textArea.selectionStart;
+                const end = textArea.selectionEnd;
+                const selectedText = routineNotes.substring(start, end);
+                
+                if (selectedText) {
+                  // Get the line containing the selection
+                  const textBeforeSelection = routineNotes.substring(0, start);
+                  const lastNewlineBeforeSelection = textBeforeSelection.lastIndexOf('\n');
+                  const lineStart = lastNewlineBeforeSelection === -1 ? 0 : lastNewlineBeforeSelection + 1;
+                  
+                  const textAfterSelection = routineNotes.substring(end);
+                  const firstNewlineAfterSelection = textAfterSelection.indexOf('\n');
+                  const lineEnd = firstNewlineAfterSelection === -1 ? 
+                    routineNotes.length : end + firstNewlineAfterSelection;
+                  
+                  const line = routineNotes.substring(lineStart, lineEnd);
+                  
+                  // Check if line already has heading
+                  if (line.trim().startsWith('#')) {
+                    // Remove heading
+                    const headingMatch = line.match(/^(#+)\s/);
+                    if (headingMatch) {
+                      const headingLength = headingMatch[0].length;
+                      const newText = routineNotes.substring(0, lineStart) + 
+                        line.substring(headingLength) + 
+                        routineNotes.substring(lineEnd);
+                      setRoutineNotes(newText);
+                      // Adjust selection
+                      setTimeout(() => {
+                        textArea.selectionStart = start - headingLength;
+                        textArea.selectionEnd = end - headingLength;
+                        textArea.focus();
+                      }, 0);
+                    }
+                  } else {
+                    // Add heading
+                    const newText = routineNotes.substring(0, lineStart) + 
+                      '# ' + line + 
+                      routineNotes.substring(lineEnd);
+                    setRoutineNotes(newText);
+                    // Adjust selection
+                    setTimeout(() => {
+                      textArea.selectionStart = start + 2;
+                      textArea.selectionEnd = end + 2;
+                      textArea.focus();
+                    }, 0);
+                  }
+                }
+              }}
+              className="bg-gray-800 hover:bg-gray-700 text-gray-300 rounded p-1" 
+              title="Bigger Text"
+            >
+              <span className="material-icons text-xs">format_size</span>
+            </button>
+            <button 
+              onClick={() => {
+                // Decrease font size by adding ### heading (smaller than # heading)
+                const textArea = document.getElementById('routineNotesTextarea') as HTMLTextAreaElement;
+                if (!textArea) return;
+                
+                const start = textArea.selectionStart;
+                const end = textArea.selectionEnd;
+                const selectedText = routineNotes.substring(start, end);
+                
+                if (selectedText) {
+                  // Get the line containing the selection
+                  const textBeforeSelection = routineNotes.substring(0, start);
+                  const lastNewlineBeforeSelection = textBeforeSelection.lastIndexOf('\n');
+                  const lineStart = lastNewlineBeforeSelection === -1 ? 0 : lastNewlineBeforeSelection + 1;
+                  
+                  const textAfterSelection = routineNotes.substring(end);
+                  const firstNewlineAfterSelection = textAfterSelection.indexOf('\n');
+                  const lineEnd = firstNewlineAfterSelection === -1 ? 
+                    routineNotes.length : end + firstNewlineAfterSelection;
+                  
+                  const line = routineNotes.substring(lineStart, lineEnd);
+                  
+                  // Check if line already has heading
+                  if (line.trim().startsWith('###')) {
+                    // Remove heading
+                    const headingMatch = line.match(/^(###)\s/);
+                    if (headingMatch) {
+                      const headingLength = headingMatch[0].length;
+                      const newText = routineNotes.substring(0, lineStart) + 
+                        line.substring(headingLength) + 
+                        routineNotes.substring(lineEnd);
+                      setRoutineNotes(newText);
+                      // Adjust selection
+                      setTimeout(() => {
+                        textArea.selectionStart = start - headingLength;
+                        textArea.selectionEnd = end - headingLength;
+                        textArea.focus();
+                      }, 0);
+                    }
+                  } else {
+                    // Add heading
+                    const newText = routineNotes.substring(0, lineStart) + 
+                      '### ' + line + 
+                      routineNotes.substring(lineEnd);
+                    setRoutineNotes(newText);
+                    // Adjust selection
+                    setTimeout(() => {
+                      textArea.selectionStart = start + 4;
+                      textArea.selectionEnd = end + 4;
+                      textArea.focus();
+                    }, 0);
+                  }
+                }
+              }}
+              className="bg-gray-800 hover:bg-gray-700 text-gray-300 rounded p-1" 
+              title="Smaller Text"
+            >
+              <span className="material-icons text-xs">text_fields</span>
+            </button>
+          </div>
+        </div>
+        <div className="relative">
+          <textarea
+            id="routineNotesTextarea"
+            value={routineNotes}
+            onChange={(e) => setRoutineNotes(e.target.value)}
+            placeholder="Enter your notes about this routine here..."
+            className="w-full bg-gray-900 border border-red-900/30 rounded-md p-2 text-white text-sm min-h-[70px] focus:ring-1 focus:ring-red-500 focus:border-red-500 max-h-[150px] overflow-y-auto"
+          />
+          {/* Live preview of formatted text */}
+          {routineNotes && (
+            <div 
+              className="absolute top-2 left-2 right-2 bottom-2 pointer-events-none overflow-y-auto formatted-notes"
+              style={{display: routineNotes ? 'block' : 'none'}}
+            >
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: routineNotes
+                    // Format bold text (**text**)
+                    .replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-white">$1</span>')
+                    // Format italic text (*text*)
+                    .replace(/\*([^*]+)\*/g, '<span class="italic">$1</span>')
+                    // Format headings (# text)
+                    .replace(/^#\s+(.*)$/gm, '<span class="text-lg font-bold text-red-400">$1</span>')
+                    // Format smaller headings (### text)
+                    .replace(/^###\s+(.*)$/gm, '<span class="text-xs font-medium text-red-300">$1</span>')
+                    // Convert line breaks to <br>
+                    .replace(/\n/g, '<br>')
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Main Start Routine and Test buttons - Always visible */}
+      <div className="p-0 flex justify-center items-center bg-black border-t-2 border-red-900 sticky bottom-0 w-full z-50">
+        <button
+          onClick={() => toggleTracking()}
+          className={`w-1/2 py-3 text-white font-bold text-lg ${isTracking ? 'bg-red-800' : 'bg-red-700'} hover:bg-red-800 transition-colors border-r border-red-900/50`}
+        >
+          <span className="flex items-center justify-center">
+            <span className="material-icons mr-2">
+              {isTracking ? 'pause_circle' : 'play_circle'}
+            </span>
+            {isTracking ? 'PAUSE ROUTINE' : 'START ROUTINE'}
+          </span>
+        </button>
+        <button
+          onClick={() => {
+            // Visual feedback
+            const container = document.getElementById('cameraContainer');
+            if (container) {
+              container.classList.add('test-flash');
+              setTimeout(() => container.classList.remove('test-flash'), 1000);
+            }
+            
+            // Need a reference video to compare against
+            if (!mediaUrl || !isVideoUrl(mediaUrl) || !referenceVideoRef.current) {
+              alert('Please select a reference video in split view first.');
+              // Toggle split view if not already active
+              if (!isSplitView) {
+                toggleSplitView();
+              }
+              return;
+            }
+            
+            // Start tracking if not already
+            const wasTracking = isTracking;
+            if (!wasTracking && toggleTracking) {
+              toggleTracking();
+            }
+            
+            // Make sure skeleton is visible on both feeds
+            if (typeof showSkeleton !== 'undefined' && !showSkeleton) {
+              // We can't directly call setShowSkeleton since it's not defined
+              // Pass the change up to the parent component via props
+              if (toggleTracking) {
+                toggleTracking(); // Turn off tracking momentarily
+                toggleTracking(); // Turn it back on to refresh settings
+              }
+            }
+            
+            // Make sure reference skeleton is visible
+            if (!showReferenceOverlay) {
+              toggleReferenceOverlay && toggleReferenceOverlay();
+            }
+            
+            // When starting a test, ensure that the distance meter is showing
+            if (!distanceInfo.showMeter) {
+              // Force enable the distance meter
+              setDistanceInfo(prev => ({
+                ...prev,
+                showMeter: true
+              }));
+              
+              // Wait for the next pose detection cycle to update the distance info
+              return;
+            }
+            
+            // Show distance suggestion if user is not at the correct distance,
+            // but still allow the test to run (just as an indicator, not a restrictor)
+            if (!distanceInfo.isCorrect) {
+              // Show an advisory notification without blocking test execution
+              const feedback = document.createElement('div');
+              feedback.className = 'absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-6 py-4 rounded-lg border border-yellow-500 z-50 text-center';
+              feedback.innerHTML = `
+                <div class="flex items-center mb-3">
+                  <span class="material-icons text-yellow-500 mr-2">info</span>
+                  <span class="font-bold">Position Suggestion</span>
+                </div>
+                <p class="text-sm mb-2">For best results, ${distanceInfo.message.toLowerCase()}</p>
+                <p class="text-xs text-gray-400">Test will continue anyway</p>
+              `;
+              
+              document.body.appendChild(feedback);
+              
+              // Remove after 3 seconds
+              setTimeout(() => {
+                document.body.removeChild(feedback);
+              }, 3000);
+              
+              // Continue with the test execution (don't return)
+              console.log("Continuing test despite distance not being optimal");
+            }
+            
+            // Reset and start reference video from beginning
+            const refVideo = referenceVideoRef.current;
+            
+            // Always reset the video to the beginning regardless of current state
+            refVideo.currentTime = 0;
+            refVideo.pause();
+            
+            // Clear previous test data
+            setReferenceFrames([]);
+            setTestResults({
+              isRunning: true,
+              processing: false,
+              scores: [],
+              overallScore: 0,
+              feedback: 'Test in progress...'
+            });
+            
+            // Record test start time for grace period
+            setTestStartTime(Date.now());
+            
+            // Start recording reference poses
+            setIsRecordingReference(true);
+            
+            // Reset timing offsets
+            setTimingOffsets([]);
+            
+            // Start recording the test
+            startRecording();
+            
+            // Always force the video to start playing from the beginning
+            // This ensures consistent behavior regardless of previous state
+            refVideo.play().catch(err => {
+              console.error("Error starting reference video:", err);
+              alert("Could not start the reference video. Please try again.");
+            });
+            
+            // If the video was paused in the UI state, update that too
+            if (isVideoPaused) {
+              // Update our UI state to match reality (video is now playing)
+              togglePlayPause();
+            }
+            
+            console.log('Running Taekwondo pose analysis test and recording...');
+            
+            // Wait for reference video to complete (or timeout after max 60 seconds for safety)
+            // This is a longer timeout to accommodate longer reference videos
+            const maxTestDuration = 60000; // 60 seconds max test duration
+            const testTimeout = setTimeout(() => {
+              console.log("Test timeout reached, ending test...");
+              endTest(wasTracking);
+            }, maxTestDuration);
+            
+            // Listen for video end event to properly end the test
+            const videoEndListener = () => {
+              console.log("Reference video ended, ending test...");
+              clearTimeout(testTimeout);
+              endTest(wasTracking);
+            };
+            
+            // Add event listener to the reference video
+            if (refVideo) {
+              // First remove any existing listeners to avoid duplicates
+              refVideo.removeEventListener('ended', videoEndListener);
+              // Then add the new listener
+              refVideo.addEventListener('ended', videoEndListener);
+              console.log("Added ended event listener to reference video");
+              
+              // Force the video to not loop during the test
+              // This ensures the ended event will fire after one playthrough
+              refVideo.loop = false;
+            }
+            
+            // Function to end the test and show results
+            const endTest = (shouldStopTracking: boolean) => {
+              console.log("Ending test and preparing results...");
+              
+              // Make sure the reference video is stopped
+              if (refVideo) {
+                refVideo.pause();
+                console.log("Reference video paused at end of test");
+              }
+              
+              // Stop recording screen capture
+              if (isRecording) {
+                console.log("Automatically stopping recording at test end");
+                stopRecording();
+                
+                // The recorded video will be saved automatically in the recordedVideo state
+                // We don't need to show the popup since it will be displayed in the results
+                console.log("Recording saved for test results");
+              }
+              
+              // Stop recording reference poses
+              setIsRecordingReference(false);
+              
+              // Reset tracking state if requested
+              if (!shouldStopTracking && isTracking && toggleTracking) {
+                toggleTracking();
+              }
+              
+              // Set state to processing (shows loading indicator)
+              setTestResults(prev => ({
+                ...prev,
+                isRunning: false,
+                processing: true
+              }));
+              
+              // Show the results modal once processing is complete
+              setTimeout(() => {
+                setShowResultsModal(true);
+              }, 100); // Small delay to ensure state updates first
+              
+              // Don't show the separate recording popup for tests
+              // The recording will appear in the test results directly
+              
+              // Use small timeout to ensure UI updates before heavy processing
+              setTimeout(() => {
+                // Analyze the data and generate feedback
+                const jointCounts = {
+                  knees: 0,
+                  ankles: 0,
+                  arms: 0,
+                  hips: 0
+                };
+                
+                let jointCountEntries = {
+                  knees: 0,
+                  ankles: 0,
+                  arms: 0,
+                  hips: 0
+                };
+                
+                let totalScore = 0;
+                let scoreCount = 0;
+                
+                // Calculate average scores by joint group
+                testResults.scores.forEach(score => {
+                  totalScore += score.score;
+                  scoreCount++;
+                  
+                  if (score.joint.includes('knee')) {
+                    jointCounts.knees += score.score;
+                    jointCountEntries.knees++;
+                  } else if (score.joint.includes('ankle')) {
+                    jointCounts.ankles += score.score;
+                    jointCountEntries.ankles++;
+                  } else if (score.joint.includes('elbow') || score.joint.includes('wrist')) {
+                    jointCounts.arms += score.score;
+                    jointCountEntries.arms++;
+                  } else if (score.joint.includes('hip')) {
+                    jointCounts.hips += score.score;
+                    jointCountEntries.hips++;
+                  }
+                });
+                
+                // Only count areas that have enough entries
+                const validAreas = [];
+                if (jointCountEntries.knees > 5) validAreas.push({ name: 'knee alignment', score: jointCounts.knees / jointCountEntries.knees });
+                if (jointCountEntries.ankles > 5) validAreas.push({ name: 'foot placement', score: jointCounts.ankles / jointCountEntries.ankles });
+                if (jointCountEntries.arms > 5) validAreas.push({ name: 'arm technique', score: jointCounts.arms / jointCountEntries.arms });
+                if (jointCountEntries.hips > 5) validAreas.push({ name: 'hip position', score: jointCounts.hips / jointCountEntries.hips });
+                
+                // Sort from lowest to highest score
+                validAreas.sort((a, b) => a.score - b.score);
+                
+                // Generate position feedback based on overall score and weakest area
+                const overallScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
+                let positionFeedback = '';
+                
+                if (overallScore >= 85) {
+                  positionFeedback = `Excellent form! Your movements perfectly match the reference technique. `;
+                } else if (overallScore >= 70) {
+                  positionFeedback = `Great form! Your technique aligns very well with the reference. `;
+                } else if (overallScore >= 50) {
+                  positionFeedback = `Good performance! Your technique is recognizable with just a few areas to refine. `;
+                } else {
+                  positionFeedback = `Nice attempt! With a bit more practice, you'll continue improving your form. `;
+                }
+                
+                // Add specific directional advice for technique improvement
+                // Analyze all joint scores to create comprehensive feedback
+                
+                // Group joints by body regions for better analysis
+                const bodyRegions = {
+                  arms: [] as {joint: string, score: number, direction?: any}[],
+                  legs: [] as {joint: string, score: number, direction?: any}[],
+                  torso: [] as {joint: string, score: number, direction?: any}[],
+                  timing: {
+                    delayed: false,
+                    tooFast: false,
+                    gaps: false,
+                    avgDelay: 0,
+                    delayMs: 0
+                  }
+                };
+                
+                // Calculate overall stats
+                let totalMisalignment = 0;
+                let worstJoint = { joint: '', score: 100, direction: null as any };
+                let secondWorstJoint = { joint: '', score: 100, direction: null as any };
+                let totalJoints = 0;
+                let badJointCount = 0;
+                
+                // Analyze each joint score for detailed feedback
+                testResults.scores.forEach(score => {
+                  totalJoints++;
+                  
+                  // Find worst and second worst joints
+                  if (score.score < worstJoint.score) {
+                    secondWorstJoint = {...worstJoint};
+                    worstJoint = {
+                      joint: score.joint,
+                      score: score.score,
+                      direction: score.direction
+                    };
+                  } else if (score.score < secondWorstJoint.score) {
+                    secondWorstJoint = {
+                      joint: score.joint,
+                      score: score.score,
+                      direction: score.direction
+                    };
+                  }
+                  
+                  // Track total misalignment
+                  if (score.score < 75) {
+                    totalMisalignment += (75 - score.score);
+                    badJointCount++;
+                  }
+                  
+                  // Group by body region
+                  if (score.joint.includes('wrist') || score.joint.includes('elbow') || score.joint.includes('shoulder')) {
+                    bodyRegions.arms.push(score);
+                  } else if (score.joint.includes('knee') || score.joint.includes('ankle') || score.joint.includes('foot')) {
+                    bodyRegions.legs.push(score);
+                  } else if (score.joint.includes('hip')) {
+                    bodyRegions.torso.push(score);
+                  }
+                });
+                
+                // Calculate regional scores
+                const getRegionScore = (region: any[]) => {
+                  if (region.length === 0) return 100;
+                  return region.reduce((sum, item) => sum + item.score, 0) / region.length;
+                };
+                
+                const armScore = getRegionScore(bodyRegions.arms);
+                const legScore = getRegionScore(bodyRegions.legs);
+                const torsoScore = getRegionScore(bodyRegions.torso);
+                
+                // Determine most problematic body part
+                let worstRegion = '';
+                let worstRegionScore = 100;
+                
+                if (armScore < worstRegionScore && bodyRegions.arms.length > 0) {
+                  worstRegion = 'arms';
+                  worstRegionScore = armScore;
+                }
+                if (legScore < worstRegionScore && bodyRegions.legs.length > 0) {
+                  worstRegion = 'legs';
+                  worstRegionScore = legScore;
+                }
+                if (torsoScore < worstRegionScore && bodyRegions.torso.length > 0) {
+                  worstRegion = 'hip position';
+                  worstRegionScore = torsoScore;
+                }
+                
+                // Analyze timing data for feedback
+                if (timingIssues.delays) {
+                  bodyRegions.timing.delayed = true;
+                  bodyRegions.timing.delayMs = timingOffsets.reduce((sum, val) => sum + val, 0) / (timingOffsets.length || 1);
+                  bodyRegions.timing.avgDelay = Math.abs(bodyRegions.timing.delayMs);
+                }
+                if (timingIssues.speed === 'fast') {
+                  bodyRegions.timing.tooFast = true;
+                }
+                if (timingIssues.gaps) {
+                  bodyRegions.timing.gaps = true;
+                }
+                
+                // Generate comprehensive feedback
+                let jointFeedback = '';
+                
+                // Case 1: Specific joint feedback (for worst problems)
+                if (worstJoint.joint && worstJoint.score < 60 && worstJoint.direction) {
+                  jointFeedback = "For refinement, try to: ";
+                  
+                  // Format the joint name (e.g., left_elbow → left elbow)
+                  const jointName = worstJoint.joint.replace('_', ' ');
+                  let directionText = '';
+                  
+                  // Build direction-specific feedback with magnitude indicators
+                  if (worstJoint.direction.x !== 'center' && worstJoint.direction.y !== 'center') {
+                    // Both X and Y need adjustment
+                    const xMag = worstJoint.direction.xMagnitude > 2 ? 'significantly ' : '';
+                    const yMag = worstJoint.direction.yMagnitude > 2 ? 'significantly ' : '';
+                    directionText = `move your ${jointName} ${yMag}${worstJoint.direction.y} and ${xMag}${worstJoint.direction.x}`;
+                  } else if (worstJoint.direction.x !== 'center') {
+                    // Only X needs adjustment
+                    const xMag = worstJoint.direction.xMagnitude > 2 ? 'significantly ' : '';
+                    directionText = `move your ${jointName} ${xMag}${worstJoint.direction.x}`;
+                  } else if (worstJoint.direction.y !== 'center') {
+                    // Only Y needs adjustment
+                    const yMag = worstJoint.direction.yMagnitude > 2 ? 'significantly ' : '';
+                    directionText = `move your ${jointName} ${yMag}${worstJoint.direction.y}`;
+                  }
+                  
+                  jointFeedback += directionText;
+                  
+                  // Add second worst joint if it's also problematic
+                  if (secondWorstJoint.joint && secondWorstJoint.score < 65 && secondWorstJoint.direction) {
+                    const jointName2 = secondWorstJoint.joint.replace('_', ' ');
+                    let directionText2 = '';
+                    
+                    if (secondWorstJoint.direction.x !== 'center' && secondWorstJoint.direction.y !== 'center') {
+                      directionText2 = `move your ${jointName2} ${secondWorstJoint.direction.y} and ${secondWorstJoint.direction.x}`;
+                    } else if (secondWorstJoint.direction.x !== 'center') {
+                      directionText2 = `move your ${jointName2} ${secondWorstJoint.direction.x}`;
+                    } else if (secondWorstJoint.direction.y !== 'center') {
+                      directionText2 = `move your ${jointName2} ${secondWorstJoint.direction.y}`;
+                    }
+                    
+                    if (directionText2) {
+                      jointFeedback += `; also ${directionText2}`;
+                    }
+                  }
+                  
+                  jointFeedback += ".";
+                  
+                  // Add regional insight if there's a clear problem area
+                  if (worstRegionScore < 60 && badJointCount > 2) {
+                    jointFeedback += ` Your ${worstRegion} need the most attention overall.`;
+                  }
+                  
+                // Case 2: More general feedback when no specific joint stands out
+                } else if (worstRegionScore < 70) {
+                  // Focus on body region with worst performance - more positive wording
+                  jointFeedback = `For even better results, you could fine-tune your ${worstRegion} position slightly.`;
+                } else if (validAreas.length > 0 && validAreas[0].score < 75) {
+                  // Fallback to old feedback if we don't have specific directional issues - more positive
+                  jointFeedback = `Your form is good! For perfection, you could polish your ${validAreas[0].name} a bit more.`;
+                }
+                
+                // Add precise timing feedback if needed
+                if (bodyRegions.timing.delayed && bodyRegions.timing.avgDelay > 300) {
+                  // Round to nearest 10ms for cleaner display
+                  const delayText = Math.round(bodyRegions.timing.avgDelay / 10) * 10;
+                  
+                  // Different message based on severity
+                  if (bodyRegions.timing.avgDelay > 1000) {
+                    jointFeedback += ` Your movements are significantly behind the reference (${delayText}ms lag).`;
+                  } else if (bodyRegions.timing.avgDelay > 500) {
+                    jointFeedback += ` You're consistently ${delayText}ms behind the reference movements.`;
+                  } else {
+                    jointFeedback += ` You have a slight delay (${delayText}ms) in your movements.`;
+                  }
+                }
+                
+                // Generate timing feedback based on analysis
+                let timingFeedback = '';
+                
+                if (timingIssues.delays) {
+                  // Enhanced feedback based on our improved sequence analysis
+                  const isDelayPositive = bodyRegions.timing.delayMs > 0;
+                  if (isDelayPositive) {
+                    timingFeedback += "You're consistently following the reference movements with a delay. Try to anticipate the next move in the sequence. ";
+                    
+                    // Add specific delay amount for more precise feedback
+                    const delayMs = Math.abs(bodyRegions.timing.delayMs);
+                    if (delayMs > 1000) {
+                      timingFeedback += `Your movements are approximately ${Math.round(delayMs/100)/10} seconds behind the reference. `;
+                    } else if (delayMs > 300) {
+                      timingFeedback += `Your sequence is about ${Math.round(delayMs/10)*10}ms behind the reference timing. `;
+                    }
+                    
+                    // Suggestions for improvement
+                    timingFeedback += "Focus on recognizing movement patterns earlier to improve your timing. ";
+                  } else {
+                    timingFeedback += "You're consistently moving ahead of the reference. This indicates good anticipation, but try to match the timing more precisely. ";
+                    
+                    // Add specific amount for ahead timing
+                    const aheadMs = Math.abs(bodyRegions.timing.delayMs);
+                    if (aheadMs > 500) {
+                      timingFeedback += `You're moving ${Math.round(aheadMs/100)/10} seconds before the reference, which may affect synchronization. `;
+                    }
+                    
+                    // Suggestions for improvement
+                    timingFeedback += "Try to follow the rhythm of the reference more closely. ";
+                  }
+                }
+                
+                if (timingIssues.gaps) {
+                  timingFeedback += "Your sequence has some unintended pauses. Work on maintaining consistent flow through the entire form. ";
+                  
+                  // Expanded feedback on gaps with more helpful suggestions
+                  timingFeedback += "These pauses typically happen when transitioning between major movements. Practice those transitions specifically to achieve smoother flow. ";
+                }
+                
+                if (timingIssues.speed === 'slow') {
+                  timingFeedback += "Your overall pace is slower than the reference. Try to increase your speed while maintaining proper technique. ";
+                  
+                  // Add specific advice for improving speed
+                  timingFeedback += "Focus on making your movements more efficient and reducing unnecessary tension in your muscles. ";
+                } else if (timingIssues.speed === 'fast') {
+                  timingFeedback += "You're performing the sequence too quickly. Slow down to execute each movement with proper control and precision. ";
+                  
+                  // Add specific advice for controlling speed
+                  timingFeedback += "Quality is more important than speed - ensure each position is fully expressed before moving to the next. ";
+                }
+                
+                // Combine all feedback elements
+                const feedback = [
+                  positionFeedback,
+                  jointFeedback,
+                  timingFeedback ? `Timing: ${timingFeedback}` : ''
+                ].filter(Boolean).join(' ');
+                
+                // Update test results with comprehensive analysis
+                setTestResults(prev => ({
+                  ...prev,
+                  isRunning: false,
+                  processing: false,
+                  scores: prev.scores,
+                  overallScore,
+                  feedback,
+                  timing: timingIssues
+                }));
+                
+                // If we started tracking just for the test, stop it
+                if (shouldStopTracking && toggleTracking) {
+                  toggleTracking();
+                }
+                
+                // Make sure recording has stopped and been saved before showing results
+                if (isRecording) {
+                  console.log('Automatically stopping recording before showing test results');
+                  stopRecording();
+                  
+                  // Since stopRecording() is asynchronous (it processes video after stopping),
+                  // we'll wait a short time to ensure the video is processed before showing results
+                  setTimeout(() => {
+                    console.log('Recording saved, now showing test results');
+                    setShowResultsModal(true);
+                  }, 500);
+                } else {
+                  // If no recording is active, show results immediately
+                  console.log('Test complete! No recording active.');
+                  setShowResultsModal(true);
+                }
+                
+                // Remove event listener
+                if (refVideo) {
+                  refVideo.removeEventListener('ended', videoEndListener);
+                }
+              }, 500); // Short delay for UI update
+            };
+            
+            // We already added the event listener above
+          }}
+          className="w-1/2 py-3 text-white font-bold text-lg bg-gradient-to-r from-gray-900 to-red-950 hover:from-gray-800 hover:to-red-900 transition-all border-red-900/20 border-l"
+        >
+          <span className="flex items-center justify-center">
+            <span className="material-icons mr-2">
+              science
+            </span>
+            TEST
+          </span>
+        </button>
+      </div>
+      
+      {/* Test Results Modal */}
+      {showResultsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/80 modal-overlay" onClick={() => setShowResultsModal(false)}></div>
+          <div className="relative bg-gray-900 rounded-lg shadow-xl border border-red-900/30 w-full max-w-md overflow-hidden modal-content" style={{
+            background: 'linear-gradient(135deg, #1a1a1a 0%, #2d1a1a 100%)',
+            boxShadow: '0 25px 50px -12px rgba(220, 38, 38, 0.25)'
+          }}>
+            
+            {/* Processing indicator */}
+            {testResults.processing && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-900/90">
+                <div className="w-16 h-16 mb-4">
+                  <div className="loader mx-auto border-t-red-500 w-16 h-16"></div>
+                </div>
+                <p className="text-white text-xl font-medium">Analyzing your performance...</p>
+              </div>
+            )}
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-900 to-red-700 p-6 relative overflow-hidden">
+              <div className="absolute inset-0 bg-black/20"></div>
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500 to-transparent"></div>
+              <div className="flex justify-between items-center relative z-10">
+                <h3 className="text-2xl font-bold text-white flex items-center">
+                  <span className="material-icons mr-3 text-red-300">analytics</span>
+                  Test Results
+                </h3>
+                <button 
+                  onClick={() => setShowResultsModal(false)}
+                  className="text-white hover:text-red-200 bg-red-800/50 hover:bg-red-800 p-2 rounded-full transition-colors"
+                >
+                  <span className="material-icons">close</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 text-center">
+              <div className="mb-5">
+                <div className="relative flex items-center justify-center mb-4">
+                  <svg width="120" height="120" viewBox="0 0 120 120" className="transform -rotate-90">
+                    {/* Background circle */}
+                    <circle 
+                      cx="60" 
+                      cy="60" 
+                      r="54" 
+                      fill="none" 
+                      stroke="#27272a" 
+                      strokeWidth="12"
+                    />
+                    {/* Score circle with animation */}
+                    <circle 
+                      cx="60" 
+                      cy="60" 
+                      r="54" 
+                      fill="none" 
+                      stroke={
+                        testResults.overallScore >= 85 ? '#22c55e' : 
+                        testResults.overallScore >= 70 ? '#eab308' : 
+                        testResults.overallScore >= 50 ? '#f97316' : 
+                        '#ef4444'
+                      } 
+                      strokeWidth="12"
+                      strokeLinecap="round"
+                      style={{"--score-value": `${testResults.overallScore}` } as React.CSSProperties} 
+                      className="score-circle"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className={`text-4xl font-bold score-animate ${
+                      testResults.overallScore >= 85 ? 'text-green-500' : 
+                      testResults.overallScore >= 70 ? 'text-yellow-500' : 
+                      testResults.overallScore >= 50 ? 'text-orange-500' : 
+                      'text-red-500'
+                    }`}>
+                      {testResults.overallScore}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-white text-lg">{testResults.feedback}</div>
+              </div>
+              
+              {/* Joint Score Details - IMPROVEMENT #5: Visual Score Heatmap */}
+              <div className="bg-black/30 p-4 rounded-lg mb-3">
+                <h4 className="text-white text-sm font-medium mb-2 flex items-center">
+                  <span className="material-icons text-sm mr-2">straighten</span>
+                  Joint Movement Analysis
+                </h4>
+                
+                {/* Score color legend for the heatmap */}
+                <div className="flex items-center justify-end mb-2 gap-2 flex-wrap">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
+                    <span className="text-gray-300 text-xs">Great</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 mr-1"></div>
+                    <span className="text-gray-300 text-xs">Fair</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-orange-500 mr-1"></div>
+                    <span className="text-gray-300 text-xs">Poor</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-red-500 mr-1"></div>
+                    <span className="text-gray-300 text-xs">Bad</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  {testResults.scores.slice(0, 6).map((score, index) => (
+                    <div key={index} className="flex justify-between items-center joint-score-item">
+                      {/* Joint name with colored dot indicating score quality */}
+                      <div className="flex items-center">
+                        <div className={`w-2 h-2 rounded-full mr-2 ${
+                          score.severity === 'good' ? 'bg-green-500' : 
+                          score.severity === 'fair' ? 'bg-yellow-500' : 
+                          score.severity === 'poor' ? 'bg-orange-500' : 
+                          'bg-red-500'
+                        }`}></div>
+                        <span className="text-gray-300 text-xs capitalize">
+                          {score.joint.replace('_', ' ')}:
+                        </span>
+                      </div>
+                      
+                      {/* Score with direction indicators */}
+                      <div className="flex items-center">
+                        {/* Direction indicators */}
+                        {score.direction && score.score < 75 && (
+                          <span className="text-xs mr-1 opacity-70">
+                            {score.direction.y !== 'center' && (
+                              <span className={`${score.direction.y === 'up' ? 'text-blue-400' : 'text-yellow-400'} mr-0.5`}>
+                                {score.direction.y === 'up' ? '↑' : '↓'}
+                              </span>
+                            )}
+                            {score.direction.x !== 'center' && (
+                              <span className={`${score.direction.x === 'left' ? 'text-purple-400' : 'text-green-400'}`}>
+                                {score.direction.x === 'left' ? '←' : '→'}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        <span className={`text-xs font-medium ${
+                          score.score >= 85 ? 'text-green-500' : 
+                          score.score >= 70 ? 'text-yellow-500' : 
+                          score.score >= 50 ? 'text-orange-500' : 
+                          'text-red-500'
+                        }`}>
+                          {Math.round(score.score)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Timing Issues */}
+              {testResults.timing !== undefined && (
+                <div className="bg-black/30 p-4 rounded-lg mb-3">
+                  <h4 className="text-white text-sm font-medium mb-2">Timing Analysis</h4>
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="flex justify-between items-center joint-score-item">
+                      <span className="text-gray-300 text-xs">Movement delays:</span>
+                      <span className={`text-xs font-medium flex items-center ${
+                        testResults.timing?.delays ? 'text-red-500' : 'text-green-500'
+                      }`}>
+                        {testResults.timing?.delays ? (
+                          <>
+                            <span className="material-icons text-xs mr-1">error</span>
+                            Detected
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-icons text-xs mr-1">check_circle</span>
+                            None
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center joint-score-item">
+                      <span className="text-gray-300 text-xs">Extra pauses:</span>
+                      <span className={`text-xs font-medium flex items-center ${
+                        testResults.timing?.gaps ? 'text-red-500' : 'text-green-500'
+                      }`}>
+                        {testResults.timing?.gaps ? (
+                          <>
+                            <span className="material-icons text-xs mr-1">error</span>
+                            Detected
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-icons text-xs mr-1">check_circle</span>
+                            None
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center joint-score-item">
+                      <span className="text-gray-300 text-xs">Movement speed:</span>
+                      <span className={`text-xs font-medium flex items-center ${
+                        testResults.timing?.speed === 'good' ? 'text-green-500' : 
+                        'text-orange-500'
+                      }`}>
+                        {testResults.timing?.speed === 'good' ? (
+                          <>
+                            <span className="material-icons text-xs mr-1">check_circle</span>
+                            Good
+                          </>
+                        ) : testResults.timing?.speed === 'slow' ? (
+                          <>
+                            <span className="material-icons text-xs mr-1">trending_down</span>
+                            Too slow
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-icons text-xs mr-1">trending_up</span>
+                            Too fast
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Routine Notes */}
+              {routineNotes && routineNotes.trim() !== "" && (
+                <div className="bg-black/30 p-4 rounded-lg mb-3 overflow-y-auto max-h-[200px]">
+                  <h4 className="text-white text-sm font-medium mb-2 flex items-center">
+                    <span className="material-icons text-sm mr-2">description</span>
+                    Routine Notes
+                  </h4>
+                  <div 
+                    className="text-gray-300 text-sm text-left formatted-notes"
+                    dangerouslySetInnerHTML={{
+                      __html: routineNotes
+                        // Format bold text (**text**)
+                        .replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-white">$1</span>')
+                        // Format italic text (*text*)
+                        .replace(/\*([^*]+)\*/g, '<span class="italic">$1</span>')
+                        // Format headings (# text)
+                        .replace(/^#\s+(.*)$/gm, '<span class="text-lg font-bold text-red-400">$1</span>')
+                        // Format smaller headings (### text)
+                        .replace(/^###\s+(.*)$/gm, '<span class="text-xs font-medium text-red-300">$1</span>')
+                        // Convert line breaks to <br>
+                        .replace(/\n/g, '<br>')
+                    }}
+                  />
+                </div>
+              )}
+              
+              {/* Recording section - always visible */}
+              <div className="mb-5 bg-black/30 p-3 rounded-lg">
+                <h4 className="text-white text-sm font-medium mb-2 flex items-center">
+                  <span className="material-icons text-sm mr-2">videocam</span>
+                  Performance Recording
+                </h4>
+                
+                {recordedVideo ? (
+                  <>
+                    <video 
+                      src={recordedVideo} 
+                      className="w-full rounded border border-red-900/30 mb-3" 
+                      controls
+                      autoPlay={false}
+                    ></video>
+                    <div className="flex justify-center">
+                      <button 
+                        className="px-3 py-2 text-xs rounded-lg bg-red-700 hover:bg-red-800 text-white flex items-center transition-all transform hover:scale-105"
+                        onClick={() => {
+                          // Create download link
+                          const a = document.createElement('a');
+                          a.href = recordedVideo;
+                          a.download = `coacht-recording-${Date.now()}.webm`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }}
+                      >
+                        <span className="material-icons text-sm mr-1">download</span>
+                        Download Video Recording
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-400 text-sm mb-3">No recording available for this session.</p>
+                    <p className="text-gray-500 text-xs">Recording will be automatically created when you run a test.</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Sharing options */}
+              <div className="mb-5">
+                <h4 className="text-white text-sm font-medium mb-2">Share Your Results</h4>
+                <div className="grid grid-cols-4 gap-2">
+                  {/* Social sharing buttons */}
+                  <button 
+                    className="p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex flex-col items-center transition-all hover:shadow-lg hover:scale-105"
+                    onClick={() => {
+                      // Get user info if available
+                      const user = localStorage.getItem('user');
+                      const username = user ? JSON.parse(user).username : '';
+                      
+                      // Create Twitter-friendly message (character-limited)
+                      let text = `${username ? `@${username}` : 'I'} scored ${testResults.overallScore}/100 on my Taekwondo form with @CoachTApp! 🥋`;
+                      
+                      // Add short version of feedback
+                      if (testResults.feedback) {
+                        // Extract first sentence only for brevity
+                        const firstSentence = testResults.feedback.split('.')[0] + '.';
+                        if (text.length + firstSentence.length < 250) {  // Twitter limit is 280
+                          text += ` ${firstSentence}`;
+                        }
+                      }
+                      
+                      // Add hashtags
+                      text += " #Taekwondo #MartialArts #Training";
+                      
+                      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                    }}
+                  >
+                    <span className="material-icons mb-1">share</span>
+                    <span className="text-xs">Twitter</span>
+                  </button>
+                  <button 
+                    className="p-3 rounded-lg bg-green-600 hover:bg-green-700 text-white flex flex-col items-center transition-all hover:shadow-lg hover:scale-105"
+                    onClick={() => {
+                      // Get user info if available
+                      const user = localStorage.getItem('user');
+                      const username = user ? JSON.parse(user).username : '';
+                      
+                      // Create detailed email content
+                      const subject = `Taekwondo Training Results: ${testResults.overallScore}/100 with CoachT`;
+                      let body = `${username ? `${username}'s` : 'My'} Taekwondo Form Assessment\n`;
+                      body += `--------------------------------\n\n`;
+                      body += `Overall Score: ${testResults.overallScore}/100\n\n`;
+                      body += `Coach Feedback: ${testResults.feedback}\n\n`;
+                      
+                      // Add detailed timing analysis
+                      if (testResults.timing) {
+                        body += "Timing Analysis:\n";
+                        body += `- Movement delays: ${testResults.timing.delays ? "Detected" : "None"}\n`;
+                        body += `- Extra pauses: ${testResults.timing.gaps ? "Detected" : "None"}\n`;
+                        body += `- Movement speed: ${testResults.timing.speed}\n\n`;
+                      }
+                      
+                      // Add routine notes if available
+                      if (routineNotes && routineNotes.trim() !== "") {
+                        body += `\nSession Notes:\n----------------\n${routineNotes.trim()}\n\n`;
+                      }
+                      
+                      body += `\nShared from CoachT - Your AI-Powered Taekwondo Training Assistant`;
+                      
+                      window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+                    }}
+                  >
+                    <span className="material-icons mb-1">email</span>
+                    <span className="text-xs">Email</span>
+                  </button>
+                  <button 
+                    className="p-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex flex-col items-center transition-all hover:shadow-lg hover:scale-105"
+                    onClick={() => {
+                      // Get user info if available
+                      const user = localStorage.getItem('user');
+                      const username = user ? JSON.parse(user).username : '';
+                      
+                      // Create clipboard content with username
+                      let text = `${username ? `${username}` : 'I'} scored ${testResults.overallScore}/100 on my Taekwondo form with CoachT!\n\n`;
+                      text += `${testResults.feedback}\n`;
+                      
+                      // Add timing info
+                      if (testResults.timing) {
+                        text += "\nTiming Analysis:\n";
+                        text += `- Movement delays: ${testResults.timing.delays ? "Detected" : "None"}\n`;
+                        text += `- Extra pauses: ${testResults.timing.gaps ? "Detected" : "None"}\n`;
+                        text += `- Movement speed: ${testResults.timing.speed}\n`;
+                      }
+                      
+                      // Add notes if available
+                      if (routineNotes && routineNotes.trim() !== "") {
+                        text += `\nMy Notes:\n${routineNotes.trim()}`;
+                      }
+                      
+                      navigator.clipboard.writeText(text)
+                        .then(() => {
+                          setShowCopyToast(true);
+                          setTimeout(() => setShowCopyToast(false), 3000);
+                        })
+                        .catch(err => console.error('Failed to copy:', err));
+                    }}
+                  >
+                    <span className="material-icons mb-1">content_copy</span>
+                    <span className="text-xs">Copy</span>
+                  </button>
+                  <button 
+                    className="p-3 rounded-lg bg-blue-800 hover:bg-blue-900 text-white flex flex-col items-center transition-all hover:shadow-lg hover:scale-105"
+                    onClick={() => {
+                      // Get user info if available
+                      const user = localStorage.getItem('user');
+                      const username = user ? JSON.parse(user).username : '';
+                      
+                      const url = encodeURIComponent(window.location.href);
+                      let text = `${username ? `${username}` : 'I'} scored ${testResults.overallScore}/100 on my Taekwondo form with CoachT! ${testResults.feedback}`;
+                      
+                      window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${encodeURIComponent(text)}`, '_blank', 'width=600,height=400');
+                    }}
+                  >
+                    <span className="material-icons mb-1">thumb_up</span>
+                    <span className="text-xs">Facebook</span>
+                  </button>
+                </div>
+              </div>
+              
+              {/* Close button */}
+              <button
+                onClick={() => setShowResultsModal(false)}
+                className="w-full py-3 bg-gradient-to-r from-red-800 to-red-700 hover:from-red-700 hover:to-red-600 text-white font-bold rounded-md shadow-lg transition-all hover:shadow-red-900/30 relative overflow-hidden group"
+              >
+                <span className="relative z-10 flex items-center justify-center">
+                  <span className="material-icons mr-2 group-hover:rotate-90 transition-transform duration-300">highlight_off</span>
+                  Close Results
+                </span>
+                <span className="absolute inset-0 bg-gradient-to-r from-red-900 to-red-800 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Copy to clipboard toast notification */}
+      {showCopyToast && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg border border-green-500 z-50 modal-content flex items-center">
+          <span className="material-icons text-green-500 mr-2">check_circle</span>
+          Results copied to clipboard!
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,87 @@
+You're 100% right — timing is likely the **core issue** behind consistently low or zero scores, even when the form looks good. Let’s isolate that and fix it properly.
+
+---
+
+## 🧠 Why Timing Is Breaking Your Score
+
+### ❌ Current Problem:
+
+You're likely comparing:
+
+```
+userFrame[i] ↔ referenceFrame[i]
+```
+
+But the user may perform the move just **½ second later**, so:
+
+* Angles are correct
+* Timing offset ruins alignment
+* Score becomes 0 despite good form
+
+---
+
+## ✅ Goal: Align Based on Motion, Not Wall Clock
+
+We need to **find the best-matching reference frame for each user frame**, even if it’s not at the exact same timestamp.
+
+---
+
+## 🔁 Fix: Use Frame-Wise Dynamic Alignment (without full DTW for now)
+
+Here’s a simple plan:
+
+### **1. Match Each User Frame to Nearest Reference Window**
+
+For each user frame:
+
+* Search ±10 reference frames
+* Compare angle differences
+* Pick the reference frame with the **lowest total angle error**
+
+```ts
+for (let offset = -10; offset <= 10; offset++) {
+  const refIndex = userFrameIndex + offset;
+  if (refIndex valid) {
+    compute average joint angle error;
+    if (error < bestError) {
+      bestMatch = refIndex;
+    }
+  }
+}
+```
+
+This allows the system to "slide" the reference video timeline until it best fits the user's real performance — forgiving minor delays.
+
+---
+
+### **2. Add Delay-Based Penalty (Soft, Optional)**
+
+Once best-aligned:
+
+* If delay = 0 → no penalty
+* If delay = 2 frames → subtract 3 points
+* If delay = 5+ → subtract 10+
+
+This allows delay to **influence**, but not destroy the score.
+
+---
+
+### **3. (Optional) Show User a Timing Feedback Label**
+
+* “Try to match the speed of the reference”
+* “You're moving too fast”
+* “Good timing!”
+
+This makes timing correction **actionable**.
+
+---
+
+## 🔁 Instructions for Replit Agent
+
+You can say:
+
+> “Fix the test alignment logic to allow for timing mismatches. For each user pose frame, compare it to reference frames within a ±10 frame window. Use the reference frame with the smallest average joint angle difference. Use that for scoring instead of frame-by-frame comparison.”
+
+---
+
+Want me to draft the timing-aware comparison function now?

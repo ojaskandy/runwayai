@@ -1,0 +1,88 @@
+// 1. Add state for joint angles
+const [jointAngles, setJointAngles] = useState<Record<string, number>>({});
+
+// 2. Define important joints that we want to calculate angles for
+const angleJoints = [
+  'left_elbow', 'right_elbow', 
+  'left_shoulder', 'right_shoulder',
+  'left_knee', 'right_knee', 
+  'left_hip', 'right_hip'
+];
+
+// 3. Function to calculate joint angles
+const calculateJointAngles = (pose: any) => {
+  if (!pose || !pose.keypoints) return {};
+  
+  // Create a map for easy keypoint lookup
+  const keypointMap = new Map();
+  pose.keypoints.forEach((kp: any) => {
+    if (kp.score > 0.5) { // Only use keypoints with decent confidence
+      keypointMap.set(kp.name, kp);
+    }
+  });
+  
+  // Calculate angles for each important joint
+  const angles: Record<string, number> = {};
+  
+  angleJoints.forEach(jointName => {
+    // Get joint and its connected points
+    const joint = keypointMap.get(jointName);
+    if (!joint) return;
+    
+    const startJointName = getConnectedJoint(jointName, 'start');
+    const endJointName = getConnectedJoint(jointName, 'end');
+    
+    const startJoint = keypointMap.get(startJointName);
+    const endJoint = keypointMap.get(endJointName);
+    
+    // Only calculate if all three points have sufficient confidence
+    if (joint && startJoint && endJoint && 
+        joint.score > 0.5 && startJoint.score > 0.5 && endJoint.score > 0.5) {
+      const angle = calculateAngle(
+        { x: startJoint.x, y: startJoint.y }, 
+        { x: joint.x, y: joint.y }, 
+        { x: endJoint.x, y: endJoint.y }
+      );
+      angles[jointName] = angle;
+    }
+  });
+  
+  return angles;
+};
+
+// 4. Call this function when pose is detected
+// Add right after the call to setUserPose(poses[0]);
+setJointAngles(calculateJointAngles(poses[0]));
+
+// 5. Draw the joint angles on the canvas - add to the drawing code
+// After drawing keypoints, add:
+if (Object.keys(jointAngles).length > 0) {
+  // Set text styling for angle display
+  ctx.font = '12px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 1;
+  
+  // Draw each angle
+  Object.entries(jointAngles).forEach(([jointName, angle]) => {
+    const joint = keypoints.find(kp => kp.name === jointName);
+    if (joint && typeof joint.score === 'number' && joint.score > confidenceThreshold) {
+      // Draw background for better readability
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.beginPath();
+      ctx.arc(joint.x, joint.y + 20, 14, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Draw angle text
+      ctx.fillStyle = 'white';
+      ctx.fillText(`${angle}°`, joint.x, joint.y + 20);
+      
+      // Draw indicator line to joint
+      ctx.strokeStyle = 'white';
+      ctx.beginPath();
+      ctx.moveTo(joint.x, joint.y + 10);
+      ctx.lineTo(joint.x, joint.y + 6);
+      ctx.stroke();
+    }
+  });
+}

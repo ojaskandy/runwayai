@@ -1,0 +1,105 @@
+// ✅ This is all the relevant code for Green Skeleton + Test Mode from your old CameraView
+
+// =================== State Setup ===================
+const [testResults, setTestResults] = useState({
+  isRunning: false,
+  processing: false,
+  scores: [],
+  overallScore: 0,
+  feedback: ''
+});
+
+const [graceTimeRemaining, setGraceTimeRemaining] = useState(3);
+const [isRecordingReference, setIsRecordingReference] = useState(false);
+const [userAngleSequences, setUserAngleSequences] = useState({});
+const [referenceAngleSequences, setReferenceAngleSequences] = useState({});
+
+// =================== Overlay Component ===================
+// Used during test mode to show green skeleton
+{testResults.isRunning && (
+  <GreenGuideOverlay 
+    videoRef={referenceVideoRef} 
+    isTestMode={testResults.isRunning} 
+    confidenceThreshold={confidenceThreshold} 
+  />
+)}
+
+// =================== Top-Right Indicator During Test ===================
+{testResults.isRunning && (
+  <div className="absolute top-2 right-2 ...">
+    <span className="...">
+      {graceTimeRemaining > 0 ? `Get ready... (${graceTimeRemaining}s)` : 'Test in progress'}
+    </span>
+  </div>
+)}
+
+// =================== Start Recording ===================
+const startRecording = () => {
+  const stream = canvasRef.current.captureStream(30);
+  const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+  const chunks = [];
+  recorder.ondataavailable = e => chunks.push(e.data);
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    setRecordedVideo(url);
+    setRecordedChunks(chunks);
+  };
+  recorder.start(1000);
+  setMediaRecorder(recorder);
+  setIsRecording(true);
+};
+
+// =================== Test Button (Bottom of Page) ===================
+<button
+  onClick={() => {
+    // 1. Validate reference video
+    if (!mediaUrl || !isVideoUrl(mediaUrl) || !referenceVideoRef.current) {
+      alert('Please select a reference video in split view first.');
+      if (!isSplitView) toggleSplitView();
+      return;
+    }
+
+    // 2. Ensure reference skeleton overlay is visible
+    if (!showReferenceOverlay) toggleReferenceOverlay();
+
+    // 3. Start test mode
+    setTestResults({
+      isRunning: true,
+      processing: false,
+      scores: [],
+      overallScore: 0,
+      feedback: 'Test in progress...'
+    });
+
+    // 4. Reset reference video and play
+    const refVideo = referenceVideoRef.current;
+    refVideo.currentTime = 0;
+    refVideo.loop = false;
+    refVideo.play();
+
+    // 5. Start recording
+    startRecording();
+    setIsRecordingReference(true);
+    setTestStartTime(Date.now());
+
+    // 6. Start grace countdown
+    let countdown = 3;
+    const countdownInterval = setInterval(() => {
+      countdown--;
+      setGraceTimeRemaining(countdown);
+      if (countdown <= 0) clearInterval(countdownInterval);
+    }, 1000);
+
+    // 7. Auto end after video ends
+    refVideo.onended = () => {
+      setIsRecordingReference(false);
+      stopRecording();
+      setTestResults(prev => ({ ...prev, isRunning: false, processing: true }));
+      setTimeout(() => setShowResultsModal(true), 500);
+    };
+  }}
+  className="..."
+>
+  TEST
+</button>
