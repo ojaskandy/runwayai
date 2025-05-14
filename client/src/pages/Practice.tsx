@@ -2039,6 +2039,17 @@ export default function Practice() {
             <Shield className="h-4 w-4 text-white" />
           </Button>
           
+          {/* Profile button */}
+          <Link href="/profile">
+            <Button 
+              variant="outline" 
+              className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3 transition-all duration-300 hover:shadow-red-500/30 hover:shadow-sm"
+            >
+              <User className="h-4 w-4 text-white mr-2" />
+              <span className="text-sm text-white font-medium">Profile</span>
+            </Button>
+          </Link>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3">

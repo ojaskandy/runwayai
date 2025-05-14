@@ -9,7 +9,7 @@ import { requestCameraPermission, getCameraStream } from '@/lib/cameraUtils';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, User, LogOut } from 'lucide-react';
+import { Sun, Moon, User, LogOut, Settings, Clock, Calendar, Award, Play, Dumbbell } from 'lucide-react';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
+// Import new components
+import Leaderboard from '@/components/Leaderboard';
+import BeltDisplay from '@/components/BeltDisplay';
+import SessionTimer from '@/components/SessionTimer';
+import CurrentTime from '@/components/CurrentTime';
 
 export type TrackingStatus = 'inactive' | 'loading' | 'ready' | 'active' | 'error';
 export type CameraFacing = 'user' | 'environment';
@@ -61,6 +67,16 @@ export default function Home() {
   const [isFullscreenMode, setIsFullscreenMode] = useState<boolean>(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [routineNotes, setRoutineNotes] = useState<string>('');
+  
+  // Added for Record button
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  
+  // Mock user belt data - to be replaced with API call
+  const [userBelt, setUserBelt] = useState({
+    color: 'red',
+    name: 'Red Belt',
+    level: 2
+  });
   
   // Load routine notes from localStorage when component mounts
   useEffect(() => {
@@ -190,11 +206,17 @@ export default function Home() {
     setIsDarkMode(newTheme === 'dark');
   };
 
+  // Handle record button click
+  const handleRecordClick = () => {
+    alert('Record button clicked!');
+    setIsRecording(!isRecording);
+  };
+
   // Render main component
   return (
     <div className="min-h-screen flex flex-col bg-black">
-      {/* Header with app title and user menu */}
-      <header className="bg-black border-b border-red-900/30 p-4 flex justify-between items-center shadow-md">
+      {/* Enhanced Header with app title and user menu */}
+      <header className="bg-black border-b border-red-900/30 px-6 py-3 flex justify-between items-center shadow-md">
         <div className="flex items-center">
           <Link to="/" className="cursor-pointer">
             <h1 className="text-2xl font-bold gradient-heading flex items-center">
@@ -202,144 +224,221 @@ export default function Home() {
               CoachT
             </h1>
           </Link>
+          
+          <div className="mx-4 h-8 w-px bg-red-900/30"></div>
+          
+          {/* Current time */}
+          <CurrentTime className="ml-2" showSeconds={false} />
         </div>
         
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={toggleDarkMode} 
-            className="h-8 w-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20"
-          >
-            {isDarkMode ? 
-              <Sun className="h-4 w-4 text-white" /> : 
-              <Moon className="h-4 w-4 text-white" />
-            }
-          </Button>
+        <div className="flex items-center space-x-4">
+          {/* Animated Session timer with pulsing effect */}
+          <div className="relative group">
+            <SessionTimer className="transition-transform group-hover:scale-105 duration-300" />
+            <div className="absolute inset-0 bg-red-500/10 rounded-md scale-105 animate-pulse -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </div>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3">
-                <User className="h-4 w-4 text-white mr-2" />
-                <span className="text-sm text-white font-medium">{user?.username}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40 border border-red-600 bg-gray-900">
-              <DropdownMenuItem 
-                className="cursor-pointer flex items-center text-white hover:bg-red-700/30" 
-                onClick={() => logoutMutation.mutate()}
+          {/* User's belt display - simplified, animated */}
+          <div className="relative group transition-transform hover:scale-105 duration-300">
+            <div className="flex items-center bg-black/40 rounded-full px-3 py-1.5 border border-red-800/30">
+              <div className="mr-2">
+                <div className={`h-5 w-5 rounded-full ${userBelt.color === 'black' ? 'bg-black border border-white' : `bg-${userBelt.color}-600`} shadow-lg`}>
+                  <div className="absolute inset-0 rounded-full bg-white/10 scale-0 group-hover:scale-100 transition-transform duration-500 ease-out"></div>
+                </div>
+              </div>
+              
+              <span className="text-white font-medium mr-2">{user?.username}</span>
+              
+              <div className="relative">
+                <div className={`h-5 w-5 rounded-full ${userBelt.color === 'black' ? 'bg-black border border-white' : `bg-${userBelt.color}-600`} shadow-lg`}>
+                  {userBelt.level > 1 && (
+                    <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-white flex items-center justify-center">
+                      <span className="text-[8px] font-bold text-black">{userBelt.level}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* UI Controls */}
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={toggleDarkMode} 
+              className="h-8 w-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20"
+            >
+              {isDarkMode ? 
+                <Sun className="h-4 w-4 text-white" /> : 
+                <Moon className="h-4 w-4 text-white" />
+              }
+            </Button>
+            
+            {/* Profile button */}
+            <Link href="/profile">
+              <Button 
+                variant="outline" 
+                className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3 transition-all duration-300 hover:shadow-red-500/30 hover:shadow-sm"
               >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <User className="h-4 w-4 text-white mr-2" />
+                <span className="text-sm text-white font-medium">Profile</span>
+              </Button>
+            </Link>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3"
+                >
+                  <Settings className="h-4 w-4 text-white mr-2" />
+                  <span className="text-sm text-white font-medium">Menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40 border border-red-600 bg-gray-900">
+                <DropdownMenuItem 
+                  className="cursor-pointer flex items-center text-white hover:bg-red-700/30"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-red-900/30" />
+                <DropdownMenuItem 
+                  className="cursor-pointer flex items-center text-white hover:bg-red-700/30" 
+                  onClick={() => logoutMutation.mutate()}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
       
       <main className="flex-1 flex flex-col">
-        {/* Loading indicator */}
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/90">
-            <LoadingState progress={loadingProgress} />
-          </div>
-        )}
-        
-        {/* Initial screen - before starting routine */}
-        {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 bg-black text-center">
-            <div className="w-full max-w-lg">
-              {/* Taekwondo logo/icon */}
-              <div className="w-24 h-24 mb-8 mx-auto bg-gradient-to-r from-red-800 to-red-700 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                <span className="material-icons text-4xl text-white">sports_martial_arts</span>
-              </div>
-              
-              <h1 className="text-4xl font-bold text-white mb-4">
-                Welcome to <span className="gradient-heading">CoachT</span>
-              </h1>
-              
-              <p className="text-red-200 mb-10 text-lg">
-                Your personal Taekwondo training assistant powered by AI. Perfect your form through advanced pose tracking.
-              </p>
-              
-              {/* Start Routine button */}
-              <button 
-                onClick={handlePermissionRequest}
-                className="w-full py-6 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 
-                  text-white text-2xl font-bold rounded-lg shadow-lg transform transition-all 
-                  hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-              >
-                <div className="flex items-center justify-center">
-                  <span className="material-icons text-2xl mr-3">play_circle</span>
-                  START ROUTINE
+        {/* Main content area */}
+        <div className="flex-1 p-6">
+          {/* Loading indicator */}
+          {isLoading && (
+            <LoadingState progress={loadingProgress} message="Loading pose detection models..." />
+          )}
+          
+          {/* Initial screen - before starting routine */}
+          {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-black text-center">
+              <div className="w-full max-w-lg">
+                {/* Taekwondo logo/icon with animation */}
+                <div className="w-24 h-24 mb-8 mx-auto bg-gradient-to-r from-red-800 to-red-700 rounded-full flex items-center justify-center shadow-lg relative group">
+                  <span className="material-icons text-4xl text-white group-hover:scale-110 transform transition-transform duration-300">sports_martial_arts</span>
+                  <div className="absolute inset-0 rounded-full bg-red-600/30 animate-ping opacity-75"></div>
                 </div>
-              </button>
-
-              {/* Practice button */}
-              <Link href="/practice">
-                <button 
-                  className="w-full mt-4 py-6 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-900 hover:to-gray-800
-                    text-white text-2xl font-bold rounded-lg shadow-lg transform transition-all border border-red-800/30
-                    hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-                >
-                  <div className="flex items-center justify-center">
-                    <span className="material-icons text-2xl mr-3">fitness_center</span>
-                    PRACTICE
+                
+                <h1 className="text-4xl font-bold text-white mb-4">
+                  Welcome to <span className="gradient-heading">CoachT</span>
+                </h1>
+                
+                <p className="text-red-200 mb-10 text-lg">
+                  Your personal Taekwondo training assistant powered by AI. Perfect your form through advanced pose tracking.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+                  {/* Start Routine button with hover animation */}
+                  <button 
+                    onClick={handlePermissionRequest}
+                    className="w-full py-5 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 
+                      text-white text-xl font-bold rounded-lg shadow-lg transform transition-all 
+                      hover:scale-105 hover:shadow-red-500/20 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                  >
+                    <div className="flex items-center justify-center">
+                      <Play className="mr-3 h-5 w-5" />
+                      START ROUTINE
+                    </div>
+                  </button>
+                
+                  {/* Practice button */}
+                  <Link href="/practice">
+                    <button 
+                      className="w-full py-5 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-900 hover:to-gray-800
+                        text-white text-xl font-bold rounded-lg shadow-lg transform transition-all border border-red-800/30
+                        hover:scale-105 hover:shadow-gray-700/20 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                    >
+                      <div className="flex items-center justify-center">
+                        <Dumbbell className="mr-3 h-5 w-5" />
+                        PRACTICE
+                      </div>
+                    </button>
+                  </Link>
+                </div>
+                
+                {/* Notes section */}
+                <div className="mt-6 bg-black/50 border border-red-900/30 rounded-lg p-4">
+                  <div className="flex items-center mb-3">
+                    <span className="material-icons text-red-500 mr-2">edit_note</span>
+                    <h3 className="text-lg font-medium text-red-100">Routine Notes</h3>
                   </div>
-                </button>
-              </Link>
-              
-              {/* Notes section */}
-              <div className="mt-10 bg-black/50 border border-red-900/30 rounded-lg p-4">
-                <div className="flex items-center mb-3">
-                  <span className="material-icons text-red-500 mr-2">edit_note</span>
-                  <h3 className="text-lg font-medium text-red-100">Routine Notes</h3>
+                  <textarea 
+                    className="w-full h-32 bg-black/70 border border-red-900/40 rounded p-3 text-white placeholder-red-200/50
+                      focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                    placeholder="Write your notes for this training session here..."
+                    value={routineNotes}
+                    onChange={(e) => setRoutineNotes(e.target.value)}
+                  ></textarea>
                 </div>
-                <textarea 
-                  className="w-full h-32 bg-black/70 border border-red-900/40 rounded p-3 text-white placeholder-red-200/50
-                    focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-                  placeholder="Write your notes for this training session here..."
-                  value={routineNotes}
-                  onChange={(e) => setRoutineNotes(e.target.value)}
-                ></textarea>
               </div>
             </div>
-          </div>
-        ) : (
-          /* Camera view with tracking - shows after permission */
-          <div className="flex-1 flex flex-col">
-            <CameraView
-              stream={stream}
-              isTracking={isTracking}
-              confidenceThreshold={confidenceThreshold}
-              modelSelection={modelSelection}
-              maxPoses={maxPoses}
-              skeletonColor="#ff0000" // Always use red for Taekwondo theme
-              showSkeleton={showSkeleton}
-              showPoints={showPoints}
-              showBackground={showBackground}
-              backgroundOpacity={backgroundOpacity}
-              backgroundBlur={backgroundBlur}
-              sourceType={sourceType}
-              imageElement={uploadedImage}
-              videoElement={uploadedVideo}
-              mediaUrl={mediaUrl}
-              showReferenceOverlay={showReferenceOverlay}
-              isFullscreenMode={isFullscreenMode}
-              toggleTracking={toggleTracking}
-              toggleReferenceOverlay={toggleReferenceOverlay}
-              onScreenshot={handleScreenshot}
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {/* Camera view with pose detection */}
+              {(hasPermission || sourceType !== 'camera') && (
+                <CameraView
+                  stream={stream}
+                  isTracking={isTracking}
+                  confidenceThreshold={confidenceThreshold}
+                  modelSelection={modelSelection}
+                  maxPoses={maxPoses}
+                  skeletonColor="red"
+                  showSkeleton={showSkeleton}
+                  showPoints={showPoints}
+                  showBackground={showBackground}
+                  backgroundOpacity={backgroundOpacity}
+                  backgroundBlur={backgroundBlur}
+                  sourceType={sourceType}
+                  imageElement={uploadedImage}
+                  videoElement={uploadedVideo}
+                  mediaUrl={mediaUrl}
+                  showReferenceOverlay={showReferenceOverlay}
+                  isFullscreenMode={isFullscreenMode}
+                  onScreenshot={handleScreenshot}
+                  toggleTracking={toggleTracking}
+                  toggleReferenceOverlay={toggleReferenceOverlay}
+                />
+              )}
+            </div>
+          )}
+          
+          {/* Camera permission request */}
+          {trackingStatus === 'error' && hasPermission === false && (
+            <PermissionDialog
+              onRequestPermission={handlePermissionRequest}
             />
+          )}
+          
+          {/* Leaderboard section with animations - moved below the main content */}
+          <div className="mt-8 mb-4">
+            <Leaderboard currentUsername={user?.username} />
           </div>
-        )}
+        </div>
       </main>
-
+      
       {/* Screenshot modal */}
-      <ScreenshotModal
-        isOpen={isScreenshotModalOpen}
-        onClose={() => setIsScreenshotModalOpen(false)}
-        screenshotData={screenshotData}
-      />
+      {isScreenshotModalOpen && screenshotData && (
+        <ScreenshotModal
+          screenshotData={screenshotData}
+          onClose={() => setIsScreenshotModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -9,10 +9,10 @@ interface NotesEditorProps {
   isTracking?: boolean;
   hasReferenceMedia?: boolean;
   hasCompletedTest?: boolean;
-  onRecord?: () => void;
-  isRecording?: boolean;
   onToggleScreenRecording?: () => void;
   isScreenRecording?: boolean;
+  onRecord?: () => void;
+  isRecording?: boolean;
 }
 
 export default function NotesEditor({ 
@@ -24,10 +24,10 @@ export default function NotesEditor({
   isTracking = false,
   hasReferenceMedia = false,
   hasCompletedTest = false,
-  onRecord,
-  isRecording = false,
   onToggleScreenRecording,
-  isScreenRecording = false
+  isScreenRecording = false,
+  onRecord,
+  isRecording = false
 }: NotesEditorProps) {
   const [notes, setNotes] = useState(initialNotes);
 
@@ -123,7 +123,6 @@ export default function NotesEditor({
           </button>
         )}
 
-        {/* Screen Recording Button */}
         {onToggleScreenRecording && (
           <button
             onClick={onToggleScreenRecording}
@@ -146,8 +145,8 @@ export default function NotesEditor({
               ? 'bg-gray-700 text-gray-300 cursor-not-allowed'
               : 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600'
           }`}
-          disabled={!hasReferenceMedia || isRecording || isScreenRecording}
-          title={!hasReferenceMedia ? 'Add reference media first' : isRecording || isScreenRecording ? 'Recording in progress' : 'Start test against reference media'}
+          disabled={!hasReferenceMedia || isScreenRecording || isRecording}
+          title={!hasReferenceMedia ? 'Add reference media first' : isScreenRecording || isRecording ? 'Recording in progress' : 'Start test against reference media'}
         >
           <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">fitness_center</span>
           Test
@@ -158,7 +157,7 @@ export default function NotesEditor({
             onClick={onShowResults}
             className="px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 text-xs sm:text-sm"
             title="View your test results"
-            disabled={isRecording || isScreenRecording}
+            disabled={isScreenRecording || isRecording}
           >
             <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">analytics</span>
             Test Results
@@ -167,4 +166,4 @@ export default function NotesEditor({
       </div>
     </div>
   );
-}
+} 

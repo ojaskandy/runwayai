@@ -2,9 +2,10 @@ import { Progress } from "@/components/ui/progress";
 
 interface LoadingStateProps {
   progress: number;
+  message?: string;
 }
 
-export default function LoadingState({ progress }: LoadingStateProps) {
+export default function LoadingState({ progress, message }: LoadingStateProps) {
   return (
     <div className="mb-6 p-6 card-highlight rounded-xl flex flex-col items-center text-center relative overflow-hidden">
       {/* Background animation effect */}
@@ -20,10 +21,12 @@ export default function LoadingState({ progress }: LoadingStateProps) {
       
       {/* Status message */}
       <p className="text-gray-300 mb-4 z-10">
-        {progress < 30 && "Initializing AI modules..."}
-        {progress >= 30 && progress < 60 && "Loading pose detection models..."}
-        {progress >= 60 && progress < 90 && "Calibrating detection algorithms..."}
-        {progress >= 90 && "Almost ready..."}
+        {message ? message : 
+          progress < 30 ? "Initializing AI modules..." :
+          progress < 60 ? "Loading pose detection models..." :
+          progress < 90 ? "Calibrating detection algorithms..." :
+          "Almost ready..."
+        }
       </p>
       
       {/* Progress bar */}

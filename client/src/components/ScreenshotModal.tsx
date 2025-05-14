@@ -2,12 +2,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import { Button } from "@/components/ui/button";
 
 interface ScreenshotModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   screenshotData: string | null;
 }
 
-export default function ScreenshotModal({ isOpen, onClose, screenshotData }: ScreenshotModalProps) {
+export default function ScreenshotModal({ isOpen = true, onClose, screenshotData }: ScreenshotModalProps) {
   const handleDownload = () => {
     if (!screenshotData) return;
     

@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Practice from "@/pages/Practice";
 import EarlyAccess from "@/pages/EarlyAccess";
+import Profile from "@/pages/Profile";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 // Use our custom ThemeProvider instead of the shadcn one
@@ -29,6 +30,9 @@ function Router() {
       
       {/* Practice page with moves library */}
       <ProtectedRoute path="/practice" component={Practice} />
+
+      {/* User profile page */}
+      <ProtectedRoute path="/profile" component={Profile} />
       
       {/* Authentication page */}
       <Route path="/auth" component={AuthPage} />

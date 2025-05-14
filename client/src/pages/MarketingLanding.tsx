@@ -1014,10 +1014,16 @@ export default function MarketingLanding() {
 
         {/* Enhanced scroll indicator */}
         <motion.div
-          className="absolute bottom-12 left-0 right-0 transform z-20 flex flex-col items-center justify-center"
+          className="absolute bottom-12 left-0 right-0 transform z-20 flex flex-col items-center justify-center cursor-pointer"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1, duration: 0.8 }}
+          onClick={() => {
+            const learnMoreSection = document.getElementById("learn-more");
+            if (learnMoreSection) {
+              learnMoreSection.scrollIntoView({ behavior: "smooth" });
+            }
+          }}
         >
           <div className="text-center mb-2">
             <p className="text-xl md:text-2xl text-red-500 font-bold">
@@ -1079,24 +1085,32 @@ export default function MarketingLanding() {
       
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6" style={{
-              background: isDarkMode 
-                ? 'linear-gradient(to right, #ff4b47, #ff0844)' 
-                : 'linear-gradient(to right, #dc2626, #ef4444)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: isDarkMode 
-                ? '0 0 10px rgba(220, 38, 38, 0.4)' 
-                : '0 0 10px rgba(220, 38, 38, 0.2)'
-            }}>
-              Advanced Training Features
-            </h2>
-            <p className="text-xl max-w-2xl mx-auto" style={{ 
-              color: isDarkMode ? 'rgba(209, 213, 219, 0.8)' : 'rgba(55, 65, 81, 0.8)' 
-            }}>
-              CoachT combines cutting-edge AI technology with martial arts
-              expertise to create the ultimate training partner.
-            </p>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+              viewport={{ once: true }}
+              className="inline-block bg-gradient-to-r from-black/80 to-red-950/80 backdrop-blur-md p-6 md:p-8 rounded-xl border border-red-500/30 shadow-xl shadow-red-900/20 mb-4"
+            >
+              <h2 className="text-4xl md:text-6xl font-bold mb-4" style={{
+                background: isDarkMode 
+                  ? 'linear-gradient(to right, #ff4b47, #ff0844)' 
+                  : 'linear-gradient(to right, #dc2626, #ef4444)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: isDarkMode 
+                  ? '0 0 15px rgba(220, 38, 38, 0.6)' 
+                  : '0 0 15px rgba(220, 38, 38, 0.3)'
+              }}>
+                Advanced Training Features
+              </h2>
+              <p className="text-xl md:text-2xl max-w-2xl mx-auto font-medium" style={{ 
+                color: isDarkMode ? 'rgba(249, 250, 251, 0.9)' : 'rgba(249, 250, 251, 0.9)'
+              }}>
+                CoachT combines cutting-edge AI technology with martial arts
+                expertise to create the ultimate training partner.
+              </p>
+            </motion.div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -1425,24 +1439,32 @@ export default function MarketingLanding() {
         
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6" style={{
-              background: isDarkMode 
-                ? 'linear-gradient(to right, #ff4b47, #ff0844)' 
-                : 'linear-gradient(to right, #dc2626, #ef4444)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: isDarkMode 
-                ? '0 0 10px rgba(220, 38, 38, 0.4)' 
-                : '0 0 10px rgba(220, 38, 38, 0.2)'
-            }}>
-              How CoachT Works
-            </h2>
-            <p className="text-xl max-w-2xl mx-auto" style={{ 
-              color: isDarkMode ? 'rgba(209, 213, 219, 0.8)' : 'rgba(55, 65, 81, 0.8)' 
-            }}>
-              Our innovative AI platform makes training more effective and
-              efficient.
-            </p>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+              viewport={{ once: true }}
+              className="inline-block bg-gradient-to-r from-black/80 to-red-950/80 backdrop-blur-md p-6 md:p-8 rounded-xl border border-red-500/30 shadow-xl shadow-red-900/20 mb-4"
+            >
+              <h2 className="text-4xl md:text-6xl font-bold mb-4" style={{
+                background: isDarkMode 
+                  ? 'linear-gradient(to right, #ff4b47, #ff0844)' 
+                  : 'linear-gradient(to right, #dc2626, #ef4444)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: isDarkMode 
+                  ? '0 0 15px rgba(220, 38, 38, 0.6)' 
+                  : '0 0 15px rgba(220, 38, 38, 0.3)'
+              }}>
+                How CoachT Works
+              </h2>
+              <p className="text-xl md:text-2xl max-w-2xl mx-auto font-medium" style={{ 
+                color: isDarkMode ? 'rgba(249, 250, 251, 0.9)' : 'rgba(249, 250, 251, 0.9)'
+              }}>
+                Our innovative AI platform makes training more effective and
+                efficient.
+              </p>
+            </motion.div>
           </div>
 
           <div className="relative">
@@ -1476,31 +1498,37 @@ export default function MarketingLanding() {
               className="relative md:grid md:grid-cols-2 items-center mb-24"
             >
               <div className="text-right pr-10 hidden md:block">
-                <h3 className="text-2xl font-bold mb-2">Setup Your Camera</h3>
-                <p className="text-gray-400">
-                  Simply launch CoachT in your browser, grant camera access, and
-                  you're ready to begin training.
-                </p>
+                <div className="bg-gradient-to-br from-black/90 to-red-950/80 backdrop-blur-md border border-red-500/40 rounded-xl p-5 shadow-lg shadow-red-900/20 inline-block mb-3">
+                  <h3 className="text-2xl md:text-3xl font-bold mb-3" style={{
+                    background: 'linear-gradient(to right, #ff4b47, #ff0844)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}>Setup Your Camera</h3>
+                  <p className="text-gray-200 text-lg">
+                    Simply launch CoachT in your browser, grant camera access, and
+                    you're ready to begin training.
+                  </p>
+                </div>
               </div>
               <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 top-1/2 z-10 hidden md:block">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-red-700 to-red-500 flex items-center justify-center text-white">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-r from-red-700 to-red-500 flex items-center justify-center text-white text-xl font-bold border border-red-500/30 shadow-lg">
                   1
                 </div>
               </div>
               <div className="md:pl-10">
-                <div className="bg-gradient-to-br from-black to-red-950/30 border border-red-900/30 rounded-lg overflow-hidden md:hidden mb-4">
-                  <h3 className="text-2xl font-bold p-4 bg-gradient-to-r from-red-900 to-red-800 flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-black/30 flex items-center justify-center text-white mr-3">
+                <div className="bg-gradient-to-br from-black/90 to-red-950/80 backdrop-blur-md border border-red-500/40 rounded-xl overflow-hidden md:hidden mb-6 shadow-lg shadow-red-900/20">
+                  <h3 className="text-2xl md:text-3xl font-bold p-5 bg-gradient-to-r from-red-900/90 to-red-800/90 flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white mr-4 border border-red-500/30 shadow-md">
                       1
                     </div>
                     Setup Your Camera
                   </h3>
-                  <p className="p-4 text-gray-400">
+                  <p className="p-5 text-gray-200 text-lg">
                     Simply launch CoachT in your browser, grant camera access,
                     and you're ready to begin training.
                   </p>
                 </div>
-                <div className="aspect-video rounded-lg overflow-hidden border border-red-900/50 shadow-xl shadow-red-900/20 bg-black p-0">
+                <div className="aspect-video rounded-xl overflow-hidden border border-red-500/50 shadow-2xl shadow-red-900/20 bg-black/70 backdrop-blur-sm p-0 hover:border-red-400/80 transition-all duration-300">
                   <img 
                     src="/assets/images/taekwondo-training.png" 
                     alt="Setup Your Camera" 
@@ -1521,19 +1549,19 @@ export default function MarketingLanding() {
               className="relative md:grid md:grid-cols-2 items-center mb-24"
             >
               <div className="md:pr-10">
-                <div className="bg-gradient-to-br from-black to-red-950/30 border border-red-900/30 rounded-lg overflow-hidden md:hidden mb-4">
-                  <h3 className="text-2xl font-bold p-4 bg-gradient-to-r from-red-900 to-red-800 flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-black/30 flex items-center justify-center text-white mr-3">
+                <div className="bg-gradient-to-br from-black/90 to-red-950/80 backdrop-blur-md border border-red-500/40 rounded-xl overflow-hidden md:hidden mb-6 shadow-lg shadow-red-900/20">
+                  <h3 className="text-2xl md:text-3xl font-bold p-5 bg-gradient-to-r from-red-900/90 to-red-800/90 flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white mr-4 border border-red-500/30 shadow-md">
                       2
                     </div>
                     Start Tracking
                   </h3>
-                  <p className="p-4 text-gray-400">
+                  <p className="p-5 text-gray-200 text-lg">
                     Activate the AI tracking system with a single click to begin
                     analyzing your movements.
                   </p>
                 </div>
-                <div className="aspect-video rounded-lg overflow-hidden border border-red-900/50 shadow-xl shadow-red-900/20 bg-black p-0">
+                <div className="aspect-video rounded-xl overflow-hidden border border-red-500/50 shadow-2xl shadow-red-900/20 bg-black/70 backdrop-blur-sm p-0 hover:border-red-400/80 transition-all duration-300">
                   <img 
                     src="/assets/images/coacht-interface.png" 
                     alt="CoachT Interface" 
@@ -1544,16 +1572,22 @@ export default function MarketingLanding() {
                 {/* Animations are defined in CSS */}
               </div>
               <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 top-1/2 z-10 hidden md:block">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-red-700 to-red-500 flex items-center justify-center text-white">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-r from-red-700 to-red-500 flex items-center justify-center text-white text-xl font-bold border border-red-500/30 shadow-lg">
                   2
                 </div>
               </div>
               <div className="text-left pl-10 hidden md:block">
-                <h3 className="text-2xl font-bold mb-2">Start Tracking</h3>
-                <p className="text-gray-400">
-                  Activate the AI tracking system with a single click to begin
-                  analyzing your movements.
-                </p>
+                <div className="bg-gradient-to-br from-black/90 to-red-950/80 backdrop-blur-md border border-red-500/40 rounded-xl p-5 shadow-lg shadow-red-900/20 inline-block mb-3">
+                  <h3 className="text-2xl md:text-3xl font-bold mb-3" style={{
+                    background: 'linear-gradient(to right, #ff4b47, #ff0844)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}>Start Tracking</h3>
+                  <p className="text-gray-200 text-lg">
+                    Activate the AI tracking system with a single click to begin
+                    analyzing your movements.
+                  </p>
+                </div>
               </div>
             </motion.div>
 
@@ -1566,31 +1600,37 @@ export default function MarketingLanding() {
               className="relative md:grid md:grid-cols-2 items-center"
             >
               <div className="text-right pr-10 hidden md:block">
-                <h3 className="text-2xl font-bold mb-2">Compare and Improve</h3>
-                <p className="text-gray-400">
-                  Test your technique against reference videos with our green
-                  guide overlay to perfect your form.
-                </p>
-              </div>
-              <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 top-1/2 z-10 hidden md:block">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-red-700 to-red-500 flex items-center justify-center text-white">
-                  3
-                </div>
-              </div>
-              <div className="md:pl-10">
-                <div className="bg-gradient-to-br from-black to-red-950/30 border border-red-900/30 rounded-lg overflow-hidden md:hidden mb-4">
-                  <h3 className="text-2xl font-bold p-4 bg-gradient-to-r from-red-900 to-red-800 flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-black/30 flex items-center justify-center text-white mr-3">
-                      3
-                    </div>
-                    Compare and Improve
-                  </h3>
-                  <p className="p-4 text-gray-400">
+                <div className="bg-gradient-to-br from-black/90 to-red-950/80 backdrop-blur-md border border-red-500/40 rounded-xl p-5 shadow-lg shadow-red-900/20 inline-block mb-3">
+                  <h3 className="text-2xl md:text-3xl font-bold mb-3" style={{
+                    background: 'linear-gradient(to right, #ff4b47, #ff0844)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}>Compare and Improve</h3>
+                  <p className="text-gray-200 text-lg">
                     Test your technique against reference videos with our green
                     guide overlay to perfect your form.
                   </p>
                 </div>
-                <div className="aspect-video rounded-lg overflow-hidden border border-red-900/50 shadow-xl shadow-red-900/20 bg-black p-0">
+              </div>
+              <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 top-1/2 z-10 hidden md:block">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-r from-red-700 to-red-500 flex items-center justify-center text-white text-xl font-bold border border-red-500/30 shadow-lg">
+                  3
+                </div>
+              </div>
+              <div className="md:pl-10">
+                <div className="bg-gradient-to-br from-black/90 to-red-950/80 backdrop-blur-md border border-red-500/40 rounded-xl overflow-hidden md:hidden mb-6 shadow-lg shadow-red-900/20">
+                  <h3 className="text-2xl md:text-3xl font-bold p-5 bg-gradient-to-r from-red-900/90 to-red-800/90 flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white mr-4 border border-red-500/30 shadow-md">
+                      3
+                    </div>
+                    Compare and Improve
+                  </h3>
+                  <p className="p-5 text-gray-200 text-lg">
+                    Test your technique against reference videos with our green
+                    guide overlay to perfect your form.
+                  </p>
+                </div>
+                <div className="aspect-video rounded-xl overflow-hidden border border-red-500/50 shadow-2xl shadow-red-900/20 bg-black/70 backdrop-blur-sm p-0 hover:border-red-400/80 transition-all duration-300">
                   <img 
                     src="/assets/images/pose-comparison.png" 
                     alt="Compare and Improve" 
@@ -1645,13 +1685,32 @@ export default function MarketingLanding() {
         
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="gradient-heading text-3xl md:text-5xl font-bold mb-6">
-              Schedule a Demo
-            </h2>
-            <p className="text-xl text-gray-400">
-              Experience the future of martial arts training with a personalized
-              demo of CoachT.
-            </p>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+              viewport={{ once: true }}
+              className="inline-block bg-gradient-to-r from-black/80 to-red-950/80 backdrop-blur-md p-6 md:p-8 rounded-xl border border-red-500/30 shadow-xl shadow-red-900/20 mb-4"
+            >
+              <h2 className="text-4xl md:text-6xl font-bold mb-4" style={{
+                background: isDarkMode 
+                  ? 'linear-gradient(to right, #ff4b47, #ff0844)' 
+                  : 'linear-gradient(to right, #dc2626, #ef4444)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: isDarkMode 
+                  ? '0 0 15px rgba(220, 38, 38, 0.6)' 
+                  : '0 0 15px rgba(220, 38, 38, 0.3)'
+              }}>
+                Schedule a Demo
+              </h2>
+              <p className="text-xl md:text-2xl max-w-2xl mx-auto font-medium" style={{ 
+                color: isDarkMode ? 'rgba(249, 250, 251, 0.9)' : 'rgba(249, 250, 251, 0.9)'
+              }}>
+                Experience the future of martial arts training with a personalized
+                demo of CoachT.
+              </p>
+            </motion.div>
           </div>
 
           <div className="modal-premium rounded-lg p-8 max-w-2xl mx-auto">
@@ -1841,17 +1900,32 @@ export default function MarketingLanding() {
         }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ 
-              color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)' 
-            }}>
-              What Practitioners Say
-            </h2>
-            <p className="text-xl max-w-2xl mx-auto" style={{ 
-              color: isDarkMode ? 'rgba(156, 163, 175, 0.9)' : 'rgba(107, 114, 128, 0.9)' 
-            }}>
-              Hear from martial artists who have improved their skills with
-              CoachT.
-            </p>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+              viewport={{ once: true }}
+              className="inline-block bg-gradient-to-r from-black/80 to-red-950/80 backdrop-blur-md p-6 md:p-8 rounded-xl border border-red-500/30 shadow-xl shadow-red-900/20 mb-4"
+            >
+              <h2 className="text-3xl md:text-5xl font-bold mb-4" style={{
+                background: isDarkMode 
+                  ? 'linear-gradient(to right, #ff4b47, #ff0844)' 
+                  : 'linear-gradient(to right, #dc2626, #ef4444)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: isDarkMode 
+                  ? '0 0 15px rgba(220, 38, 38, 0.6)' 
+                  : '0 0 15px rgba(220, 38, 38, 0.3)'
+              }}>
+                What Practitioners Say
+              </h2>
+              <p className="text-xl md:text-2xl max-w-2xl mx-auto font-medium" style={{ 
+                color: isDarkMode ? 'rgba(249, 250, 251, 0.9)' : 'rgba(249, 250, 251, 0.9)'
+              }}>
+                Hear from martial artists who have improved their skills with
+                CoachT.
+              </p>
+            </motion.div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -2026,15 +2100,23 @@ export default function MarketingLanding() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.6 }}
+              className="bg-gradient-to-r from-black/70 to-red-950/70 backdrop-blur-md p-6 md:p-8 rounded-xl border border-red-500/30 shadow-xl shadow-red-900/20"
             >
-              <h2 className="text-3xl md:text-4xl font-bold mb-6" style={{ 
-                color: isDarkMode ? 'white' : '#7f1d1d'
+              <h2 className="text-3xl md:text-5xl font-bold mb-6" style={{ 
+                background: isDarkMode 
+                  ? 'linear-gradient(to right, #ffffff, #f0f0f0)' 
+                  : 'linear-gradient(to right, #991b1b, #7f1d1d)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: isDarkMode 
+                  ? '0 0 15px rgba(255, 255, 255, 0.6)' 
+                  : '0 0 15px rgba(120, 20, 20, 0.4)'
               }}>
                 Ready to Transform Your Training?
               </h2>
               
-              <p className="text-xl mb-8 max-w-2xl mx-auto" style={{ 
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(127, 29, 29, 0.9)'
+              <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto font-medium" style={{ 
+                color: isDarkMode ? 'rgba(249, 250, 251, 0.9)' : 'rgba(249, 250, 251, 0.9)'
               }}>
                 Join our exclusive early access program for students and be among the first to experience the future of Taekwondo training.
               </p>

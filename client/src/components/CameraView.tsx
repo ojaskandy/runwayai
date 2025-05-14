@@ -30,6 +30,26 @@ interface CameraViewProps {
   onScreenshot: (dataUrl: string) => void;
   toggleTracking?: () => void;
   toggleReferenceOverlay?: () => void;
+  
+  // Additional props
+  cameraFacing?: 'user' | 'environment';
+  setCameraFacing?: (facing: 'user' | 'environment') => void;
+  onRecordClick?: () => void;
+  routineNotes?: string;
+  setRoutineNotes?: (notes: string) => void;
+}
+
+// Update the TestResults type (add this where other interfaces/types are defined)
+interface TestResults {
+  isRunning: boolean;
+  processing: boolean;
+  scores: JointScore[];
+  overallScore: number;
+  feedback: string;
+  timing?: TimingIssues;
+  dtwScores?: Record<string, number>;
+  angleData?: any;
+  dtwResults?: Record<string, any>;
 }
 
 export default function CameraView({
@@ -52,7 +72,14 @@ export default function CameraView({
   isFullscreenMode = false,
   onScreenshot,
   toggleTracking: externalToggleTracking,
-  toggleReferenceOverlay: externalToggleReferenceOverlay
+  toggleReferenceOverlay: externalToggleReferenceOverlay,
+  
+  // Additional props
+  cameraFacing,
+  setCameraFacing,
+  onRecordClick,
+  routineNotes = '',
+  setRoutineNotes
 }: CameraViewProps) {
   const toggleTracking = externalToggleTracking || (() => {
     console.log("Toggle tracking clicked, but no handler was provided");
@@ -71,21 +98,15 @@ export default function CameraView({
   const [isSplitView, setIsSplitView] = useState<boolean>(false);
   const [isVideoPaused, setIsVideoPaused] = useState<boolean>(false);
   const [showMediaSelector, setShowMediaSelector] = useState<boolean>(false);
-  const [routineNotes, setRoutineNotes] = useState<string>('');
-  const [testResults, setTestResults] = useState<{
-    isRunning: boolean;
-    processing: boolean;
-    scores: JointScore[];
-    overallScore: number;
-    feedback: string;
-    timing?: TimingIssues;
-    dtwScores?: Record<string, number>;
-  }>({
+  const [localRoutineNotes, setLocalRoutineNotes] = useState<string>('');
+  const [testResults, setTestResults] = useState<TestResults>({
     isRunning: false,
     processing: false,
     scores: [],
     overallScore: 0,
-    feedback: ''
+    feedback: '',
+    dtwScores: {},
+    dtwResults: {}
   });
   // State variables for UI control
   const [showResultsModal, setShowResultsModal] = useState<boolean>(false);
@@ -144,15 +165,31 @@ export default function CameraView({
     'left_ankle', 'right_ankle'
   ];
 
-  useEffect(() => {
-    const savedNotes = localStorage.getItem('routineNotes');
-    if (savedNotes) {
-      setRoutineNotes(savedNotes);
-    }
-  }, []);
+  // At the state variables section, add a new state for tracking if a test has been completed
+  const [hasCompletedTest, setHasCompletedTest] = useState<boolean>(false);
+
+  // Add state for storing regular angle measurements
+  const [angleRecordingInterval, setAngleRecordingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [userAngleHistory, setUserAngleHistory] = useState<{
+    [joint: string]: Array<{angle: number, timestamp: number}>
+  }>({});
+  const [referenceAngleHistory, setReferenceAngleHistory] = useState<{
+    [joint: string]: Array<{angle: number, timestamp: number}>
+  }>({});
 
   useEffect(() => {
-    localStorage.setItem('routineNotes', routineNotes);
+    const savedNotes = localStorage.getItem('routineNotes');
+    if (savedNotes && setRoutineNotes) {
+      setLocalRoutineNotes(savedNotes);
+      setRoutineNotes(savedNotes);
+    }
+  }, [setRoutineNotes]);
+
+  useEffect(() => {
+    if (routineNotes) {
+      localStorage.setItem('routineNotes', routineNotes);
+      setLocalRoutineNotes(routineNotes);
+    }
   }, [routineNotes]);
 
   useEffect(() => {
@@ -1644,105 +1681,130 @@ export default function CameraView({
   };
 
   const toggleRecording = () => {
+    if (onRecordClick) {
+      onRecordClick();
+    }
+    
     if (isRecording) {
       stopRecording();
     } else {
-      startManualRecording();
-    }
-  };
-
-  const startManualRecording = async () => {
-    try {
-      console.log('Starting screen capture - select the browser window');
-
-      const displayStream = await (navigator.mediaDevices as any).getDisplayMedia({
-        video: {
-          cursor: "always",
-          displaySurface: "browser"
-        },
-        audio: false
-      });
-
-      console.log('Screen capture started successfully');
-
-      const recorder = new MediaRecorder(displayStream, {
-        mimeType: 'video/webm; codecs=vp9',
-        videoBitsPerSecond: 3000000
-      });
-
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        displayStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
-
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        setRecordedVideo(url);
-        setRecordedChunks(chunks);
-        setShowRecordingPopup(true);
-        console.log('Recording finished, showing popup with playback');
-      };
-
-      recorder.start(1000);
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-      console.log('Recording started - capturing what you see on screen');
-    } catch (err) {
-      console.error('Screen capture failed:', err);
-      alert('Screen recording was denied or failed. Please try again and select the browser window to record.');
+      startRecording();
     }
   };
 
   const startRecording = () => {
-    if (!canvasRef.current) return;
+    if (isRecording || !canvasRef.current) {
+      console.log("Recording already in progress or canvas not ready.");
+      return;
+    }
+    console.log("Attempting to start recording...");
+
+    const stream = canvasRef.current.captureStream(30); // 30 FPS
+    if (!stream) {
+      console.error("Failed to capture stream from canvas.");
+      return;
+    }
+
+    // Check for MediaRecorder browser support and available MIME types
+    const MimeTypes = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8,opus',
+      'video/webm;codecs=vp8',
+      'video/webm',
+      'video/mp4;codecs=h264', // MP4 might need specific server-side processing for some browsers if not directly playable
+      'video/mp4',
+    ];
+    const supportedMimeType = MimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+
+    if (!supportedMimeType) {
+      console.error("No supported MIME type found for MediaRecorder.");
+      alert("Video recording is not supported by your browser or no suitable codec found.");
+      return;
+    }
+    console.log("Using MIME type:", supportedMimeType);
 
     try {
-      const stream = canvasRef.current.captureStream(30);
-      recordingStream.current = stream;
+      const recorder = new MediaRecorder(stream, { mimeType: supportedMimeType });
+      setMediaRecorder(recorder);
+      setRecordedChunks([]); // Clear previous chunks
 
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
-
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          setRecordedChunks((prev) => [...prev, event.data]);
         }
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        setRecordedVideo(url);
-        setRecordedChunks(chunks);
-        console.log('Test recording finished, playback available in results modal');
+        console.log("Recording stopped. Chunks collected:", recordedChunks.length);
+        // Check recordedChunks directly in this scope as state update might be async
+        setRecordedChunks(currentChunks => {
+          if (currentChunks.length === 0) {
+            console.warn("No data chunks recorded.");
+            // Optionally alert user or handle error
+            return []; // Return empty array to prevent error with Blob constructor
+          }
+          const blob = new Blob(currentChunks, { type: supportedMimeType });
+          const url = URL.createObjectURL(blob);
+          console.log("Blob created, URL:", url);
+          setRecordedVideo(url);
+          setShowRecordingPopup(true); // Show the popup
+          
+          // Stop all tracks on the captured stream
+          stream.getTracks().forEach(track => track.stop());
+          console.log("Canvas stream tracks stopped.");
+          return currentChunks; // Though it's about to be cleared, keep consistency
+        });
+      };
+      
+      recorder.onerror = (event) => {
+        console.error("MediaRecorder error:", event);
+        alert("An error occurred during recording.");
+        setIsRecording(false);
+        stream.getTracks().forEach(track => track.stop());
       };
 
-      recorder.start(1000);
-      setMediaRecorder(recorder);
+      recorder.start();
+      console.log("Recording started successfully.");
       setIsRecording(true);
-      console.log('Test recording started');
-    } catch (err) {
-      console.error('Error starting recording:', err);
+    } catch (error) {
+      console.error("Error initializing MediaRecorder:", error);
+      alert("Failed to initialize video recorder. Your browser might not support the required features.");
+      stream.getTracks().forEach(track => track.stop());
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    console.log("Attempting to stop recording...");
+    if (mediaRecorder && mediaRecorder.state === "recording") {
       mediaRecorder.stop();
-      setIsRecording(false);
-      console.log('Recording stopped');
+      console.log("MediaRecorder.stop() called.");
+    } else {
+      console.log("MediaRecorder not recording or not available.");
     }
+    // isRecording will be set to false in onstop or onerror to ensure cleanup happens first
+    // For immediate UI feedback, you could set it here, but onstop is more robust for state changes.
+    // setIsRecording(false); // Consider if UI needs immediate feedback vs. waiting for onstop
   };
 
   const closeRecordingPopup = () => {
     setShowRecordingPopup(false);
+    if (recordedVideo) {
+      URL.revokeObjectURL(recordedVideo);
+      console.log("Revoked recorded video URL:", recordedVideo);
+    }
+    setRecordedVideo(undefined);
+    setRecordedChunks([]); // Clear chunks after popup is closed
+    // Ensure recorder is nullified if it wasn't already
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        // It should be inactive, but as a fallback
+        try {
+            if(mediaRecorder.stream) mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        } catch(e){ console.warn("Error stopping tracks on mediaRecorder cleanup", e);}
+    }
+    setMediaRecorder(null);
+    setIsRecording(false); // Ensure recording state is false
   };
-
 
   useEffect(() => {
     if (testStartTime > 0 && testResults.isRunning) {
@@ -1763,6 +1825,245 @@ export default function CameraView({
     }
   }, [testStartTime, testResults.isRunning]);
 
+  // Recording Popup Modal (New)
+  useEffect(() => {
+    // Cleanup for the recordedVideo URL when component unmounts or URL changes
+    return () => {
+      if (recordedVideo && showRecordingPopup === false) { // If popup was closed but URL still exists
+        URL.revokeObjectURL(recordedVideo);
+        console.log("Cleaned up orphaned recorded video URL on effect cleanup:", recordedVideo);
+        // setRecordedVideo(undefined); // This would be handled by closeRecordingPopup ideally
+      }
+    };
+  }, [recordedVideo, showRecordingPopup]);
+  // End Recording Popup Modal (New)
+
+  // Generate angle data for comparison
+  const generateAngleComparisonData = () => {
+    // Create timestamps array with regular intervals
+    const timestamps: string[] = [];
+    const userAngles: { [joint: string]: number[] } = {};
+    const expectedAngles: { [joint: string]: number[] } = {};
+    
+    // Initialize arrays for each joint
+    angleJoints.forEach(joint => {
+      userAngles[joint] = [];
+      expectedAngles[joint] = [];
+    });
+    
+    // Find the earliest and latest timestamps across all joints
+    let earliestTimestamp = Infinity;
+    let latestTimestamp = 0;
+    
+    // Determine time range from recorded angle history
+    for (const joint of angleJoints) {
+      const userHistory = userAngleHistory[joint] || [];
+      const refHistory = referenceAngleHistory[joint] || [];
+      
+      if (userHistory.length > 0) {
+        earliestTimestamp = Math.min(earliestTimestamp, userHistory[0].timestamp);
+        latestTimestamp = Math.max(latestTimestamp, userHistory[userHistory.length - 1].timestamp);
+      }
+      
+      if (refHistory.length > 0) {
+        earliestTimestamp = Math.min(earliestTimestamp, refHistory[0].timestamp);
+        latestTimestamp = Math.max(latestTimestamp, refHistory[refHistory.length - 1].timestamp);
+      }
+    }
+    
+    if (earliestTimestamp === Infinity) {
+      console.error("No angle data available");
+      return { timestamps: [], userAngles: {}, expectedAngles: {} };
+    }
+    
+    // Create a timeline with 100ms intervals
+    const timeline: number[] = [];
+    let currentTime = earliestTimestamp;
+    
+    while (currentTime <= latestTimestamp) {
+      timeline.push(currentTime);
+      timestamps.push(new Date(currentTime - earliestTimestamp).toISOString().substr(14, 5)); // Format as MM:SS.sss
+      currentTime += 100; // 100ms intervals
+    }
+    
+    // For each joint, interpolate angles at each timestamp
+    angleJoints.forEach(jointName => {
+      const userHistory = userAngleHistory[jointName] || [];
+      const refHistory = referenceAngleHistory[jointName] || [];
+      
+      // For each timestamp, find the closest angle recording or interpolate
+      timeline.forEach(time => {
+        // Find user angle at this time
+        let userAngle = 0;
+        if (userHistory.length > 0) {
+          // Find the two closest recordings and interpolate
+          const closestIndex = userHistory.findIndex(entry => entry.timestamp >= time);
+          
+          if (closestIndex === 0) {
+            // Before first recording, use first value
+            userAngle = userHistory[0].angle;
+          } else if (closestIndex === -1) {
+            // After last recording, use last value
+            userAngle = userHistory[userHistory.length - 1].angle;
+          } else {
+            // Interpolate between two recordings
+            const before = userHistory[closestIndex - 1];
+            const after = userHistory[closestIndex];
+            const ratio = (time - before.timestamp) / (after.timestamp - before.timestamp);
+            userAngle = before.angle * (1 - ratio) + after.angle * ratio;
+          }
+        }
+        
+        // Find reference angle at this time
+        let refAngle = 0;
+        if (refHistory.length > 0) {
+          // Find the two closest recordings and interpolate
+          const closestIndex = refHistory.findIndex(entry => entry.timestamp >= time);
+          
+          if (closestIndex === 0) {
+            // Before first recording, use first value
+            refAngle = refHistory[0].angle;
+          } else if (closestIndex === -1) {
+            // After last recording, use last value
+            refAngle = refHistory[refHistory.length - 1].angle;
+          } else {
+            // Interpolate between two recordings
+            const before = refHistory[closestIndex - 1];
+            const after = refHistory[closestIndex];
+            const ratio = (time - before.timestamp) / (after.timestamp - before.timestamp);
+            refAngle = before.angle * (1 - ratio) + after.angle * ratio;
+          }
+        }
+        
+        userAngles[jointName].push(userAngle);
+        expectedAngles[jointName].push(refAngle);
+      });
+    });
+    
+    return {
+      timestamps,
+      userAngles,
+      expectedAngles
+    };
+  };
+
+  // Update the useEffect that handles angle recording
+  useEffect(() => {
+    // Only start recording angles when isRecordingReference is true
+    if (isRecordingReference) {
+      console.log("Starting angle recording...");
+      
+      // Clear any existing intervals
+      if (angleRecordingInterval) {
+        clearInterval(angleRecordingInterval);
+      }
+      
+      // Initialize angle history
+      const initialUserHistory: {[joint: string]: Array<{angle: number, timestamp: number}>} = {};
+      const initialRefHistory: {[joint: string]: Array<{angle: number, timestamp: number}>} = {};
+      
+      angleJoints.forEach(joint => {
+        initialUserHistory[joint] = [];
+        initialRefHistory[joint] = [];
+      });
+      
+      setUserAngleHistory(initialUserHistory);
+      setReferenceAngleHistory(initialRefHistory);
+      
+      // Start recording angles every 100ms
+      const interval = setInterval(() => {
+        const currentTime = Date.now();
+        
+        // Debug log to verify the interval is running
+        console.log("Recording angles at", new Date(currentTime).toISOString());
+        
+        // Get current user pose and reference pose
+        if (userPose?.keypoints && referencePose?.keypoints) {
+          // Debug: log that we found valid poses
+          console.log("Found valid poses for recording angles");
+          
+          // Record angles for each joint
+          angleJoints.forEach(jointName => {
+            try {
+              // User pose angle calculation
+              const userJoint = userPose.keypoints.find((kp: any) => kp.name === jointName);
+              const userStartJointName = getConnectedJoint(jointName, 'start');
+              const userEndJointName = getConnectedJoint(jointName, 'end');
+              
+              const userStartJoint = userPose.keypoints.find((kp: any) => kp.name === userStartJointName);
+              const userEndJoint = userPose.keypoints.find((kp: any) => kp.name === userEndJointName);
+              
+              // Reference pose angle calculation
+              const refJoint = referencePose.keypoints.find((kp: any) => kp.name === jointName);
+              const refStartJointName = getConnectedJoint(jointName, 'start');
+              const refEndJointName = getConnectedJoint(jointName, 'end');
+              
+              const refStartJoint = referencePose.keypoints.find((kp: any) => kp.name === refStartJointName);
+              const refEndJoint = referencePose.keypoints.find((kp: any) => kp.name === refEndJointName);
+              
+              // Calculate and store user angle if all points are valid
+              if (userJoint && userStartJoint && userEndJoint && 
+                  userJoint.score > 0.1 && userStartJoint.score > 0.1 && userEndJoint.score > 0.1) {
+                const userAngle = calculateAngle(
+                  { x: userStartJoint.x, y: userStartJoint.y }, 
+                  { x: userJoint.x, y: userJoint.y }, 
+                  { x: userEndJoint.x, y: userEndJoint.y }
+                );
+                
+                setUserAngleHistory(prev => ({
+                  ...prev,
+                  [jointName]: [...(prev[jointName] || []), {angle: userAngle, timestamp: currentTime}]
+                }));
+                
+                console.log(`Recorded user angle for ${jointName}: ${userAngle}°`);
+              } else {
+                console.log(`Cannot calculate user angle for ${jointName} - missing valid points`);
+              }
+              
+              // Calculate and store reference angle if all points are valid
+              if (refJoint && refStartJoint && refEndJoint && 
+                  refJoint.score > 0.1 && refStartJoint.score > 0.1 && refEndJoint.score > 0.1) {
+                const refAngle = calculateAngle(
+                  { x: refStartJoint.x, y: refStartJoint.y }, 
+                  { x: refJoint.x, y: refJoint.y }, 
+                  { x: refEndJoint.x, y: refEndJoint.y }
+                );
+                
+                setReferenceAngleHistory(prev => ({
+                  ...prev,
+                  [jointName]: [...(prev[jointName] || []), {angle: refAngle, timestamp: currentTime}]
+                }));
+                
+                console.log(`Recorded reference angle for ${jointName}: ${refAngle}°`);
+              } else {
+                console.log(`Cannot calculate reference angle for ${jointName} - missing valid points`);
+              }
+            } catch (error) {
+              console.error(`Error recording angles for joint ${jointName}:`, error);
+            }
+          });
+        } else {
+          console.warn("Missing keypoints for angle recording");
+          if (!userPose?.keypoints) console.warn("User pose keypoints missing");
+          if (!referencePose?.keypoints) console.warn("Reference pose keypoints missing");
+        }
+      }, 100); // Record every 100ms (0.1 seconds)
+      
+      setAngleRecordingInterval(interval);
+      
+      return () => {
+        if (interval) {
+          clearInterval(interval);
+          console.log("Stopped angle recording interval");
+        }
+      };
+    } else if (angleRecordingInterval) {
+      // Stop recording angles when not in recording mode
+      clearInterval(angleRecordingInterval);
+      setAngleRecordingInterval(null);
+      console.log("Angle recording disabled");
+    }
+  }, [isRecordingReference, userPose, referencePose, angleJoints]);
 
   return (
     <div className="m-0 p-0">
@@ -1818,7 +2119,7 @@ export default function CameraView({
                 />
               )}
 
-              {distanceInfo.showMeter && userPose && referencePose && !testResults.isRunning && (
+              {false && distanceInfo.showMeter && userPose && referencePose && !testResults.isRunning && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-black/80 border border-red-900/40 shadow-lg">
                   <div className="flex flex-col items-center space-y-2">
                     <div className="text-white text-sm font-medium">Position yourself at proper distance</div>
@@ -2082,8 +2383,13 @@ export default function CameraView({
       </div>
 
       <NotesEditor
-        initialNotes={routineNotes}
-        onChange={setRoutineNotes}
+        initialNotes={routineNotes || localRoutineNotes}
+        onChange={(notes: string) => {
+          setLocalRoutineNotes(notes);
+          if (setRoutineNotes) {
+            setRoutineNotes(notes);
+          }
+        }}
         onStartRoutine={toggleTracking}
         onStartTest={() => {
           // 1. Validate reference media is available
@@ -2109,7 +2415,7 @@ export default function CameraView({
             processing: false,
             scores: [],
             overallScore: 0,
-            feedback: 'Test in progress...'
+            feedback: 'Follow the green guide to match the reference movement'
           });
           
           // 5. Reset reference video and play it from the beginning
@@ -2137,98 +2443,154 @@ export default function CameraView({
               
               // Stop recording if active
               if (isRecording && mediaRecorder) {
+                console.log('Stopping recording before showing test results...');
                 mediaRecorder.stop();
-              }
-              
-              setTestResults(prev => ({ ...prev, isRunning: false, processing: true }));
-              
-              // Process both pose sequences and run the test
-              setTimeout(() => {
-                if (userPoseHistory.length < 5 || referencePoseHistory.length < 5) {
-                  setTestResults(prev => ({
-                    ...prev,
-                    processing: false,
-                    feedback: 'Not enough pose data. Please try again.',
-                    overallScore: 0
-                  }));
-                  return;
-                }
-                
-                // Compare poses and calculate scores 
-                const userAnglesData: Record<string, number[]> = {};
-                const refAnglesData: Record<string, number[]> = {};
-                
-                // Get angle sequences for DTW comparison
-                angleJoints.forEach(joint => {
-                  if (userAngleSequences[joint]?.length && referenceAngleSequences[joint]?.length) {
-                    userAnglesData[joint] = userAngleSequences[joint];
-                    refAnglesData[joint] = referenceAngleSequences[joint];
-                  }
-                });
-                
-                // Calculate DTW-based scores
-                const dtwScores: Record<string, number> = {};
-                let totalDtwScore = 0;
-                let validJointCount = 0;
-                
-                Object.keys(userAnglesData).forEach(joint => {
-                  if (userAnglesData[joint].length >= 5 && refAnglesData[joint].length >= 5) {
-                    const result = compareAnglesWithDTW(userAnglesData[joint], refAnglesData[joint], joint);
-                    // Get the score from the result object
-                    const score = result.score;
-                    dtwScores[joint] = score;
-                    totalDtwScore += score;
-                    validJointCount++;
-                  }
-                });
-                
-                const avgDtwScore = validJointCount > 0 ? Math.round(totalDtwScore / validJointCount) : 0;
-                
-                // Get latest frame comparison
-                const latestUserPose = userPoseHistory[userPoseHistory.length - 1]?.pose;
-                const latestRefPose = referencePoseHistory[referencePoseHistory.length - 1]?.pose;
-                
-                // Create a properly typed frame comparison object
-                let frameComparison: { jointScores: JointScore[]; overallScore: number } = { 
-                  jointScores: [], 
-                  overallScore: 0 
-                };
-                
-                if (latestUserPose && latestRefPose) {
-                  const result = comparePoses(latestUserPose, latestRefPose);
-                  if (result.jointScores && Array.isArray(result.jointScores)) {
-                    frameComparison = {
-                      jointScores: result.jointScores as JointScore[],
-                      overallScore: result.overallScore
+                // Wait for recording to be processed before showing results
+                setTimeout(() => {
+                  setTestResults(prev => ({ ...prev, isRunning: false, processing: true }));
+                  
+                  // Process both pose sequences and run the test
+                  setTimeout(() => {
+                    if (userPoseHistory.length < 5 || referencePoseHistory.length < 5) {
+                      setTestResults(prev => ({
+                        ...prev,
+                        isRunning: false, // Ensure this is explicitly set to false
+                        processing: false,
+                        feedback: 'Not enough pose data. Please try again.',
+                        overallScore: 0
+                      }));
+                      // Ensure hasCompletedTest is set to allow re-opening results if needed.
+                      setHasCompletedTest(true); 
+                      setShowResultsModal(true); // Show modal even with error to inform user
+                      return;
+                    }
+                    
+                    // Log data to debug
+                    console.log("Processing test results...");
+                    console.log("User pose history:", userPoseHistory.length, "frames");
+                    console.log("Reference pose history:", referencePoseHistory.length, "frames");
+                    
+                    // Compare poses and calculate scores
+                    const userAnglesData: Record<string, number[]> = {};
+                    const refAnglesData: Record<string, number[]> = {};
+                    
+                    // Get angle sequences for DTW comparison
+                    angleJoints.forEach(joint => {
+                      if (userAngleHistory[joint]?.length && referenceAngleHistory[joint]?.length) {
+                        userAnglesData[joint] = userAngleHistory[joint].map(entry => entry.angle);
+                        refAnglesData[joint] = referenceAngleHistory[joint].map(entry => entry.angle);
+                      } else if (userAngleSequences[joint]?.length && referenceAngleSequences[joint]?.length) {
+                        // Fallback to old angle sequences if new ones aren't available
+                        userAnglesData[joint] = userAngleSequences[joint];
+                        refAnglesData[joint] = referenceAngleSequences[joint];
+                      }
+                    });
+                    
+                    // Calculate DTW-based scores
+                    const dtwScores: Record<string, number> = {};
+                    const dtwResultsFromComparison: Record<string, any> = {}; // Renamed to avoid conflict
+                    let totalDtwScore = 0;
+                    let validJointCount = 0;
+                    
+                    Object.keys(userAnglesData).forEach(joint => {
+                      if (userAnglesData[joint].length >= 5 && refAnglesData[joint].length >= 5) {
+                        const result = compareAnglesWithDTW(userAnglesData[joint], refAnglesData[joint], joint);
+                        // Get the score from the result object
+                        const score = result.score;
+                        dtwScores[joint] = score;
+                        dtwResultsFromComparison[joint] = result; // Use renamed variable
+                        totalDtwScore += score;
+                        validJointCount++;
+                      }
+                    });
+                    
+                    const avgDtwScore = validJointCount > 0 ? Math.round(totalDtwScore / validJointCount) : 0;
+                    
+                    // Get latest frame comparison
+                    const latestUserPose = userPoseHistory[userPoseHistory.length - 1]?.pose;
+                    const latestRefPose = referencePoseHistory[referencePoseHistory.length - 1]?.pose;
+                    
+                    // Create a properly typed frame comparison object
+                    let frameComparison: { jointScores: JointScore[]; overallScore: number } = { 
+                      jointScores: [], 
+                      overallScore: 0 
                     };
-                  }
-                }
+                    
+                    if (latestUserPose && latestRefPose) {
+                      const result = comparePoses(latestUserPose, latestRefPose);
+                      if (result.jointScores && Array.isArray(result.jointScores)) {
+                        // IMPORTANT: comparePoses returns overallScore as a SUM of joint scores.
+                        // We need an average for the frame comparison part of the final score.
+                        const frameOverallScoreSum = result.overallScore;
+                        const frameValidJoints = result.jointScores.filter(s => s.score > 0).length;
+                        const avgFrameScore = frameValidJoints > 0 ? Math.round(frameOverallScoreSum / frameValidJoints) : 0;
+
+                        frameComparison = {
+                          jointScores: result.jointScores as JointScore[],
+                          overallScore: avgFrameScore // Use the averaged frame score
+                        };
+                      }
+                    }
+                    
+                    // Weight the scores: 70% DTW (movement pattern), 30% frame comparison
+                    let calculatedFinalScore = Math.round(0.7 * avgDtwScore + 0.3 * frameComparison.overallScore);
+                    // CLAMP THE FINAL SCORE
+                    calculatedFinalScore = Math.max(0, Math.min(100, calculatedFinalScore));
+
+                    // Generate detailed angle data for charts/tables
+                    const angleDataForChart = generateAngleComparisonData();
+
+                    // Debug the angle data for charts
+                    console.log("Angle data ready for visualization:");
+                    console.log("Timestamps:", angleDataForChart.timestamps?.length || 0, "points");
+
+                    if (angleDataForChart.userAngles) {
+                      Object.entries(angleDataForChart.userAngles).forEach(([joint, angles]) => {
+                        console.log(`${joint} user angles:`, (angles as number[]).length, "points");
+                      });
+                    }
+
+                    if (angleDataForChart.expectedAngles) {
+                      Object.entries(angleDataForChart.expectedAngles).forEach(([joint, angles]) => {
+                        console.log(`${joint} expected angles:`, (angles as number[]).length, "points");
+                      });
+                    }
+                    
+                    // Construct feedback message (example)
+                    const feedback = `Test completed. Overall Score: ${calculatedFinalScore}%. DTW Score: ${avgDtwScore}%. Frame Score: ${frameComparison.overallScore}%.`;
+                    
+                    // Set the test results with the angle data
+                    setTestResults({
+                      isRunning: false,
+                      processing: false,
+                      scores: frameComparison.jointScores, // These are from the last frame, consider if overall joint scores are needed
+                      overallScore: calculatedFinalScore, // Pass the clamped and final score
+                      feedback,
+                      timing: timingIssues, // Ensure timingIssues state is up-to-date
+                      dtwScores,
+                      angleData: angleDataForChart, // Pass the generated chart data
+                      dtwResults: dtwResultsFromComparison // Pass the detailed DTW results
+                    });
+                    
+                    // Log the test results
+                    console.log("Test completed with score:", calculatedFinalScore);
+                    console.log("Joint scores (last frame):", frameComparison.jointScores);
+                    
+                    // Set hasCompletedTest to true to enable the Test Results button
+                    setHasCompletedTest(true);
+                    
+                    // Show results modal immediately
+                    setShowResultsModal(true);
+                  }, 1000); // Simulate processing delay
+                }, 500); // Give time for mediaRecorder.onstop to execute
+              } else {
+                setTestResults(prev => ({ ...prev, isRunning: false, processing: true }));
                 
-                // Weight the scores: 70% DTW (movement pattern), 30% frame comparison
-                const finalScore = Math.round(0.7 * avgDtwScore + 0.3 * frameComparison.overallScore);
+                // ... existing processing code ...
                 
-                // Generate feedback based on scores
-                let feedback = 'Great job!';
-                if (finalScore < 50) {
-                  feedback = 'Keep practicing. Focus on matching the reference movements more closely.';
-                } else if (finalScore < 70) {
-                  feedback = 'Good effort! Try to keep your movements smoother and more precise.';
-                } else if (finalScore < 85) {
-                  feedback = 'Well done! Your form is solid with room for minor improvements.';
-                }
-                
-                setTestResults({
-                  isRunning: false,
-                  processing: false,
-                  scores: frameComparison.jointScores,
-                  overallScore: finalScore,
-                  feedback,
-                  timing: timingIssues,
-                  dtwScores
-                });
-                
-                setShowResultsModal(true);
-              }, 1000);
+                // Set hasCompletedTest to true to enable the Test Results button
+                setHasCompletedTest(true);
+              }
             };
           } else {
             // If it's a static image reference
@@ -2256,6 +2618,9 @@ export default function CameraView({
                   overallScore: 0 // This would need to be calculated
                 }));
                 
+                // Set hasCompletedTest to true to enable the Test Results button
+                setHasCompletedTest(true);
+                
                 setShowResultsModal(true);
               }, 1000);
             }, 5000);
@@ -2263,6 +2628,10 @@ export default function CameraView({
         }}
         isTracking={isTracking}
         hasReferenceMedia={isSplitView && (!!imageElement || !!referenceVideoRef.current)}
+        hasCompletedTest={hasCompletedTest}
+        onShowResults={() => setShowResultsModal(true)}
+        onRecord={toggleRecording}
+        isRecording={isRecording}
       />
 
       <ResultsModal
@@ -2273,8 +2642,68 @@ export default function CameraView({
         feedback={testResults.feedback}
         timing={testResults.timing}
         recordedVideo={recordedVideo}
-        routineNotes={routineNotes}
+        routineNotes={routineNotes || localRoutineNotes}
+        angleData={testResults.angleData}
+        dtwResults={testResults.dtwResults}
       />
+
+      {/* Distance Meter */}
+      {false && distanceInfo.showMeter && (
+        <div 
+          className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/70 p-2 px-4 rounded-lg shadow-lg z-20
+                     border-2 animate-fade-in-fast"
+          style={{ borderColor: distanceInfo.isCorrect ? '#10b981' : '#ef4444' }}
+        >
+          <p className={`text-sm font-medium ${distanceInfo.isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+            {distanceInfo.message}
+          </p>
+          <div className="w-32 h-2 bg-gray-700 rounded-full mt-1 overflow-hidden">
+            <div 
+              className="h-full transition-all duration-300 ease-in-out"
+              style={{ 
+                width: `${Math.min(100, Math.max(0, (distanceInfo.scale - 0.5) * 100 / 0.8))}%`, // scale 0.7-1.3 maps to ~25%-100%
+                background: distanceInfo.isCorrect ? '#10b981' : '#ef4444'
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Recording Popup */}
+      {showRecordingPopup && recordedVideo && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 p-6 rounded-xl shadow-2xl w-full max-w-3xl border border-red-700/50">
+            <h3 className="text-xl font-semibold text-white mb-4 text-center">Screen Recording Complete</h3>
+            <video 
+              src={recordedVideo} 
+              controls 
+              autoPlay 
+              className="w-full rounded-lg max-h-[70vh] mb-4 border border-gray-700"
+            />
+            <div className="flex flex-row gap-4 justify-end">
+              <button
+                onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = recordedVideo;
+                  a.download = `CoachT-Training-${new Date().toISOString().slice(0,10)}.webm`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                }}
+                className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow-md"
+              >
+                Download Recording
+              </button>
+              <button
+                onClick={closeRecordingPopup}
+                className="px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition-colors shadow-md"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
