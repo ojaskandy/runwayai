@@ -13,7 +13,11 @@ async function runMigrations() {
       ADD COLUMN IF NOT EXISTS recordings_count INTEGER DEFAULT 0,
       ADD COLUMN IF NOT EXISTS goal TEXT DEFAULT '',
       ADD COLUMN IF NOT EXISTS goal_due_date TIMESTAMP,
-      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW(),
+      ADD COLUMN IF NOT EXISTS belt TEXT DEFAULT 'white',
+      ADD COLUMN IF NOT EXISTS belt_name TEXT DEFAULT 'White Belt',
+      ADD COLUMN IF NOT EXISTS belt_level INTEGER DEFAULT 1,
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
     `);
     console.log("Updated users table");
 

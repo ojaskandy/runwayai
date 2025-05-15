@@ -34,9 +34,11 @@ interface CameraViewProps {
   // Additional props
   cameraFacing?: 'user' | 'environment';
   setCameraFacing?: (facing: 'user' | 'environment') => void;
+  externalIsRecording?: boolean;
   onRecordClick?: () => void;
   routineNotes?: string;
   setRoutineNotes?: (notes: string) => void;
+  customBackground?: string | null;
 }
 
 // Update the TestResults type (add this where other interfaces/types are defined)
@@ -77,9 +79,11 @@ export default function CameraView({
   // Additional props
   cameraFacing,
   setCameraFacing,
+  externalIsRecording,
   onRecordClick,
   routineNotes = '',
-  setRoutineNotes
+  setRoutineNotes,
+  customBackground
 }: CameraViewProps) {
   const toggleTracking = externalToggleTracking || (() => {
     console.log("Toggle tracking clicked, but no handler was provided");
@@ -118,6 +122,13 @@ export default function CameraView({
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const [recordedVideo, setRecordedVideo] = useState<string | undefined>(undefined);
   const [isRecording, setIsRecording] = useState<boolean>(false);
+  
+  // Sync with external recording state if provided
+  useEffect(() => {
+    if (externalIsRecording !== undefined && externalIsRecording !== isRecording) {
+      setIsRecording(externalIsRecording);
+    }
+  }, [externalIsRecording]);
   
   // State variables for pose detection
   const [userPose, setUserPose] = useState<any>(null);
@@ -177,6 +188,20 @@ export default function CameraView({
     [joint: string]: Array<{angle: number, timestamp: number}>
   }>({});
 
+  // Add a state for preloaded background image
+  const [preloadedBackground, setPreloadedBackground] = useState<HTMLImageElement | null>(null);
+  
+  // Preload custom background image
+  useEffect(() => {
+    if (customBackground) {
+      const img = new Image();
+      img.onload = () => setPreloadedBackground(img);
+      img.src = customBackground;
+    } else {
+      setPreloadedBackground(null);
+    }
+  }, [customBackground]);
+  
   useEffect(() => {
     const savedNotes = localStorage.getItem('routineNotes');
     if (savedNotes && setRoutineNotes) {
@@ -316,99 +341,107 @@ export default function CameraView({
     let animationFrameId: number | null = null;
 
     const detect = async () => {
-      if (!sourceElement || !canvasElement) return;
-
-      const ctx = canvasElement.getContext('2d', { alpha: !showBackground });
-      if (!ctx) return;
-
-      let width = 0;
-      let height = 0;
-
-      if (sourceType === 'image' && imageElement) {
-        width = imageElement.naturalWidth;
-        height = imageElement.naturalHeight;
-      } else if (sourceElement instanceof HTMLVideoElement) {
-        width = sourceElement.videoWidth;
-        height = sourceElement.videoHeight;
-      }
-
-      if (width === 0 || height === 0) {
-        console.log("Source has zero dimensions, skipping detection");
-        if (animationFrameId) {
-          animationFrameId = requestAnimationFrame(detect);
+      try {
+        frameCountRef.current = (frameCountRef.current + 1) % frameSkipRate;
+        if (!isTracking || frameCountRef.current !== 0) {
+          animationRef.current = requestAnimationFrame(detect);
+          return;
         }
-        return;
-      }
-
-      const container = document.getElementById('cameraContainer');
-      let containerWidth = width;
-      let containerHeight = height;
-      let scaleX = 1;
-      let scaleY = 1;
-
-      if (container && isFullscreenMode) {
-        containerWidth = container.clientWidth;
-        containerHeight = container.clientHeight;
-
-        const videoRatio = width / height;
-        const containerRatio = containerWidth / containerHeight;
-
-        if (videoRatio > containerRatio) {
-          scaleX = containerWidth / width;
-          scaleY = scaleX;
-        } else {
-          scaleY = containerHeight / height;
-          scaleX = scaleY;
+        
+        const ctx = canvasRef.current?.getContext('2d');
+        const video = videoRef.current;
+        
+        if (!ctx || !video) {
+          animationRef.current = requestAnimationFrame(detect);
+          return;
+        }
+        
+        const videoWidth = video.videoWidth || video.width || ctx.canvas.width;
+        const videoHeight = video.videoHeight || video.height || ctx.canvas.height;
+        
+        ctx.canvas.width = videoWidth;
+        ctx.canvas.height = videoHeight;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, videoWidth, videoHeight);
+        
+        // Draw background (video/image source)
+        if (showBackground) {
+          if (customBackground && preloadedBackground) {
+            // If a custom background is provided, use the preloaded image
+            ctx.globalAlpha = backgroundOpacity;
+            
+            // Apply a blur effect if requested
+            if (backgroundBlur > 0) {
+              ctx.filter = `blur(${backgroundBlur}px)`;
+            }
+            
+            // Draw the custom background, scaling to fit
+            ctx.drawImage(preloadedBackground, 0, 0, videoWidth, videoHeight);
+            
+            // Reset filters
+            ctx.filter = 'none';
+            ctx.globalAlpha = 1.0;
+          } else {
+            // Otherwise draw the default video/camera feed
+            ctx.globalAlpha = backgroundOpacity;
+            
+            // Apply a blur effect if requested
+            if (backgroundBlur > 0) {
+              ctx.filter = `blur(${backgroundBlur}px)`;
+            }
+            
+            ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
+            
+            // Reset filters
+            ctx.filter = 'none';
+            ctx.globalAlpha = 1.0;
+          }
         }
 
-        console.log("Fullscreen scaling:", { width, height, containerWidth, containerHeight, scaleX, scaleY });
-      }
+        if (isTracking) {
+          try {
+            // PERFORMANCE OPTIMIZATION: Skip frames to reduce CPU load
+            // Only run detection every n frames based on device performance
+            const shouldSkipFrame = frameCountRef.current % frameSkipRate !== 0;
+            frameCountRef.current = (frameCountRef.current + 1) % (frameSkipRate * 10); // Reset counter periodically
+            
+            // Run actual pose detection
+            const poses = await detectPoses(
+              sourceElement,
+              maxPoses,
+              confidenceThreshold
+            );
 
-      if (canvasElement.width !== width || canvasElement.height !== height) {
-        canvasElement.width = width;
-        canvasElement.height = height;
-      }
+            if (sourceElement === videoRef.current && poses && poses.length > 0) {
+              setUserPose(poses[0]);
 
-      ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+              if (isSplitView && referenceVideoRef.current &&
+                  referenceVideoRef.current.readyState >= 2) {
+                if (!testResults.isRunning) {
+                  try {
+                    // Process reference video every frame
+                    const refPoses = await detectPoses(
+                      referenceVideoRef.current,
+                      1,
+                      confidenceThreshold
+                    );
 
-      if (showBackground) {
-        ctx.globalAlpha = backgroundOpacity;
-        if (backgroundBlur > 0) {
-          ctx.filter = `blur(${backgroundBlur}px)`;
-        }
-        ctx.drawImage(
-          sourceElement,
-          0,
-          0,
-          canvasElement.width,
-          canvasElement.height
-        );
-        ctx.filter = 'none';
-        ctx.globalAlpha = 1.0;
-      }
+                    if (refPoses && refPoses.length > 0) {
+                      setReferencePose(refPoses[0]);
+                      if (isSplitView && referenceVideoRef.current) {
+                        updateDistanceMeter(poses[0], refPoses[0]);
+                      }
+                    }
+                  } catch (error) {
+                    console.error("Error detecting pose on reference video:", error);
+                  }
+                }
+              }
 
-      if (isTracking) {
-        try {
-          // PERFORMANCE OPTIMIZATION: Skip frames to reduce CPU load
-          // Only run detection every n frames based on device performance
-          const shouldSkipFrame = frameCountRef.current % frameSkipRate !== 0;
-          frameCountRef.current = (frameCountRef.current + 1) % (frameSkipRate * 10); // Reset counter periodically
-          
-          // Run actual pose detection
-          const poses = await detectPoses(
-            sourceElement,
-            maxPoses,
-            confidenceThreshold
-          );
-
-          if (sourceElement === videoRef.current && poses && poses.length > 0) {
-            setUserPose(poses[0]);
-
-            if (isSplitView && referenceVideoRef.current &&
-                referenceVideoRef.current.readyState >= 2) {
-              if (!testResults.isRunning) {
+              if (testResults.isRunning && referenceVideoRef.current &&
+                  referenceVideoRef.current.readyState >= 2) {
                 try {
-                  // Process reference video every frame
                   const refPoses = await detectPoses(
                     referenceVideoRef.current,
                     1,
@@ -416,159 +449,243 @@ export default function CameraView({
                   );
 
                   if (refPoses && refPoses.length > 0) {
+                    console.log("Setting reference pose with keypoints:", refPoses[0].keypoints.length);
                     setReferencePose(refPoses[0]);
-                    if (isSplitView && referenceVideoRef.current) {
-                      updateDistanceMeter(poses[0], refPoses[0]);
+
+                    if (isRecordingReference) {
+                      setReferenceFrames(prev => [...prev, refPoses[0]]);
+                    }
+
+                    const timestamp = Date.now();
+                    const inGracePeriod = testStartTime > 0 && (timestamp - testStartTime < 1000);
+
+                    if (!inGracePeriod) {
+                      let bestRefPose = refPoses[0];
+
+                      if (referencePoseHistory.length > 0) {
+                        const bestMatchingPose = findBestMatchingPose(timestamp, referencePoseHistory);
+                        if (bestMatchingPose) {
+                          bestRefPose = bestMatchingPose;
+                        }
+                      }
+
+                      const comparison = comparePoses(poses[0], bestRefPose);
+
+                      setTestResults(prev => ({
+                        ...prev,
+                        scores: comparison.jointScores,
+                        overallScore: comparison.overallScore
+                      }));
+                    } else {
+                      console.log(`In grace period: ${Math.round((timestamp - testStartTime) / 100) / 10}s elapsed, pausing comparisons`);
                     }
                   }
-                } catch (error) {
-                  console.error("Error detecting pose on reference video:", error);
+                } catch (err) {
+                  console.error("Error detecting poses on reference video:", err);
                 }
               }
-            }
 
-            if (testResults.isRunning && referenceVideoRef.current &&
-                referenceVideoRef.current.readyState >= 2) {
-              try {
-                const refPoses = await detectPoses(
-                  referenceVideoRef.current,
-                  1,
-                  confidenceThreshold
-                );
+              poses.forEach(pose => {
+                const keypoints = pose.keypoints;
+                const connections = [
+                  ['left_shoulder', 'right_shoulder'],
+                  ['left_shoulder', 'left_hip'],
+                  ['right_shoulder', 'right_hip'],
+                  ['left_hip', 'right_hip'],
+                  ['left_shoulder', 'left_elbow'],
+                  ['left_elbow', 'left_wrist'],
+                  ['right_shoulder', 'right_elbow'],
+                  ['right_elbow', 'right_wrist'],
+                  ['left_hip', 'left_knee'],
+                  ['left_knee', 'left_ankle'],
+                  ['right_hip', 'right_knee'],
+                  ['right_knee', 'right_ankle'],
+                  ['nose', 'left_eye'],
+                  ['nose', 'right_eye'],
+                  ['left_eye', 'left_ear'],
+                  ['right_eye', 'right_ear'],
+                ];
 
-                if (refPoses && refPoses.length > 0) {
-                  console.log("Setting reference pose with keypoints:", refPoses[0].keypoints.length);
-                  setReferencePose(refPoses[0]);
+                if (testResults.isRunning && sourceType === 'camera') {
+                  console.log("TEST MODE ACTIVE - Should draw green skeleton");
 
-                  if (isRecordingReference) {
-                    setReferenceFrames(prev => [...prev, refPoses[0]]);
-                  }
-
-                  const timestamp = Date.now();
-                  const inGracePeriod = testStartTime > 0 && (timestamp - testStartTime < 1000);
-
-                  if (!inGracePeriod) {
-                    let bestRefPose = refPoses[0];
-
-                    if (referencePoseHistory.length > 0) {
-                      const bestMatchingPose = findBestMatchingPose(timestamp, referencePoseHistory);
-                      if (bestMatchingPose) {
-                        bestRefPose = bestMatchingPose;
-                      }
-                    }
-
-                    const comparison = comparePoses(poses[0], bestRefPose);
-
-                    setTestResults(prev => ({
-                      ...prev,
-                      scores: comparison.jointScores,
-                      overallScore: comparison.overallScore
-                    }));
+                  if (referenceVideoRef.current && referenceVideoRef.current.readyState >= 2) {
+                    console.log("Using reference video for overlay - video is ready");
+                  } else if (referencePose) {
+                    console.log("Using cached reference pose with keypoints:", referencePose.keypoints.length);
                   } else {
-                    console.log(`In grace period: ${Math.round((timestamp - testStartTime) / 100) / 10}s elapsed, pausing comparisons`);
+                    console.log("NO REFERENCE POSE AVAILABLE YET");
+                  }
+
+                  ctx.font = "bold 24px system-ui";
+                  ctx.textAlign = "center";
+                  ctx.strokeStyle = 'black';
+                  ctx.lineWidth = 3;
+                  ctx.strokeText("FOLLOW THE GREEN GUIDE", canvasElement.width / 2, 40);
+                  ctx.fillStyle = '#10B981';
+                  ctx.fillText("FOLLOW THE GREEN GUIDE", canvasElement.width / 2, 40);
+
+                  if (referencePose && referencePose.keypoints) {
+                    const refKeypoints = referencePose.keypoints;
+                    if (refKeypoints && refKeypoints.length > 0) {
+                      console.log("Reference keypoints found:", refKeypoints.length);
+                      const cleanRefPose = {
+                        keypoints: JSON.parse(JSON.stringify(refKeypoints))
+                      };
+                      ctx.strokeStyle = '#10B981';
+                      ctx.lineWidth = 6;
+                      ctx.globalAlpha = 0.85;
+                      ctx.shadowColor = 'rgba(16, 185, 129, 0.9)';
+                      ctx.shadowBlur = 15;
+
+                      connections.forEach((connection) => {
+                        const fromName = connection[0];
+                        const toName = connection[1];
+                        const fromRef = cleanRefPose.keypoints.find((kp: any) => kp.name === fromName);
+                        const toRef = cleanRefPose.keypoints.find((kp: any) => kp.name === toName);
+
+                        if (fromRef && toRef &&
+                            typeof fromRef.score === 'number' &&
+                            typeof toRef.score === 'number' &&
+                            fromRef.score > confidenceThreshold &&
+                            toRef.score > confidenceThreshold) {
+                          ctx.beginPath();
+                          ctx.moveTo(fromRef.x, fromRef.y);
+                          ctx.lineTo(toRef.x, toRef.y);
+                          ctx.stroke();
+                        }
+                      });
+
+                      cleanRefPose.keypoints.forEach((refPoint: any) => {
+                        if (typeof refPoint.score === 'number' && refPoint.score > confidenceThreshold) {
+                          ctx.fillStyle = '#4ADE80';
+                          ctx.beginPath();
+                          ctx.arc(refPoint.x, refPoint.y, 10, 0, 2 * Math.PI);
+                          ctx.fill();
+                        }
+                      });
+
+                      ctx.shadowColor = 'transparent';
+                      ctx.shadowBlur = 0;
+                      ctx.globalAlpha = 1.0;
+
+                      ctx.font = 'bold 16px Arial';
+                      ctx.textAlign = 'center';
+                      ctx.textBaseline = 'middle';
+                      ctx.lineWidth = 2;
+
+                      Object.entries(calculateJointAngles(referencePose)).forEach(([jointName, angle]) => {
+                        if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
+                          return;
+                        }
+
+                        const joint = referencePose.keypoints.find((kp: any) => kp.name === jointName);
+                        if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
+                          const offsetX = (joint.x > canvasElement.width / 2) ? -30 : 30;
+                          const offsetY = (joint.y > canvasElement.height / 2) ? -30 : 30;
+
+                          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                          ctx.beginPath();
+                          ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
+                          ctx.fill();
+
+                          ctx.strokeStyle = '#10B981';
+                          ctx.lineWidth = 2;
+                          ctx.shadowColor = '#10B981';
+                          ctx.shadowBlur = 5;
+                          ctx.beginPath();
+                          ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
+                          ctx.stroke();
+
+                          ctx.shadowBlur = 0;
+                          ctx.shadowColor = 'transparent';
+
+                          ctx.fillStyle = 'white';
+                          ctx.fillText(`${angle}°`, joint.x + offsetX/2, joint.y + offsetY/2);
+
+                          ctx.strokeStyle = '#10B981';
+                          ctx.lineWidth = 1.5;
+                          ctx.beginPath();
+                          ctx.moveTo(joint.x, joint.y);
+                          ctx.lineTo(joint.x + offsetX/2, joint.y + offsetY/2);
+                          ctx.stroke();
+                        }
+                      });
+                    }
                   }
                 }
-              } catch (err) {
-                console.error("Error detecting poses on reference video:", err);
-              }
-            }
 
-            poses.forEach(pose => {
-              const keypoints = pose.keypoints;
-              const connections = [
-                ['left_shoulder', 'right_shoulder'],
-                ['left_shoulder', 'left_hip'],
-                ['right_shoulder', 'right_hip'],
-                ['left_hip', 'right_hip'],
-                ['left_shoulder', 'left_elbow'],
-                ['left_elbow', 'left_wrist'],
-                ['right_shoulder', 'right_elbow'],
-                ['right_elbow', 'right_wrist'],
-                ['left_hip', 'left_knee'],
-                ['left_knee', 'left_ankle'],
-                ['right_hip', 'right_knee'],
-                ['right_knee', 'right_ankle'],
-                ['nose', 'left_eye'],
-                ['nose', 'right_eye'],
-                ['left_eye', 'left_ear'],
-                ['right_eye', 'right_ear'],
-              ];
+                if (showSkeleton) {
+                  ctx.strokeStyle = skeletonColor || '#B91C1C';
+                  ctx.lineWidth = 3;
 
-              if (testResults.isRunning && sourceType === 'camera') {
-                console.log("TEST MODE ACTIVE - Should draw green skeleton");
+                  connections.forEach((connection) => {
+                    const fromName = connection[0];
+                    const toName = connection[1];
+                    const from = keypoints.find(kp => kp.name === fromName);
+                    const to = keypoints.find(kp => kp.name === toName);
 
-                if (referenceVideoRef.current && referenceVideoRef.current.readyState >= 2) {
-                  console.log("Using reference video for overlay - video is ready");
-                } else if (referencePose) {
-                  console.log("Using cached reference pose with keypoints:", referencePose.keypoints.length);
-                } else {
-                  console.log("NO REFERENCE POSE AVAILABLE YET");
+                    if (from && to &&
+                        typeof from.score === 'number' &&
+                        typeof to.score === 'number' &&
+                        from.score > confidenceThreshold &&
+                        to.score > confidenceThreshold) {
+                      ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
+                      ctx.shadowBlur = 10;
+
+                      ctx.beginPath();
+                      ctx.moveTo(from.x, from.y);
+                      ctx.lineTo(to.x, to.y);
+                      ctx.stroke();
+
+                      ctx.shadowColor = 'transparent';
+                      ctx.shadowBlur = 0;
+                    }
+                  });
                 }
 
-                ctx.font = "bold 24px system-ui";
-                ctx.textAlign = "center";
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 3;
-                ctx.strokeText("FOLLOW THE GREEN GUIDE", canvasElement.width / 2, 40);
-                ctx.fillStyle = '#10B981';
-                ctx.fillText("FOLLOW THE GREEN GUIDE", canvasElement.width / 2, 40);
+                if (showPoints) {
+                  keypoints.forEach(keypoint => {
+                    if (typeof keypoint.score === 'number' && keypoint.score > confidenceThreshold) {
+                      const { x, y } = keypoint;
 
-                if (referencePose && referencePose.keypoints) {
-                  const refKeypoints = referencePose.keypoints;
-                  if (refKeypoints && refKeypoints.length > 0) {
-                    console.log("Reference keypoints found:", refKeypoints.length);
-                    const cleanRefPose = {
-                      keypoints: JSON.parse(JSON.stringify(refKeypoints))
-                    };
-                    ctx.strokeStyle = '#10B981';
-                    ctx.lineWidth = 6;
-                    ctx.globalAlpha = 0.85;
-                    ctx.shadowColor = 'rgba(16, 185, 129, 0.9)';
-                    ctx.shadowBlur = 15;
+                      ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
+                      ctx.shadowBlur = 15;
 
-                    connections.forEach((connection) => {
-                      const fromName = connection[0];
-                      const toName = connection[1];
-                      const fromRef = cleanRefPose.keypoints.find((kp: any) => kp.name === fromName);
-                      const toRef = cleanRefPose.keypoints.find((kp: any) => kp.name === toName);
+                      ctx.fillStyle = '#ef4444';
+                      ctx.beginPath();
+                      ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                      ctx.fill();
 
-                      if (fromRef && toRef &&
-                          typeof fromRef.score === 'number' &&
-                          typeof toRef.score === 'number' &&
-                          fromRef.score > confidenceThreshold &&
-                          toRef.score > confidenceThreshold) {
-                        ctx.beginPath();
-                        ctx.moveTo(fromRef.x, fromRef.y);
-                        ctx.lineTo(toRef.x, toRef.y);
-                        ctx.stroke();
-                      }
-                    });
+                      ctx.shadowColor = 'transparent';
+                      ctx.shadowBlur = 0;
+                    }
+                  });
+                }
 
-                    cleanRefPose.keypoints.forEach((refPoint: any) => {
-                      if (typeof refPoint.score === 'number' && refPoint.score > confidenceThreshold) {
-                        ctx.fillStyle = '#4ADE80';
-                        ctx.beginPath();
-                        ctx.arc(refPoint.x, refPoint.y, 10, 0, 2 * Math.PI);
-                        ctx.fill();
-                      }
-                    });
+                if (showSkeleton && isTracking) {
+                  ctx.font = 'bold 16px Arial';
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'middle';
+                  ctx.lineWidth = 2;
 
-                    ctx.shadowColor = 'transparent';
-                    ctx.shadowBlur = 0;
-                    ctx.globalAlpha = 1.0;
+                  const currentAngles = calculateJointAngles(poses[0]);
+                  setJointAngles(currentAngles);
 
-                    ctx.font = 'bold 16px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.lineWidth = 2;
+                  Object.entries(currentAngles).forEach(([jointName, angle]) => {
+                    if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
+                      return;
+                    }
 
-                    Object.entries(calculateJointAngles(referencePose)).forEach(([jointName, angle]) => {
-                      if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
-                        return;
-                      }
+                    const joint = keypoints.find(kp => kp.name === jointName);
+                    if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
+                      const startJointName = getConnectedJoint(jointName, 'start');
+                      const endJointName = getConnectedJoint(jointName, 'end');
 
-                      const joint = referencePose.keypoints.find((kp: any) => kp.name === jointName);
-                      if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
+                      const startJoint = keypoints.find(kp => kp.name === startJointName);
+                      const endJoint = keypoints.find(kp => kp.name === endJointName);
+
+                      if (startJoint && endJoint) {
                         const offsetX = (joint.x > canvasElement.width / 2) ? -30 : 30;
                         const offsetY = (joint.y > canvasElement.height / 2) ? -30 : 30;
 
@@ -577,9 +694,9 @@ export default function CameraView({
                         ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
                         ctx.fill();
 
-                        ctx.strokeStyle = '#10B981';
+                        ctx.strokeStyle = '#ef4444';
                         ctx.lineWidth = 2;
-                        ctx.shadowColor = '#10B981';
+                        ctx.shadowColor = '#ef4444';
                         ctx.shadowBlur = 5;
                         ctx.beginPath();
                         ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
@@ -591,137 +708,36 @@ export default function CameraView({
                         ctx.fillStyle = 'white';
                         ctx.fillText(`${angle}°`, joint.x + offsetX/2, joint.y + offsetY/2);
 
-                        ctx.strokeStyle = '#10B981';
+                        ctx.strokeStyle = '#ef4444';
                         ctx.lineWidth = 1.5;
                         ctx.beginPath();
                         ctx.moveTo(joint.x, joint.y);
                         ctx.lineTo(joint.x + offsetX/2, joint.y + offsetY/2);
                         ctx.stroke();
                       }
-                    });
-                  }
-                }
-              }
-
-              if (showSkeleton) {
-                ctx.strokeStyle = skeletonColor || '#B91C1C';
-                ctx.lineWidth = 3;
-
-                connections.forEach((connection) => {
-                  const fromName = connection[0];
-                  const toName = connection[1];
-                  const from = keypoints.find(kp => kp.name === fromName);
-                  const to = keypoints.find(kp => kp.name === toName);
-
-                  if (from && to &&
-                      typeof from.score === 'number' &&
-                      typeof to.score === 'number' &&
-                      from.score > confidenceThreshold &&
-                      to.score > confidenceThreshold) {
-                    ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
-                    ctx.shadowBlur = 10;
-
-                    ctx.beginPath();
-                    ctx.moveTo(from.x, from.y);
-                    ctx.lineTo(to.x, to.y);
-                    ctx.stroke();
-
-                    ctx.shadowColor = 'transparent';
-                    ctx.shadowBlur = 0;
-                  }
-                });
-              }
-
-              if (showPoints) {
-                keypoints.forEach(keypoint => {
-                  if (typeof keypoint.score === 'number' && keypoint.score > confidenceThreshold) {
-                    const { x, y } = keypoint;
-
-                    ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
-                    ctx.shadowBlur = 15;
-
-                    ctx.fillStyle = '#ef4444';
-                    ctx.beginPath();
-                    ctx.arc(x, y, 6, 0, 2 * Math.PI);
-                    ctx.fill();
-
-                    ctx.shadowColor = 'transparent';
-                    ctx.shadowBlur = 0;
-                  }
-                });
-              }
-
-              if (showSkeleton && isTracking) {
-                ctx.font = 'bold 16px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.lineWidth = 2;
-
-                const currentAngles = calculateJointAngles(poses[0]);
-                setJointAngles(currentAngles);
-
-                Object.entries(currentAngles).forEach(([jointName, angle]) => {
-                  if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
-                    return;
-                  }
-
-                  const joint = keypoints.find(kp => kp.name === jointName);
-                  if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
-                    const startJointName = getConnectedJoint(jointName, 'start');
-                    const endJointName = getConnectedJoint(jointName, 'end');
-
-                    const startJoint = keypoints.find(kp => kp.name === startJointName);
-                    const endJoint = keypoints.find(kp => kp.name === endJointName);
-
-                    if (startJoint && endJoint) {
-                      const offsetX = (joint.x > canvasElement.width / 2) ? -30 : 30;
-                      const offsetY = (joint.y > canvasElement.height / 2) ? -30 : 30;
-
-                      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                      ctx.beginPath();
-                      ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
-                      ctx.fill();
-
-                      ctx.strokeStyle = '#ef4444';
-                      ctx.lineWidth = 2;
-                      ctx.shadowColor = '#ef4444';
-                      ctx.shadowBlur = 5;
-                      ctx.beginPath();
-                      ctx.arc(joint.x + offsetX/2, joint.y + offsetY/2, 22, 0, 2 * Math.PI);
-                      ctx.stroke();
-
-                      ctx.shadowBlur = 0;
-                      ctx.shadowColor = 'transparent';
-
-                      ctx.fillStyle = 'white';
-                      ctx.fillText(`${angle}°`, joint.x + offsetX/2, joint.y + offsetY/2);
-
-                      ctx.strokeStyle = '#ef4444';
-                      ctx.lineWidth = 1.5;
-                      ctx.beginPath();
-                      ctx.moveTo(joint.x, joint.y);
-                      ctx.lineTo(joint.x + offsetX/2, joint.y + offsetY/2);
-                      ctx.stroke();
                     }
-                  }
-                });
-              }
-            });
+                  });
+                }
+              });
+            }
+          } catch (error) {
+            console.error('Error during pose detection:', error);
           }
-        } catch (error) {
-          console.error('Error during pose detection:', error);
+        } else if (!isTracking && showBackground) {
+          ctx.drawImage(
+            sourceElement,
+            0,
+            0,
+            canvasElement.width,
+            canvasElement.height
+          );
         }
-      } else if (!isTracking && showBackground) {
-        ctx.drawImage(
-          sourceElement,
-          0,
-          0,
-          canvasElement.width,
-          canvasElement.height
-        );
-      }
 
-      animationFrameId = requestAnimationFrame(detect);
+        animationFrameId = requestAnimationFrame(detect);
+      } catch (error) {
+        console.error('Error during pose detection:', error);
+        animationFrameId = requestAnimationFrame(detect);
+      }
     };
 
     detect();
