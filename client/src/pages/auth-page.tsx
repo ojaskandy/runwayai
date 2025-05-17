@@ -156,11 +156,11 @@ export default function AuthPage() {
                 <span className="material-icons text-white text-5xl">sports_martial_arts</span>
               </div>
               
-              {/* CoachT Text */}
+              {/* CoachT Text with properly positioned cursor */}
               <h1 className="text-6xl md:text-8xl font-bold relative inline-block">
                 <span className="relative">
                   {typedText}
-                  <span className="absolute right-0 top-1 h-16 w-[3px] bg-white animate-blink"></span>
+                  <span className="inline-block h-[0.8em] w-[3px] ml-[2px] align-middle bg-white animate-blink"></span>
                 </span>
               </h1>
             </div>
