@@ -62,11 +62,11 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use port 5173 for local development
-  const port = 5173;
+  // Use port 5000 to match workflow configuration
+  const port = 5000;
   server.listen({
     port,
-    host: "localhost"
+    host: "0.0.0.0" // Listen on all interfaces to make it accessible in deployment
   }, () => {
     log(`serving on port ${port}`);
   });
