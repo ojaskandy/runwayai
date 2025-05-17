@@ -1,5 +1,8 @@
-import { createRoot } from "react-dom/client";
-import App from "./App";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from './hooks/use-auth';
 import "./index.css";
 
 // Add global CSS for Material Icons and custom styling specific to this app
@@ -40,4 +43,14 @@ globalStyle.textContent = `
 `;
 document.head.appendChild(globalStyle);
 
-createRoot(document.getElementById("root")!).render(<App />);
+const queryClient = new QueryClient();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
+);

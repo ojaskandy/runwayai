@@ -13,18 +13,8 @@ export default function SessionTimer({ className = '' }: SessionTimerProps) {
   useEffect(() => {
     // Start the timer when component mounts
     setIsActive(true);
+    setSeconds(0); // Always reset seconds to 0 on mount
     
-    // Check if timer is already in localStorage (page refresh case)
-    const storedStartTime = localStorage.getItem('sessionStartTime');
-    if (storedStartTime) {
-      const startTime = parseInt(storedStartTime, 10);
-      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-      setSeconds(elapsedSeconds);
-    } else {
-      // Store start time for the session
-      localStorage.setItem('sessionStartTime', Date.now().toString());
-    }
-
     // Set up event listeners for tab visibility
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);

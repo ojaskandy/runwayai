@@ -11,7 +11,9 @@ import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { 
   Sun, Moon, User, LogOut, Settings, Clock, Calendar, Award, Play, 
-  Dumbbell, HelpCircle, MessageSquare, BarChart, Info, RefreshCw, Trash2
+  Dumbbell, HelpCircle, MessageSquare, BarChart, Info, RefreshCw, Trash2,
+  Home as HomeIcon, ListChecks, Loader2, PanelRightOpen, PanelRightClose, Palette,
+  ChevronDown, ChevronUp, ScrollText
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -28,17 +30,53 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-
-// Import new components
 import Leaderboard from '@/components/Leaderboard';
 import BeltDisplay from '@/components/BeltDisplay';
 import SessionTimer from '@/components/SessionTimer';
 import CurrentTime from '@/components/CurrentTime';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest, getQueryFn } from '@/lib/queryClient';
+import { format } from 'date-fns';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export type TrackingStatus = 'inactive' | 'loading' | 'ready' | 'active' | 'error';
 export type CameraFacing = 'user' | 'environment';
 export type SourceType = 'camera' | 'image' | 'video';
+
+interface Recording {
+  id: number;
+  userId: number;
+  fileUrl: string;
+  title: string | null;
+  notes: string | null;
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+}
+
+// Timer component specifically for the current session view on this page
+function CurrentPageTimer() {
+  const [sessionSeconds, setSessionSeconds] = useState(0);
+  useEffect(() => {
+    const timerInterval = setInterval(() => {
+      setSessionSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timerInterval);
+  }, []);
+
+  const formatDisplayTime = (totalSeconds: number): string => {
+    const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+    const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+    const s = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  };
+  return <span className="font-mono text-red-400">{formatDisplayTime(sessionSeconds)}</span>;
+}
 
 export default function Home() {
   // Auth and theme contexts
@@ -78,16 +116,18 @@ export default function Home() {
   // UI state
   const [isFullscreenMode, setIsFullscreenMode] = useState<boolean>(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
-  const [routineNotes, setRoutineNotes] = useState<string>('');
+  const [isSessionPanelExpanded, setIsSessionPanelExpanded] = useState<boolean>(false);
+  
+  // Camera view options
+  const [skeletonColorChoice, setSkeletonColorChoice] = useState<'red' | 'blue' | 'green' | 'purple' | 'orange'>('red');
+  const [blackoutMode, setBlackoutMode] = useState<boolean>(false);
   
   // Dialog states
   const [showHowItWorksDialog, setShowHowItWorksDialog] = useState<boolean>(false);
-  const [showFeedbackDialog, setShowFeedbackDialog] = useState<boolean>(false);
   const [showLeaderboardDialog, setShowLeaderboardDialog] = useState<boolean>(false);
   const [showTips, setShowTips] = useState<boolean>(false);
   const [showCustomizeDialog, setShowCustomizeDialog] = useState<boolean>(false);
-  const [feedbackText, setFeedbackText] = useState<string>('');
-
+  
   // Added for Record button
   const [isRecording, setIsRecording] = useState<boolean>(false);
   
@@ -102,14 +142,18 @@ export default function Home() {
     level: 2
   });
   
+  // Theme state for buttons
+  const [buttonTheme, setButtonTheme] = useState<'sky' | 'crimson' | 'emerald' | 'amber'>('sky');
+  
+  // Fetch recordings for the session log
+  const { data: recordings, isLoading: isLoadingRecordings, error: recordingsError } = useQuery<Recording[], Error>({
+    queryKey: ['/api/recordings', user?.id],
+    queryFn: () => apiRequest("GET", "/api/recordings").then(res => res.json()),
+    enabled: !!user,
+  });
+
   // Load routine notes from localStorage when component mounts
   useEffect(() => {
-    const savedNotes = localStorage.getItem('routineNotes');
-    if (savedNotes) {
-      setRoutineNotes(savedNotes);
-    }
-    
-    // Get user belt from localStorage if available
     const savedBelt = localStorage.getItem('userBelt');
     if (savedBelt) {
       setUserBelt(JSON.parse(savedBelt));
@@ -126,13 +170,20 @@ export default function Home() {
     if (savedSelectedBackground) {
       setSelectedBackground(savedSelectedBackground);
     }
+
+    // Load button theme
+    const savedButtonTheme = localStorage.getItem('buttonTheme') as typeof buttonTheme;
+    if (savedButtonTheme) {
+      setButtonTheme(savedButtonTheme);
+    }
+
+    // Check if user has seen the welcome guide
+    const hasSeenGuide = localStorage.getItem('hasSeenWelcomeGuide');
+    if (!hasSeenGuide) {
+      setShowHowItWorksDialog(true); // Show dialog on first visit
+    }
   }, []);
 
-  // Save routine notes to localStorage when they change
-  useEffect(() => {
-    localStorage.setItem('routineNotes', routineNotes);
-  }, [routineNotes]);
-  
   // Screenshot modal
   const [screenshotData, setScreenshotData] = useState<string | null>(null);
   const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState<boolean>(false);
@@ -250,7 +301,6 @@ export default function Home() {
 
   // Handle record button click
   const handleRecordClick = () => {
-    alert('Record button clicked!');
     setIsRecording(!isRecording);
   };
   
@@ -301,12 +351,37 @@ export default function Home() {
   // Handle feedback submission by opening email client
   const handleFeedbackSubmit = () => {
     const username = user?.username || 'User';
-    const subject = encodeURIComponent(`Feedback on CoachT: ${username}`);
-    const body = encodeURIComponent(feedbackText);
-    window.location.href = `mailto:okandy@uw.edu?subject=${subject}&body=${body}`;
-    setShowFeedbackDialog(false);
-    setFeedbackText('');
+    const subject = encodeURIComponent(`Feedback on CoachT by ${username}`);
+    const body = encodeURIComponent("Please type your feedback here:\n\n"); // Default body
+    window.location.href = `mailto:ojaskandy@gmail.com?subject=${subject}&body=${body}`;
   };
+
+  const getButtonClasses = (theme: typeof buttonTheme, type: 'primary' | 'outline') => {
+    const themes = {
+      sky: {
+        primary: 'bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 text-white shadow-lg hover:shadow-sky-500/40 focus:ring-sky-500',
+        outline: 'border-sky-700 text-sky-400 hover:bg-sky-900/30 hover:text-sky-300 focus:ring-sky-500',
+      },
+      crimson: {
+        primary: 'bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-700 hover:to-rose-600 text-white shadow-lg hover:shadow-red-500/40 focus:ring-red-500',
+        outline: 'border-red-700 text-red-400 hover:bg-red-900/30 hover:text-red-300 focus:ring-red-500',
+      },
+      emerald: {
+        primary: 'bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-700 hover:to-green-600 text-white shadow-lg hover:shadow-emerald-500/40 focus:ring-emerald-500',
+        outline: 'border-emerald-700 text-emerald-400 hover:bg-emerald-900/30 hover:text-emerald-300 focus:ring-emerald-500',
+      },
+      amber: {
+        primary: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-amber-500/40 focus:ring-amber-500',
+        outline: 'border-amber-700 text-amber-400 hover:bg-amber-900/30 hover:text-amber-300 focus:ring-amber-500',
+      }
+    };
+    return themes[theme][type];
+  };
+
+  // Effect to update background visibility based on blackout mode
+  useEffect(() => {
+    setShowBackground(!blackoutMode);
+  }, [blackoutMode]);
 
   // Render main component
   return (
@@ -314,8 +389,8 @@ export default function Home() {
       {/* Enhanced Header with belt display, app title and user menu */}
       <header className="bg-gradient-to-r from-black to-red-950/90 border-b border-red-900/30 px-6 py-3 flex justify-between items-center shadow-md">
         <div className="flex items-center gap-4">
-          <Link to="/" className="cursor-pointer">
-            <h1 className="text-2xl font-bold gradient-heading flex items-center group">
+          <Link to="/welcome" className="cursor-pointer">
+            <h1 className="text-2xl font-bold gradient-heading flex items-center group z-50 relative">
               <motion.span 
                 className="material-icons text-red-600 mr-2"
                 whileHover={{ rotate: 360 }}
@@ -363,7 +438,11 @@ export default function Home() {
           
           {/* Profile button */}
           <Link href="/profile">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <motion.div 
+              whileHover={{ scale: 1.05 }} 
+              whileTap={{ scale: 0.95 }} 
+              className="relative group" // Added relative group for badge positioning
+            >
               <Button 
                 variant="outline" 
                 className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3 transition-all duration-300 hover:shadow-red-500/30 hover:shadow-sm"
@@ -371,6 +450,9 @@ export default function Home() {
                 <User className="h-4 w-4 text-white mr-2" />
                 <span className="text-sm text-white font-medium">Profile</span>
               </Button>
+              <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md transform group-hover:scale-110 transition-transform z-10">
+                In Development
+              </span>
             </motion.div>
           </Link>
             
@@ -436,6 +518,17 @@ export default function Home() {
               <BarChart className="h-4 w-4 mr-2" />
               <span className="font-medium text-sm">Leaderboard</span>
             </motion.button>
+
+            <Link href="/welcome">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="h-10 rounded-full px-4 py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors"
+              >
+                <HomeIcon className="h-4 w-4 mr-2" />
+                <span className="font-medium text-sm">View Welcome Page</span>
+              </motion.button>
+            </Link>
           </div>
           
           <div className="flex items-center gap-3">
@@ -443,7 +536,7 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="h-10 rounded-full px-4 py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors"
-              onClick={() => setShowFeedbackDialog(true)}
+              onClick={handleFeedbackSubmit}
             >
               <MessageSquare className="h-4 w-4 mr-2" />
               <span className="font-medium text-sm">Feedback</span>
@@ -465,143 +558,144 @@ export default function Home() {
       </div>
       
       <main className="flex-1 flex flex-col">
-        {/* Main content area */}
-        <div className="flex-1 p-6">
-          {/* Loading indicator */}
-          {isLoading && (
-            <LoadingState progress={loadingProgress} message="Loading pose detection models..." />
-          )}
+        {/* Adjusted padding for the main content area */}
+        <div className="flex-1 p-8 md:p-10">
+          {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
-          {/* Initial screen - before starting routine */}
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-black text-center">
-              <div className="w-full max-w-lg">
-                {/* Taekwondo logo/icon with animation */}
-                <motion.div 
-                  className="w-24 h-24 mb-8 mx-auto bg-gradient-to-r from-red-800 to-red-700 rounded-full flex items-center justify-center shadow-lg relative group"
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ 
-                    type: "spring",
-                    stiffness: 260,
-                    damping: 20,
-                    delay: 0.1
-                  }}
-                >
-                  <motion.span 
-                    className="material-icons text-4xl text-white transform"
-                    animate={{ rotate: [0, 10, -10, 0] }}
-                    transition={{ 
-                      duration: 2,
-                      repeat: Infinity,
-                      repeatType: "reverse",
-                      ease: "easeInOut"
-                    }}
-                  >
-                    sports_martial_arts
-                  </motion.span>
-                  <div className="absolute inset-0 rounded-full bg-red-600/30 animate-ping opacity-75"></div>
+            // New layout for the home screen
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-x-8 items-start max-w-screen-xl mx-auto w-full h-full">
+              {/* Left Column: Welcome Text and Actions - Centered */}
+              <div className={`lg:mx-auto ${isSessionPanelExpanded ? 'lg:col-span-8' : 'lg:col-span-10 lg:col-start-2'} space-y-8 flex flex-col items-center transition-all duration-300 ease-in-out mt-16 md:mt-24`}>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-center w-full">
+                  <h1 className="text-4xl md:text-5xl font-bold text-white">
+                    Ready to train, <span className="gradient-heading">{user?.username || 'User'}</span>?
+                  </h1>
+                  <p className="text-sky-200 mt-3 text-lg md:text-xl">
+                    Track progress. Perfect your form.
+                  </p>
                 </motion.div>
-                
-                <motion.h1 
-                  className="text-4xl font-bold text-white mb-4"
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  Welcome to <span className="gradient-heading">CoachT</span>
-                </motion.h1>
-                
-                <motion.p 
-                  className="text-red-200 mb-10 text-lg"
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  Your personal Taekwondo training assistant powered by AI. Perfect your form through advanced pose tracking.
-                </motion.p>
-                
+
                 <motion.div 
-                  className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10"
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 relative group w-full max-w-2xl"
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                 >
-                  {/* Start Routine button with hover animation */}
-                  <motion.button 
-                    onClick={handlePermissionRequest}
-                    className="w-full py-5 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 
-                      text-white text-xl font-bold rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-                    whileHover={{ 
-                      scale: 1.05,
-                      boxShadow: "0 0 15px rgba(239, 68, 68, 0.5)" 
-                    }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="flex items-center justify-center">
-                      <Play className="mr-3 h-5 w-5" />
-                      START ROUTINE
-                    </div>
-                  </motion.button>
-                
-                  {/* Practice button */}
-                  <Link href="/practice">
+                  <div className="relative group"> {/* Wrapper for badge */}
                     <motion.button 
-                      className="w-full py-5 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-900 hover:to-gray-800
-                        text-white text-xl font-bold rounded-lg shadow-lg border border-red-800/30
-                        focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-                      whileHover={{ 
-                        scale: 1.05,
-                        boxShadow: "0 0 15px rgba(107, 114, 128, 0.5)" 
-                      }}
-                      whileTap={{ scale: 0.98 }}
+                      onClick={handlePermissionRequest}
+                      className={`w-full py-4 md:py-5 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      whileTap={{ scale: 0.97 }}
                     >
-                      <div className="flex items-center justify-center">
-                        <Dumbbell className="mr-3 h-5 w-5" />
-                        PRACTICE
-                      </div>
+                      <Play className="mr-2 h-5 w-5" />
+                      Start Live Routine
+                    </motion.button>
+                    <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md transform group-hover:scale-110 transition-transform z-10">
+                      In Development
+                    </span>
+                  </div>
+                
+                  <Link href="/practice">
+                    <motion.button
+                      className={`w-full py-4 md:py-5 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      <Dumbbell className="mr-2 h-5 w-5" />
+                      Practice Library
                     </motion.button>
                   </Link>
                 </motion.div>
-                
-                {/* Customize Screen Button */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.45 }}
-                  className="flex justify-center"
-                >
-                  <motion.button
-                    onClick={() => setShowCustomizeDialog(true)}
-                    className="px-4 py-2 bg-transparent border border-red-700 text-red-400 rounded-md flex items-center
-                      hover:bg-red-900/20 transition-all shadow-sm hover:shadow"
-                    whileHover={{ y: -2 }}
-                  >
-                    <span className="material-icons mr-2 text-sm">wallpaper</span>
-                    Customize Screen
-                  </motion.button>
-                </motion.div>
-                
-                {/* Notes section */}
                 <motion.div 
-                  className="mt-6 bg-black/50 border border-red-900/30 rounded-lg p-4"
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.5 }}
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                  className="pt-6" 
                 >
-                  <div className="flex items-center mb-3">
-                    <span className="material-icons text-red-500 mr-2">edit_note</span>
-                    <h3 className="text-lg font-medium text-red-100">Routine Notes</h3>
-                  </div>
-                  <textarea 
-                    className="w-full h-32 bg-black/70 border border-red-900/40 rounded p-3 text-white placeholder-red-200/50
-                      focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-                    placeholder="Write your notes for this training session here..."
-                    value={routineNotes}
-                    onChange={(e) => setRoutineNotes(e.target.value)}
-                  ></textarea>
+                   <Button
+                    onClick={() => setShowCustomizeDialog(true)}
+                    variant="outline"
+                    className={`px-6 py-3 text-base transition-all duration-300 ease-in-out rounded-lg ${getButtonClasses(buttonTheme, 'outline')}`}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Customize Screen
+                  </Button>
                 </motion.div>
               </div>
+
+              {/* Right Column: Session Log - Collapsible */}
+              <motion.div 
+                className={`bg-gray-950/70 border shadow-xl h-full flex flex-col fixed top-[220px] right-0 md:right-4 lg:right-8 transition-all duration-300 ease-in-out z-20 ${isSessionPanelExpanded ? 'lg:col-span-3 w-[350px] p-6' : 'lg:col-span-1 w-[70px] p-3 items-center'} ${buttonTheme === 'sky' ? 'border-sky-800/40' : buttonTheme === 'crimson' ? 'border-red-800/40' : buttonTheme === 'emerald' ? 'border-emerald-800/40' : 'border-amber-800/40'} rounded-xl`}
+                initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}
+                layout // Animate layout changes
+              >
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setIsSessionPanelExpanded(!isSessionPanelExpanded)} 
+                  className={`absolute -left-10 top-2 hover:bg-opacity-20 ${buttonTheme === 'sky' ? 'text-sky-400 hover:text-sky-300 hover:bg-sky-700/20' : buttonTheme === 'crimson' ? 'text-red-400 hover:text-red-300 hover:bg-red-700/20' : buttonTheme === 'emerald' ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-700/20' : 'text-amber-400 hover:text-amber-300 hover:bg-amber-700/20'} ${isSessionPanelExpanded ? 'rounded-l-md rounded-r-none' : 'rounded-md'}`}
+                  title={isSessionPanelExpanded ? "Collapse Panel" : "Expand Panel"}
+                >
+                  {isSessionPanelExpanded ? <PanelRightClose className="h-6 w-6" /> : <PanelRightOpen className="h-6 w-6" />}
+                </Button>
+
+                {/* Current Session Info */}
+                <div className={`mb-6 pb-6 border-b ${!isSessionPanelExpanded ? 'hidden' : 'block'} ${buttonTheme === 'sky' ? 'border-sky-800/50' : buttonTheme === 'crimson' ? 'border-red-800/50' : buttonTheme === 'emerald' ? 'border-emerald-800/50' : 'border-amber-800/50'}`}>
+                  <h2 className={`text-2xl font-semibold mb-3 flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    <Clock className="mr-3 h-6 w-6" />
+                    Current Session
+                  </h2>
+                  <p className="text-gray-300">
+                    Time on this page: <CurrentPageTimer />
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This timer resets if you refresh or leave the page.
+                  </p>
+                </div>
+
+                {/* Recordings Log */}
+                <div className={`${!isSessionPanelExpanded ? 'hidden' : 'block'} flex-1 overflow-hidden`}>
+                  <h2 className={`text-2xl font-semibold mb-5 flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    <ListChecks className="mr-3 h-7 w-7" />
+                    Recent Recordings
+                  </h2>
+                  <div className={`overflow-y-auto pr-2 scrollbar-thin scrollbar-track-gray-800 ${isSessionPanelExpanded ? 'max-h-[calc(100vh-480px)]' : 'max-h-0'} ${buttonTheme === 'sky' ? 'scrollbar-thumb-sky-600' : buttonTheme === 'crimson' ? 'scrollbar-thumb-red-600' : buttonTheme === 'emerald' ? 'scrollbar-thumb-emerald-600' : 'scrollbar-thumb-amber-600'}`}>
+                    {isLoadingRecordings && (
+                      <div className="flex items-center justify-center py-10">
+                        <Loader2 className={`h-10 w-10 animate-spin ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                        {isSessionPanelExpanded && <p className="ml-4 text-gray-400 text-lg">Loading...</p>}
+                      </div>
+                    )}
+                    {recordingsError && (
+                      <p className="text-red-400 text-center py-5">Error: {recordingsError.message}</p>
+                    )}
+                    {!isLoadingRecordings && recordings && recordings.length > 0 && (
+                      <ul className="space-y-3">
+                        {recordings.slice().reverse().map(rec => (
+                          <li key={rec.id} className={`bg-gray-900 p-3 rounded-lg border border-gray-800 hover:shadow-md transition-all duration-200 ease-in-out transform ${buttonTheme === 'sky' ? 'hover:border-sky-600/60 hover:shadow-sky-700/20' : buttonTheme === 'crimson' ? 'hover:border-red-600/60 hover:shadow-red-700/20' : buttonTheme === 'emerald' ? 'hover:border-emerald-600/60 hover:shadow-emerald-700/20' : 'hover:border-amber-600/60 hover:shadow-amber-700/20'}`}>
+                            <p className="text-sm text-white font-medium truncate">
+                              {rec.title || `Practice Recording ${rec.id}`}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {format(new Date(rec.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {!isLoadingRecordings && (!recordings || recordings.length === 0) && !recordingsError && (
+                      <p className="text-gray-500 italic text-center py-10 text-sm">No recordings yet.</p>
+                    )}
+                  </div>
+                </div>
+                 {/* Collapsed State Icons */}
+                {!isSessionPanelExpanded && (
+                  <div className="flex flex-col items-center space-y-6 mt-6">
+                    <span title="Current Session">
+                      <Clock className={`h-7 w-7 ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                    </span>
+                    <span title="Recent Recordings">
+                      <ListChecks className={`h-7 w-7 ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                    </span>
+                  </div>
+                )}
+              </motion.div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
@@ -613,7 +707,7 @@ export default function Home() {
                   confidenceThreshold={confidenceThreshold}
                   modelSelection={modelSelection}
                   maxPoses={maxPoses}
-                  skeletonColor="red"
+                  skeletonColor={skeletonColorChoice}
                   showSkeleton={showSkeleton}
                   showPoints={showPoints}
                   showBackground={showBackground}
@@ -632,10 +726,52 @@ export default function Home() {
                   setCameraFacing={setCameraFacing}
                   externalIsRecording={isRecording}
                   onRecordClick={handleRecordClick}
-                  routineNotes={routineNotes}
-                  setRoutineNotes={setRoutineNotes}
                   customBackground={selectedBackground}
                 />
+              )}
+
+              {/* Camera Settings Panel */}
+              {sourceType === 'camera' && hasPermission && !isLoading && (
+                <div className="absolute top-4 right-4 bg-gray-950/80 border border-gray-800 rounded-lg p-3 shadow-lg z-20">
+                  <h3 className={`text-sm font-semibold mb-2 ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    Camera Options
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    {/* Skeleton Color Selection */}
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Skeleton Color</label>
+                      <div className="flex space-x-2">
+                        {['red', 'blue', 'green', 'purple', 'orange'].map((color) => (
+                          <button
+                            key={color}
+                            onClick={() => setSkeletonColorChoice(color as typeof skeletonColorChoice)}
+                            className={`w-6 h-6 rounded-full border ${skeletonColorChoice === color ? 'border-white border-2' : 'border-gray-600'}`}
+                            style={{ backgroundColor: 
+                              color === 'red' ? '#ef4444' : 
+                              color === 'blue' ? '#3b82f6' : 
+                              color === 'green' ? '#10b981' : 
+                              color === 'purple' ? '#8b5cf6' : 
+                              '#f97316' // orange
+                            }}
+                            aria-label={`Set skeleton color to ${color}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Blackout Mode Toggle */}
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Blackout Mode</label>
+                      <button
+                        onClick={() => setBlackoutMode(!blackoutMode)}
+                        className={`w-full py-1 px-3 rounded text-sm font-medium ${blackoutMode ? 'bg-gray-200 text-black' : 'bg-gray-800 text-white'}`}
+                      >
+                        {blackoutMode ? 'On (Skeleton Only)' : 'Off (Show Camera)'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -658,194 +794,113 @@ export default function Home() {
       )}
 
       {/* "How It Works" Dialog */}
-      <Dialog open={showHowItWorksDialog} onOpenChange={setShowHowItWorksDialog}>
-        <DialogContent className="bg-gray-950 border-red-900 text-white max-w-3xl">
+      <Dialog open={showHowItWorksDialog} onOpenChange={(isOpen) => {
+        setShowHowItWorksDialog(isOpen);
+        if (!isOpen) {
+          localStorage.setItem('hasSeenWelcomeGuide', 'true'); // Mark as seen when closed
+        }
+      }}>
+        <DialogContent className={`bg-gray-950 border text-white max-w-3xl ${getButtonClasses(buttonTheme, 'outline').split(' ').find(c => c.startsWith('border-')) || 'border-sky-800'}`}>
           <DialogHeader>
-            <DialogTitle className="text-2xl flex items-center text-red-500">
-              <HelpCircle className="mr-2 h-5 w-5" /> 
+            <DialogTitle className={`text-3xl flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
+              <HelpCircle className="mr-3 h-7 w-7" /> 
               How CoachT Works
             </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Learn how to get the most out of your training with CoachT
+            <DialogDescription className="text-gray-400 mt-1">
+              Welcome to CoachT! Here's a quick guide to get you started.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid gap-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <motion.div 
-                className="bg-black/50 p-4 rounded-lg border border-red-900/30"
-                whileHover={{ scale: 1.03, boxShadow: "0 0 8px rgba(239, 68, 68, 0.3)" }}
-              >
-                <div className="w-12 h-12 rounded-full bg-red-900/50 flex items-center justify-center mb-3">
-                  <Play className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Step 1: Start Routine</h3>
-                <p className="text-gray-400 text-sm">
-                  Click 'Start Routine' to activate your camera and begin AI pose tracking.
-                </p>
-              </motion.div>
-              
-              <motion.div 
-                className="bg-black/50 p-4 rounded-lg border border-red-900/30"
-                whileHover={{ scale: 1.03, boxShadow: "0 0 8px rgba(239, 68, 68, 0.3)" }}
-              >
-                <div className="w-12 h-12 rounded-full bg-red-900/50 flex items-center justify-center mb-3">
-                  <RefreshCw className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Step 2: See Feedback</h3>
-                <p className="text-gray-400 text-sm">
-                  Watch in real-time as CoachT provides instant feedback on your form.
-                </p>
-              </motion.div>
-              
-              <motion.div 
-                className="bg-black/50 p-4 rounded-lg border border-red-900/30"
-                whileHover={{ scale: 1.03, boxShadow: "0 0 8px rgba(239, 68, 68, 0.3)" }}
-              >
-                <div className="w-12 h-12 rounded-full bg-red-900/50 flex items-center justify-center mb-3">
-                  <Award className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Step 3: Track Progress</h3>
-                <p className="text-gray-400 text-sm">
-                  Monitor your improvements over time with detailed statistics and records.
-                </p>
-              </motion.div>
-            </div>
-            
-            <div className="mt-4">
-              <h3 className="font-bold text-xl mb-3">Tips For Best Results</h3>
-              <ul className="list-disc pl-5 space-y-2 text-gray-300">
-                <li>Position yourself 6-8 feet from the camera</li>
-                <li>Ensure your entire body is visible in the frame</li>
-                <li>Train in a well-lit area with minimal background distractions</li>
-                <li>Wear clothing that contrasts with your background</li>
-                <li>Start with slower movements to get familiar with the tracking</li>
-              </ul>
-            </div>
+          <div className="py-4 text-gray-300 h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-track-gray-800 ${buttonTheme === 'sky' ? 'scrollbar-thumb-sky-600' : buttonTheme === 'crimson' ? 'scrollbar-thumb-red-600' : buttonTheme === 'emerald' ? 'scrollbar-thumb-emerald-600' : 'scrollbar-thumb-amber-600'}">
+            <Accordion type="single" collapsible className="space-y-4">
+              <AccordionItem value="item-1" className="border-b-0">
+                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
+                  <div className="flex items-center">
+                    <Play className="mr-2 h-5 w-5" />
+                    Start Live Routine
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-3 pb-2 px-2">
+                  <p className="mb-2">
+                    This is your main training ground! Clicking 'Start Live Routine' will activate your camera for real-time AI pose tracking.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-1 text-sm">
+                    <li><strong>Permissions:</strong> Your browser will ask for camera access. Please allow it for CoachT to see your movements.</li>
+                    <li><strong>Real-time Feedback:</strong> Once active, CoachT analyzes your form and provides instant visual cues and (soon!) audio feedback.</li>
+                    <li><strong>During the Routine:</strong> You'll have options to record your session, pause, and adjust settings (like skeleton visibility) directly on the screen.</li>
+                    <li><strong>Goal:</strong> Focus on matching the target poses and refining your technique based on the AI's guidance.</li>
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-2" className="border-b-0">
+                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
+                  <div className="flex items-center">
+                    <Dumbbell className="mr-2 h-5 w-5" />
+                    Practice Library
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-3 pb-2 px-2">
+                  <p className="mb-2">
+                    The 'Practice Library' is where you can explore and master individual Taekwondo moves or other exercises.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-1 text-sm">
+                    <li><strong>Browse Moves:</strong> Navigate through categories to find specific techniques, forms, or drills.</li>
+                    <li><strong>Detailed View:</strong> Each move has a dedicated page with reference visuals, key joint angle data, and (eventually) video demonstrations.</li>
+                    <li><strong>Focused Practice:</strong> Launch a targeted practice session for any move directly from its library page. This works similarly to the 'Start Live Routine' but focuses on that single move.</li>
+                    <li><strong>Reference Poses:</strong> For developers or advanced users, you can contribute by saving your own reference poses for moves.</li>
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-3" className="border-b-0">
+                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
+                  <div className="flex items-center">
+                    <MessageSquare className="mr-2 h-5 w-5" />
+                    Providing Feedback
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-3 pb-2 px-2">
+                  <p className="mb-2">
+                    Your input is invaluable for making CoachT better! Use the 'Feedback' button (usually in the top navigation or menu) to share your thoughts.
+                  </p>
+                  <ul className="list-disc pl-6 space-y-1 text-sm">
+                    <li><strong>How it Works:</strong> Clicking 'Feedback' will typically open your default email client with a pre-filled subject line.</li>
+                    <li><strong>What to Share:</strong> Tell us about your experience, any bugs you encounter, features you'd love to see, or general suggestions.</li>
+                    <li><strong>Be Specific:</strong> The more detail you provide, the better we can understand and address your feedback.</li>
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-4" className="border-b-0">
+                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
+                  <div className="flex items-center">
+                    <Info className="mr-2 h-5 w-5" />
+                    General Tips for Best Results
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-3 pb-2 px-2">
+                  <ul className="list-disc pl-6 space-y-2 text-sm">
+                    <li>Position yourself 6-8 feet from the camera for full-body tracking.</li>
+                    <li>Ensure your entire body is visible within the camera frame.</li>
+                    <li>Train in a well-lit area with a contrasting background if possible.</li>
+                    <li>Wear clothing that doesn't blend in too much with your surroundings.</li>
+                    <li>Start with slower movements to help the AI calibrate and for you to get used to the feedback.</li>
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="mt-2">
             <Button 
-              onClick={() => setShowHowItWorksDialog(false)}
-              className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white"
+              onClick={() => {
+                setShowHowItWorksDialog(false);
+                localStorage.setItem('hasSeenWelcomeGuide', 'true'); // Explicitly set on click too
+              }}
+              className={`text-white px-6 py-2 text-base ${getButtonClasses(buttonTheme, 'primary')}`}
             >
-              Got it
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Feedback Dialog */}
-      <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
-        <DialogContent className="bg-gray-950 border-red-900 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-2xl flex items-center text-red-500">
-              <MessageSquare className="mr-2 h-5 w-5" /> 
-              Provide Feedback
-            </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Share your suggestions or report issues to help us improve
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-6 py-4">
-            <textarea 
-              placeholder="Type your feedback here..."
-              className="min-h-[150px] bg-gray-900 border border-red-900/40 rounded p-3 text-white"
-              value={feedbackText}
-              onChange={(e) => setFeedbackText(e.target.value)}
-            ></textarea>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white"
-              onClick={handleFeedbackSubmit}
-            >
-              Submit Feedback
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Customize Screen Dialog */}
-      <Dialog open={showCustomizeDialog} onOpenChange={setShowCustomizeDialog}>
-        <DialogContent className="bg-gray-950 border-red-900 text-white max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl flex items-center text-red-500">
-              <span className="material-icons mr-2">wallpaper</span>
-              Customize Screen
-            </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Upload and select custom background images for your training sessions
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-6 py-4">
-            {/* Upload new background section */}
-            <div className="border-2 border-dashed border-red-900/40 rounded-lg p-4 flex flex-col items-center">
-              <span className="material-icons text-4xl text-red-500/70 mb-2">add_photo_alternate</span>
-              <p className="text-sm text-gray-300 mb-4">Upload a background image</p>
-              
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleBackgroundImageUpload}
-                className="bg-red-950/20 border-red-900/40 text-white p-2 rounded-md w-full"
-              />
-            </div>
-            
-            {/* Background gallery */}
-            <div>
-              <h3 className="font-bold text-lg mb-3">Your Backgrounds</h3>
-              {backgroundImages.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {backgroundImages.map((image, index) => (
-                    <div 
-                      key={index} 
-                      className={`relative group rounded-lg overflow-hidden border-2 ${selectedBackground === image ? 'border-red-500' : 'border-red-900/30'} h-40 cursor-pointer`}
-                      onClick={() => handleSelectBackground(image)}
-                    >
-                      <img
-                        src={image}
-                        alt={`Background ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteBackground(image);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      {selectedBackground === image && (
-                        <div className="absolute top-2 right-2 bg-red-500 rounded-full p-1">
-                          <span className="material-icons text-white text-sm">check</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 bg-gray-900/50 rounded-lg">
-                  <p className="text-gray-400">No background images uploaded yet</p>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              onClick={() => setShowCustomizeDialog(false)}
-              className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white"
-            >
-              Done
+              Got it, Let's Train!
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -853,9 +908,9 @@ export default function Home() {
       
       {/* Leaderboard Dialog */}
       <Dialog open={showLeaderboardDialog} onOpenChange={setShowLeaderboardDialog}>
-        <DialogContent className="bg-gray-950 border-red-900 text-white max-w-3xl">
+        <DialogContent className={`bg-gray-950 border text-white max-w-3xl ${getButtonClasses(buttonTheme, 'outline').split(' ').find(c => c.startsWith('border-')) || 'border-sky-800'}`}>
           <DialogHeader>
-            <DialogTitle className="text-2xl flex items-center text-red-500">
+            <DialogTitle className={`text-2xl flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
               <BarChart className="mr-2 h-5 w-5" /> 
               Leaderboard
             </DialogTitle>
@@ -871,7 +926,7 @@ export default function Home() {
           <DialogFooter>
             <Button 
               onClick={() => setShowLeaderboardDialog(false)}
-              className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white"
+              className={`text-white ${getButtonClasses(buttonTheme, 'primary')}`}
             >
               Close
             </Button>
@@ -881,9 +936,9 @@ export default function Home() {
       
       {/* Training Tips Dialog */}
       <Dialog open={showTips} onOpenChange={setShowTips}>
-        <DialogContent className="bg-gray-950 border-red-900 text-white">
+        <DialogContent className={`bg-gray-950 border text-white ${getButtonClasses(buttonTheme, 'outline').split(' ').find(c => c.startsWith('border-')) || 'border-sky-800'}`}>
           <DialogHeader>
-            <DialogTitle className="text-2xl flex items-center text-red-500">
+            <DialogTitle className={`text-2xl flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
               <Info className="mr-2 h-5 w-5" /> 
               Training Tips
             </DialogTitle>
@@ -924,7 +979,7 @@ export default function Home() {
           <DialogFooter>
             <Button 
               onClick={() => setShowTips(false)}
-              className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white"
+              className={`text-white ${getButtonClasses(buttonTheme, 'primary')}`}
             >
               Got it
             </Button>
@@ -932,12 +987,53 @@ export default function Home() {
         </DialogContent>
       </Dialog>
 
-      {/* Add gallery frames on left and right sides when not tracking */}
+      {/* Customize Screen Dialog - Repurposed for Color Themes */}
+      <Dialog open={showCustomizeDialog} onOpenChange={setShowCustomizeDialog}>
+        <DialogContent className={`bg-gray-950 border text-white max-w-lg ${getButtonClasses(buttonTheme, 'outline').split(' ').find(c => c.startsWith('border-')) || 'border-sky-800'}`}>
+          <DialogHeader>
+            <DialogTitle className={`text-2xl flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
+              <Palette className="mr-3 h-6 w-6" />
+              Customize UI Theme
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 mt-1">
+              Change the primary color theme for buttons and accents.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-6">
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg text-gray-200">Select a Color Theme:</h3>
+              {(['sky', 'crimson', 'emerald', 'amber'] as const).map((themeOption) => (
+                <Button
+                  key={themeOption}
+                  onClick={() => {
+                    setButtonTheme(themeOption);
+                    localStorage.setItem('buttonTheme', themeOption);
+                  }}
+                  className={`w-full justify-start py-3 px-4 text-base rounded-md transition-all duration-200 ease-in-out ${getButtonClasses(themeOption, 'primary')} ${buttonTheme === themeOption ? 'ring-2 ring-offset-2 ring-offset-gray-950 ' + (themeOption === 'sky' ? 'ring-sky-400' : themeOption === 'crimson' ? 'ring-red-400' : themeOption === 'emerald' ? 'ring-emerald-400' : 'ring-amber-400') : ''}`}
+                >
+                  <span className={`w-4 h-4 rounded-full mr-3 ${
+                    themeOption === 'sky' ? 'bg-sky-500' : 
+                    themeOption === 'crimson' ? 'bg-red-500' : 
+                    themeOption === 'emerald' ? 'bg-emerald-500' : 
+                    'bg-amber-500'
+                  }`}></span>
+                  {themeOption.charAt(0).toUpperCase() + themeOption.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="mt-2">
+            <Button onClick={() => setShowCustomizeDialog(false)} className={`text-white px-6 py-2 text-base ${getButtonClasses(buttonTheme, 'primary')}`}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Gallery frames for welcome screen (only shown if not tracking and backgroundImages exist) */}
       {(!hasPermission || trackingStatus === 'inactive') && !isTracking && backgroundImages.length > 0 && (
         <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: -1 }}>
-          <div className="flex h-full items-center">
+          <div className="flex h-full items-center justify-between">
             {/* Left side frames */}
-            <div className="hidden md:flex flex-col ml-8 space-y-8">
+            <div className="hidden md:flex flex-col ml-8 space-y-8" style={{ position: 'absolute', left: '2rem', top: '50%', transform: 'translateY(-50%)' }}>
               {backgroundImages.slice(0, Math.min(3, Math.ceil(backgroundImages.length / 2))).map((image, index) => (
                 <motion.div
                   key={`left-${index}`}
@@ -945,36 +1041,37 @@ export default function Home() {
                   initial={{ opacity: 0, x: -50 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 + (index * 0.1) }}
-                  whileHover={{ scale: 1.05, rotate: index % 2 === 0 ? -2 : 2 }}
+                  whileHover={{ scale: 1.05, rotate: index % 2 === 0 ? -8 : -4 }}
                   style={{ 
-                    transform: `rotate(${index % 2 === 0 ? -3 : 3}deg)`,
+                    transform: `rotate(${index % 2 === 0 ? -10 : -5}deg)`,
                     width: '180px',
-                    height: '200px'
+                    height: '200px',
+                    transformOrigin: 'center center'
                   }}
                 >
                   <div className="relative w-full h-full">
                     {/* Outer frame with shadow */}
                     <div className="absolute inset-0 border-[12px] rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.6)]" 
                       style={{
-                        borderImage: 'linear-gradient(45deg, #2d1a16 0%, #701f1f 50%, #2d1a16 100%) 1',
+                        borderImage: 'linear-gradient(45deg, #0c2a4d 0%, #1f6bac 50%, #0c2a4d 100%) 1',
                         boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8), 0 10px 25px rgba(0,0,0,0.7)'
                       }}>
                     </div>
                     
-                    {/* Inner frame */}
-                    <div className="absolute inset-[12px] border-2 border-red-900/40"></div>
+                    {/* Inner frame with glass effect */}
+                    <div className="absolute inset-[12px] border-2 border-sky-900/40 backdrop-blur-sm bg-white/5 rounded"></div>
                     
                     {/* Decorative corner elements */}
-                    <div className="absolute top-[-5px] left-[-5px] w-8 h-8 bg-gradient-to-br from-red-900 to-red-700 rounded-full flex items-center justify-center transform -rotate-45">
+                    <div className="absolute top-[-5px] left-[-5px] w-8 h-8 bg-gradient-to-br from-sky-900 to-sky-700 rounded-full flex items-center justify-center transform -rotate-45">
                       <span className="text-white text-xs">◆</span>
                     </div>
-                    <div className="absolute top-[-5px] right-[-5px] w-8 h-8 bg-gradient-to-bl from-red-900 to-red-700 rounded-full flex items-center justify-center transform rotate-45">
+                    <div className="absolute top-[-5px] right-[-5px] w-8 h-8 bg-gradient-to-bl from-sky-900 to-sky-700 rounded-full flex items-center justify-center transform rotate-45">
                       <span className="text-white text-xs">◆</span>
                     </div>
-                    <div className="absolute bottom-[-5px] left-[-5px] w-8 h-8 bg-gradient-to-tr from-red-900 to-red-700 rounded-full flex items-center justify-center transform rotate-45">
+                    <div className="absolute bottom-[-5px] left-[-5px] w-8 h-8 bg-gradient-to-tr from-sky-900 to-sky-700 rounded-full flex items-center justify-center transform rotate-45">
                       <span className="text-white text-xs">◆</span>
                     </div>
-                    <div className="absolute bottom-[-5px] right-[-5px] w-8 h-8 bg-gradient-to-tl from-red-900 to-red-700 rounded-full flex items-center justify-center transform -rotate-45">
+                    <div className="absolute bottom-[-5px] right-[-5px] w-8 h-8 bg-gradient-to-tl from-sky-900 to-sky-700 rounded-full flex items-center justify-center transform -rotate-45">
                       <span className="text-white text-xs">◆</span>
                     </div>
                     
@@ -985,18 +1082,18 @@ export default function Home() {
                       className="absolute inset-[16px] object-cover w-[calc(100%-32px)] h-[calc(100%-32px)]"
                     />
                     
-                    {/* Glass-like reflection overlay */}
-                    <div className="absolute inset-[16px] bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                    {/* Enhanced glass-like reflection overlay */}
+                    <div className="absolute inset-[16px] bg-gradient-to-br from-white/20 to-transparent pointer-events-none"></div>
+                    <div className="absolute inset-[16px] overflow-hidden rounded">
+                      <div className="absolute top-0 left-[-100%] w-[300%] h-[50%] bg-gradient-to-br from-white/30 to-transparent transform rotate-45 opacity-60"></div>
+                    </div>
                   </div>
                 </motion.div>
               ))}
             </div>
             
-            {/* Center content - just a spacer */}
-            <div className="flex-1"></div>
-            
             {/* Right side frames */}
-            <div className="hidden md:flex flex-col mr-8 space-y-8">
+            <div className="hidden md:flex flex-col mr-8 space-y-8" style={{ position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)' }}>
               {backgroundImages.slice(Math.ceil(backgroundImages.length / 2), Math.min(6, backgroundImages.length)).map((image, index) => (
                 <motion.div
                   key={`right-${index}`}
@@ -1004,36 +1101,37 @@ export default function Home() {
                   initial={{ opacity: 0, x: 50 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + (index * 0.1) }}
-                  whileHover={{ scale: 1.05, rotate: index % 2 === 0 ? 2 : -2 }}
+                  whileHover={{ scale: 1.05, rotate: index % 2 === 0 ? 8 : 4 }}
                   style={{ 
-                    transform: `rotate(${index % 2 === 0 ? 3 : -3}deg)`,
+                    transform: `rotate(${index % 2 === 0 ? 10 : 5}deg)`,
                     width: '180px',
-                    height: '200px'
+                    height: '200px',
+                    transformOrigin: 'center center'
                   }}
                 >
                   <div className="relative w-full h-full">
                     {/* Outer frame with shadow */}
                     <div className="absolute inset-0 border-[12px] rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.6)]" 
                       style={{
-                        borderImage: 'linear-gradient(45deg, #2d1a16 0%, #701f1f 50%, #2d1a16 100%) 1',
+                        borderImage: 'linear-gradient(45deg, #0c2a4d 0%, #1f6bac 50%, #0c2a4d 100%) 1',
                         boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8), 0 10px 25px rgba(0,0,0,0.7)'
                       }}>
                     </div>
                     
-                    {/* Inner frame */}
-                    <div className="absolute inset-[12px] border-2 border-red-900/40"></div>
+                    {/* Inner frame with glass effect */}
+                    <div className="absolute inset-[12px] border-2 border-sky-900/40 backdrop-blur-sm bg-white/5 rounded"></div>
                     
                     {/* Decorative corner elements */}
-                    <div className="absolute top-[-5px] left-[-5px] w-8 h-8 bg-gradient-to-br from-red-900 to-red-700 rounded-full flex items-center justify-center transform -rotate-45">
+                    <div className="absolute top-[-5px] left-[-5px] w-8 h-8 bg-gradient-to-br from-sky-900 to-sky-700 rounded-full flex items-center justify-center transform -rotate-45">
                       <span className="text-white text-xs">◆</span>
                     </div>
-                    <div className="absolute top-[-5px] right-[-5px] w-8 h-8 bg-gradient-to-bl from-red-900 to-red-700 rounded-full flex items-center justify-center transform rotate-45">
+                    <div className="absolute top-[-5px] right-[-5px] w-8 h-8 bg-gradient-to-bl from-sky-900 to-sky-700 rounded-full flex items-center justify-center transform rotate-45">
                       <span className="text-white text-xs">◆</span>
                     </div>
-                    <div className="absolute bottom-[-5px] left-[-5px] w-8 h-8 bg-gradient-to-tr from-red-900 to-red-700 rounded-full flex items-center justify-center transform rotate-45">
+                    <div className="absolute bottom-[-5px] left-[-5px] w-8 h-8 bg-gradient-to-tr from-sky-900 to-sky-700 rounded-full flex items-center justify-center transform rotate-45">
                       <span className="text-white text-xs">◆</span>
                     </div>
-                    <div className="absolute bottom-[-5px] right-[-5px] w-8 h-8 bg-gradient-to-tl from-red-900 to-red-700 rounded-full flex items-center justify-center transform -rotate-45">
+                    <div className="absolute bottom-[-5px] right-[-5px] w-8 h-8 bg-gradient-to-tl from-sky-900 to-sky-700 rounded-full flex items-center justify-center transform -rotate-45">
                       <span className="text-white text-xs">◆</span>
                     </div>
                     
@@ -1044,12 +1142,101 @@ export default function Home() {
                       className="absolute inset-[16px] object-cover w-[calc(100%-32px)] h-[calc(100%-32px)]"
                     />
                     
-                    {/* Glass-like reflection overlay */}
-                    <div className="absolute inset-[16px] bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                    {/* Enhanced glass-like reflection overlay */}
+                    <div className="absolute inset-[16px] bg-gradient-to-br from-white/20 to-transparent pointer-events-none"></div>
+                    <div className="absolute inset-[16px] overflow-hidden rounded">
+                      <div className="absolute top-0 left-[-100%] w-[300%] h-[50%] bg-gradient-to-br from-white/30 to-transparent transform rotate-45 opacity-60"></div>
+                    </div>
                   </div>
                 </motion.div>
               ))}
             </div>
+          </div>
+          
+          {/* Colorful animated elements at the bottom */}
+          <div className="absolute bottom-0 left-0 right-0 h-40 overflow-hidden">
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ff3366" stopOpacity="0.8">
+                    <animate attributeName="offset" values="0;0.3;0" dur="10s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="30%" stopColor="#4f6df5" stopOpacity="0.8">
+                    <animate attributeName="offset" values="0.3;0.6;0.3" dur="10s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="60%" stopColor="#11d3f3" stopOpacity="0.8">
+                    <animate attributeName="offset" values="0.6;0.9;0.6" dur="10s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="90%" stopColor="#ff9933" stopOpacity="0.8">
+                    <animate attributeName="offset" values="0.9;1.0;0.9" dur="10s" repeatCount="indefinite" />
+                  </stop>
+                </linearGradient>
+                <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#11d3f3" stopOpacity="0.8">
+                    <animate attributeName="offset" values="0;0.3;0" dur="8s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="30%" stopColor="#ff9933" stopOpacity="0.8">
+                    <animate attributeName="offset" values="0.3;0.6;0.3" dur="8s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="60%" stopColor="#ff3366" stopOpacity="0.8">
+                    <animate attributeName="offset" values="0.6;0.9;0.6" dur="8s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="90%" stopColor="#4f6df5" stopOpacity="0.8">
+                    <animate attributeName="offset" values="0.9;1.0;0.9" dur="8s" repeatCount="indefinite" />
+                  </stop>
+                </linearGradient>
+              </defs>
+              
+              <path d="M0,40 Q250,5 500,40 T1000,40 T1500,40 T2000,40 T2500,40 V100 H0 V40" fill="url(#grad1)">
+                <animate attributeName="d" 
+                  values="M0,40 Q250,5 500,40 T1000,40 T1500,40 T2000,40 T2500,40 V100 H0 V40;
+                          M0,40 Q250,20 500,35 T1000,35 T1500,45 T2000,30 T2500,40 V100 H0 V40;
+                          M0,40 Q250,40 500,20 T1000,30 T1500,25 T2000,40 T2500,40 V100 H0 V40;
+                          M0,40 Q250,5 500,40 T1000,40 T1500,40 T2000,40 T2500,40 V100 H0 V40"
+                  dur="20s" 
+                  repeatCount="indefinite" />
+              </path>
+              
+              <path d="M0,65 Q250,45 500,65 T1000,65 T1500,65 T2000,65 T2500,65 V100 H0 V65" fill="url(#grad2)">
+                <animate attributeName="d" 
+                  values="M0,65 Q250,45 500,65 T1000,65 T1500,65 T2000,65 T2500,65 V100 H0 V65;
+                          M0,65 Q250,75 500,60 T1000,60 T1500,70 T2000,55 T2500,65 V100 H0 V65;
+                          M0,65 Q250,65 500,45 T1000,55 T1500,50 T2000,65 T2500,65 V100 H0 V65;
+                          M0,65 Q250,45 500,65 T1000,65 T1500,65 T2000,65 T2500,65 V100 H0 V65"
+                  dur="15s" 
+                  repeatCount="indefinite" />
+              </path>
+              
+              <path d="M0,80 Q250,105 500,80 T1000,80 T1500,80 T2000,80 T2500,80 V100 H0 V80" fill="url(#grad1)" opacity="0.6">
+                <animate attributeName="d" 
+                  values="M0,80 Q250,105 500,80 T1000,80 T1500,80 T2000,80 T2500,80 V100 H0 V80;
+                          M0,80 Q250,70 500,80 T1000,90 T1500,75 T2000,85 T2500,80 V100 H0 V80;
+                          M0,80 Q250,85 500,70 T1000,75 T1500,90 T2000,80 T2500,80 V100 H0 V80;
+                          M0,80 Q250,105 500,80 T1000,80 T1500,80 T2000,80 T2500,80 V100 H0 V80"
+                  dur="25s" 
+                  repeatCount="indefinite" />
+              </path>
+              
+              <circle cx="10%" cy="85%" r="5" fill="#ff3366">
+                <animate attributeName="cx" values="10%;90%;10%" dur="20s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.8;0.4;0.8" dur="5s" repeatCount="indefinite" />
+              </circle>
+              
+              <circle cx="20%" cy="75%" r="3" fill="#4f6df5">
+                <animate attributeName="cx" values="20%;70%;20%" dur="15s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.7;0.3;0.7" dur="7s" repeatCount="indefinite" />
+              </circle>
+              
+              <circle cx="80%" cy="80%" r="6" fill="#11d3f3">
+                <animate attributeName="cx" values="80%;30%;80%" dur="25s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.6;0.2;0.6" dur="8s" repeatCount="indefinite" />
+              </circle>
+              
+              <circle cx="65%" cy="90%" r="4" fill="#ff9933">
+                <animate attributeName="cx" values="65%;25%;65%" dur="18s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.5;0.3;0.5" dur="6s" repeatCount="indefinite" />
+              </circle>
+            </svg>
           </div>
         </div>
       )}

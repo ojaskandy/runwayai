@@ -616,7 +616,19 @@ export default function CameraView({
                 }
 
                 if (showSkeleton) {
-                  ctx.strokeStyle = skeletonColor || '#B91C1C';
+                  // Define the actual color based on skeletonColor prop
+                  const skeletonRGB = 
+                    skeletonColor === 'blue' ? { r: 59, g: 130, b: 246 } :
+                    skeletonColor === 'green' ? { r: 16, g: 185, b: 129 } :
+                    skeletonColor === 'purple' ? { r: 139, g: 92, b: 246 } :
+                    skeletonColor === 'orange' ? { r: 249, g: 115, b: 22 } :
+                    { r: 239, g: 68, b: 68 }; // default red
+                  
+                  ctx.strokeStyle = skeletonColor === 'blue' ? '#3b82f6' :
+                                   skeletonColor === 'green' ? '#10b981' :
+                                   skeletonColor === 'purple' ? '#8b5cf6' :
+                                   skeletonColor === 'orange' ? '#f97316' :
+                                   '#ef4444'; // default red
                   ctx.lineWidth = 3;
 
                   connections.forEach((connection) => {
@@ -630,7 +642,7 @@ export default function CameraView({
                         typeof to.score === 'number' &&
                         from.score > confidenceThreshold &&
                         to.score > confidenceThreshold) {
-                      ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
+                      ctx.shadowColor = `rgba(${skeletonRGB.r}, ${skeletonRGB.g}, ${skeletonRGB.b}, 0.7)`;
                       ctx.shadowBlur = 10;
 
                       ctx.beginPath();
@@ -645,14 +657,27 @@ export default function CameraView({
                 }
 
                 if (showPoints) {
+                  const pointColor = skeletonColor === 'blue' ? '#3b82f6' :
+                                   skeletonColor === 'green' ? '#10b981' :
+                                   skeletonColor === 'purple' ? '#8b5cf6' :
+                                   skeletonColor === 'orange' ? '#f97316' :
+                                   '#ef4444'; // default red
+                                   
+                  const shadowRGB = 
+                    skeletonColor === 'blue' ? { r: 59, g: 130, b: 246 } :
+                    skeletonColor === 'green' ? { r: 16, g: 185, b: 129 } :
+                    skeletonColor === 'purple' ? { r: 139, g: 92, b: 246 } :
+                    skeletonColor === 'orange' ? { r: 249, g: 115, b: 22 } :
+                    { r: 239, g: 68, b: 68 }; // default red
+
                   keypoints.forEach(keypoint => {
                     if (typeof keypoint.score === 'number' && keypoint.score > confidenceThreshold) {
                       const { x, y } = keypoint;
 
-                      ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
+                      ctx.shadowColor = `rgba(${shadowRGB.r}, ${shadowRGB.g}, ${shadowRGB.b}, 0.7)`;
                       ctx.shadowBlur = 15;
 
-                      ctx.fillStyle = '#ef4444';
+                      ctx.fillStyle = pointColor;
                       ctx.beginPath();
                       ctx.arc(x, y, 6, 0, 2 * Math.PI);
                       ctx.fill();
@@ -836,141 +861,90 @@ export default function CameraView({
       ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
       try {
-        const poses = await detectPoses(
-          refElement,
-          maxPoses,
-          confidenceThreshold
-        );
+        if (!poseDetector) {
+          console.error('Pose detector not initialized');
+          return;
+        }
 
+        const poses = await poseDetector.estimatePoses(refElement, {
+          flipHorizontal: false,
+          maxPoses: 1
+        });
+
+        // Check if we have at least one pose
         if (poses && poses.length > 0) {
-          poses.forEach(pose => {
-            const keypoints = pose.keypoints;
-            const connections = [
-              ['left_shoulder', 'right_shoulder'],
-              ['left_shoulder', 'left_hip'],
-              ['right_shoulder', 'right_hip'],
-              ['left_hip', 'right_hip'],
-              ['left_shoulder', 'left_elbow'],
-              ['left_elbow', 'left_wrist'],
-              ['right_shoulder', 'right_elbow'],
-              ['right_elbow', 'right_wrist'],
-              ['left_hip', 'left_knee'],
-              ['left_knee', 'left_ankle'],
-              ['right_hip', 'right_knee'],
-              ['right_knee', 'right_ankle'],
-              ['nose', 'left_eye'],
-              ['nose', 'right_eye'],
-              ['left_eye', 'left_ear'],
-              ['right_eye', 'right_ear'],
-            ];
+          // Calculate scale factors
+          const scaleX = overlayCanvas.width / width;
+          const scaleY = overlayCanvas.height / height;
 
-            const scaleX = overlayCanvas.width / width;
-            const scaleY = overlayCanvas.height / height;
+          // Get the pose with the highest score
+          const pose = poses[0];
+          const keypoints = pose.keypoints;
+          
+          // Define the actual color based on skeletonColor prop
+          const skeletonRGB = 
+            skeletonColor === 'blue' ? { r: 59, g: 130, b: 246 } :
+            skeletonColor === 'green' ? { r: 16, g: 185, b: 129 } :
+            skeletonColor === 'purple' ? { r: 139, g: 92, b: 246 } :
+            skeletonColor === 'orange' ? { r: 249, g: 115, b: 22 } :
+            { r: 239, g: 68, b: 68 }; // default red
 
-            ctx.strokeStyle = skeletonColor || '#B91C1C';
-            ctx.lineWidth = 3;
+          // Draw skeleton lines
+          ctx.strokeStyle = skeletonColor === 'blue' ? '#3b82f6' :
+                          skeletonColor === 'green' ? '#10b981' :
+                          skeletonColor === 'purple' ? '#8b5cf6' :
+                          skeletonColor === 'orange' ? '#f97316' :
+                          '#ef4444'; // default red
+          ctx.lineWidth = 3;
 
-            connections.forEach((connection) => {
-              const fromName = connection[0];
-              const toName = connection[1];
-              const from = keypoints.find(kp => kp.name === fromName);
-              const to = keypoints.find(kp => kp.name === toName);
+          connections.forEach((connection) => {
+            const fromName = connection[0];
+            const toName = connection[1];
+            const from = keypoints.find(kp => kp.name === fromName);
+            const to = keypoints.find(kp => kp.name === toName);
 
-              if (from && to &&
-                  typeof from.score === 'number' &&
-                  typeof to.score === 'number' &&
-                  from.score > confidenceThreshold &&
-                  to.score > confidenceThreshold) {
-                ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
-                ctx.shadowBlur = 10;
+            if (from && to &&
+                typeof from.score === 'number' &&
+                typeof to.score === 'number' &&
+                from.score > confidenceThreshold &&
+                to.score > confidenceThreshold) {
+              ctx.shadowColor = `rgba(${skeletonRGB.r}, ${skeletonRGB.g}, ${skeletonRGB.b}, 0.7)`;
+              ctx.shadowBlur = 10;
 
+              ctx.beginPath();
+              ctx.moveTo(from.x * scaleX, from.y * scaleY);
+              ctx.lineTo(to.x * scaleX, to.y * scaleY);
+              ctx.stroke();
+
+              ctx.shadowColor = 'transparent';
+              ctx.shadowBlur = 0;
+            }
+          });
+
+          if (showPoints) {
+            const pointColor = skeletonColor === 'blue' ? '#3b82f6' :
+                              skeletonColor === 'green' ? '#10b981' :
+                              skeletonColor === 'purple' ? '#8b5cf6' :
+                              skeletonColor === 'orange' ? '#f97316' :
+                              '#ef4444'; // default red
+            
+            keypoints.forEach(keypoint => {
+              if (typeof keypoint.score === 'number' && keypoint.score > confidenceThreshold) {
+                const { x, y } = keypoint;
+
+                ctx.shadowColor = `rgba(${skeletonRGB.r}, ${skeletonRGB.g}, ${skeletonRGB.b}, 0.7)`;
+                ctx.shadowBlur = 15;
+
+                ctx.fillStyle = pointColor;
                 ctx.beginPath();
-                ctx.moveTo(from.x * scaleX, from.y * scaleY);
-                ctx.lineTo(to.x * scaleX, to.y * scaleY);
-                ctx.stroke();
+                ctx.arc(x * scaleX, y * scaleY, 6, 0, 2 * Math.PI);
+                ctx.fill();
 
                 ctx.shadowColor = 'transparent';
                 ctx.shadowBlur = 0;
               }
             });
-
-            if (showPoints) {
-              keypoints.forEach(keypoint => {
-                if (typeof keypoint.score === 'number' && keypoint.score > confidenceThreshold) {
-                  const { x, y } = keypoint;
-
-                  ctx.shadowColor = 'rgba(220, 38, 38, 0.7)';
-                  ctx.shadowBlur = 15;
-
-                  ctx.fillStyle = '#ef4444';
-                  ctx.beginPath();
-                  ctx.arc(x * scaleX, y * scaleY, 6, 0, 2 * Math.PI);
-                  ctx.fill();
-
-                  ctx.shadowColor = 'transparent';
-                  ctx.shadowBlur = 0;
-                }
-              });
-            }
-
-            if (showSkeleton) {
-              ctx.font = 'bold 16px Arial';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.lineWidth = 2;
-
-              const refAngles = calculateJointAngles(pose);
-
-              Object.entries(refAngles).forEach(([jointName, angle]) => {
-                if (['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear'].includes(jointName)) {
-                  return;
-                }
-
-                const joint = keypoints.find(kp => kp.name === jointName);
-                if (joint && typeof joint.score === 'number' && joint.score > 0.3) {
-                  const startJointName = getConnectedJoint(jointName, 'start');
-                  const endJointName = getConnectedJoint(jointName, 'end');
-
-                  const startJoint = keypoints.find(kp => kp.name === startJointName);
-                  const endJoint = keypoints.find(kp => kp.name === endJointName);
-
-                  if (startJoint && endJoint) {
-                    const offsetX = (joint.x > width / 2) ? -30 : 30;
-                    const offsetY = (joint.y > height / 2) ? -30 : 30;
-
-                    const scaledX = joint.x * scaleX;
-                    const scaledY = joint.y * scaleY;
-
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                    ctx.beginPath();
-                    ctx.arc(scaledX + offsetX/2, scaledY + offsetY/2, 22, 0, 2 * Math.PI);
-                    ctx.fill();
-
-                    ctx.strokeStyle = '#ef4444';
-                    ctx.lineWidth = 2;
-                    ctx.shadowColor = '#ef4444';
-                    ctx.shadowBlur = 5;
-                    ctx.beginPath();
-                    ctx.arc(scaledX + offsetX/2, scaledY + offsetY/2, 22, 0, 2 * Math.PI);
-                    ctx.stroke();
-
-                    ctx.shadowBlur = 0;
-                    ctx.shadowColor = 'transparent';
-
-                    ctx.fillStyle = 'white';
-                    ctx.fillText(`${angle}°`, scaledX + offsetX/2, scaledY + offsetY/2);
-
-                    ctx.strokeStyle = '#ef4444';
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    ctx.moveTo(scaledX, scaledY);
-                    ctx.lineTo(scaledX + offsetX/2, scaledY + offsetY/2);
-                    ctx.stroke();
-                  }
-                }
-              });
-            }
-          });
+          }
         }
       } catch (error) {
         console.error('Error during reference pose detection:', error);

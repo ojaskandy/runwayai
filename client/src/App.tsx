@@ -15,14 +15,19 @@ import { ProtectedRoute } from "@/lib/protected-route";
 // Use our custom ThemeProvider instead of the shadcn one
 import { ThemeProvider } from "./hooks/use-theme";
 import MarketingLanding from "@/pages/MarketingLanding";
+import RootRedirector from "@/pages/RootRedirector";
 
 function Router() {
   return (
     <Switch>
-      {/* Marketing landing page as the default landing page */}
-      <Route path="/" component={MarketingLanding} />
+      {/* Root path now uses RootRedirector */}
+      <Route path="/" component={RootRedirector} />
       
-      {/* User dashboard after login */}
+      {/* Marketing landing page moved to /welcome */}
+      <Route path="/welcome" component={MarketingLanding} />
+      
+      {/* User dashboard after login - This might be redundant if /app is the main target */}
+      {/* Consider removing /dashboard if Home (at /app) is the primary post-login page */}
       <Route path="/dashboard" component={Landing} />
       
       {/* Main application with camera tracking */}

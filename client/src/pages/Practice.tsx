@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sun, Moon, User, LogOut, Search, ArrowLeft, Camera, Shield } from 'lucide-react';
+import { Sun, Moon, User, LogOut, Search, ArrowLeft, Camera, Shield, MessageSquare } from 'lucide-react';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -2003,6 +2003,14 @@ export default function Practice() {
     }
   }, [isDeveloperMode, selectedMove]);
   
+  // Handle feedback submission by opening email client
+  const handleFeedbackSubmit = () => {
+    const username = user?.username || 'User';
+    const subject = encodeURIComponent(`Feedback on CoachT (Practice Page) by ${username}`);
+    const body = encodeURIComponent("Please type your feedback here:\n\n"); // Default body
+    window.location.href = `mailto:ojaskandy@gmail.com?subject=${subject}&body=${body}`;
+  };
+  
   return (
     <div className="min-h-screen flex flex-col bg-black">
       {/* Header with app title and user menu */}
@@ -2586,17 +2594,49 @@ export default function Practice() {
           /* Detail view for a selected move */
           <div className="bg-gray-900/70 border border-red-900/30 rounded-lg p-6 max-w-4xl mx-auto w-full">
             <div className="flex justify-between items-start mb-4">
-              <h1 className="text-2xl font-bold text-white">{selectedMove.name}</h1>
-              <button 
-                onClick={() => {
-                  setSelectedMove(null);
-                  setShowDeveloperTools(false);
-                  setUploadedImage(null);
-                }}
-                className="text-red-400 hover:text-red-300"
-              >
-                <span className="material-icons">close</span>
-              </button>
+              <div className="flex items-center space-x-3">
+                <Button variant="ghost" size="icon" onClick={() => setSelectedMove(null)} className="text-red-500 hover:bg-red-900/20">
+                  <ArrowLeft className="h-6 w-6" />
+                </Button>
+                <h1 className="text-2xl font-bold text-red-500 truncate max-w-md">{selectedMove.name}</h1>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <Button variant="outline" size="icon" onClick={toggleDarkMode} className="h-10 w-10 rounded-full border-red-600 bg-transparent hover:bg-red-700/20">
+                  {isDarkMode ? 
+                    <Sun className="h-5 w-5 text-white" /> : 
+                    <Moon className="h-5 w-5 text-white" />
+                  }
+                </Button>
+
+                {/* Added Feedback Button */}
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={handleFeedbackSubmit}
+                  className="h-10 w-10 rounded-full border-red-600 bg-transparent hover:bg-red-700/20"
+                >
+                  <MessageSquare className="h-5 w-5 text-white" />
+                </Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3">
+                      <User className="h-4 w-4 text-white mr-2" />
+                      <span className="text-sm text-white font-medium">{user?.username}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40 border border-red-600 bg-gray-900">
+                    <DropdownMenuItem 
+                      className="cursor-pointer flex items-center text-white hover:bg-red-700/30" 
+                      onClick={() => logoutMutation.mutate()}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
             
             <div className="badge-container flex gap-2 mb-4">
