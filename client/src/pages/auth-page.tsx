@@ -43,6 +43,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(true);
   const [typedText, setTypedText] = useState("");
   const [colorTransition, setColorTransition] = useState(false);
+  const [cornerGradients, setCornerGradients] = useState(false);
+  const [logoContrast, setLogoContrast] = useState(false);
   
   // Password visibility
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -96,14 +98,24 @@ export default function AuthPage() {
       } else {
         clearInterval(typingInterval);
         
-        // Start color transition
+        // Start corner gradients
         setTimeout(() => {
-          setColorTransition(true);
+          setCornerGradients(true);
           
-          // Complete loading
+          // Start color transition
           setTimeout(() => {
-            setLoading(false);
-          }, 800);
+            setColorTransition(true);
+            
+            // Add logo contrast
+            setTimeout(() => {
+              setLogoContrast(true);
+              
+              // Complete loading
+              setTimeout(() => {
+                setLoading(false);
+              }, 800);
+            }, 400);
+          }, 500);
         }, 300);
       }
     }, 150);
@@ -132,19 +144,45 @@ export default function AuthPage() {
       {/* Loading screen */}
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
-          <div className="text-center relative">
-            <h1 className="text-6xl md:text-8xl font-bold relative inline-block">
-              <span className="relative">
-                {typedText}
-                <span className="absolute right-0 top-1 h-16 w-[3px] bg-white animate-blink"></span>
-              </span>
-            </h1>
-            
-            <div 
-              className={`absolute inset-0 bg-gradient-to-r from-red-600 to-red-500 transition-all duration-800 mix-blend-overlay
-                ${colorTransition ? 'opacity-100' : 'opacity-0'}`}
-            ></div>
+          {/* CoachT Logo that stays throughout animation */}
+          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-300
+            ${logoContrast ? 'scale-110' : 'scale-100'}`}>
+            <div className={`flex items-center justify-center transition-all duration-500 
+              ${logoContrast ? 'ring-4 ring-black p-2 rounded-xl bg-red-600' : ''}`}>
+              <h1 className="text-6xl md:text-8xl font-bold relative inline-block">
+                <span className="relative">
+                  {typedText}
+                  <span className="absolute right-0 top-1 h-16 w-[3px] bg-white animate-blink"></span>
+                </span>
+              </h1>
+            </div>
           </div>
+          
+          {/* Corner gradients that come toward center */}
+          <div className={`absolute top-0 left-0 w-full h-full transition-all duration-1000 ease-in-out
+            ${cornerGradients ? 'opacity-100' : 'opacity-0'}`}>
+            {/* Top-left corner gradient */}
+            <div className={`absolute top-0 left-0 w-1/3 h-1/3 bg-gradient-to-br from-red-600 to-transparent transition-all duration-700
+              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
+            
+            {/* Top-right corner gradient */}
+            <div className={`absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-bl from-red-600 to-transparent transition-all duration-700
+              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
+            
+            {/* Bottom-left corner gradient */}
+            <div className={`absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-red-600 to-transparent transition-all duration-700
+              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
+            
+            {/* Bottom-right corner gradient */}
+            <div className={`absolute bottom-0 right-0 w-1/3 h-1/3 bg-gradient-to-tl from-red-600 to-transparent transition-all duration-700
+              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
+          </div>
+          
+          {/* Full gradient overlay */}
+          <div 
+            className={`absolute inset-0 bg-gradient-to-r from-red-600 to-red-500 transition-all duration-800 mix-blend-overlay
+              ${colorTransition ? 'opacity-90' : 'opacity-0'}`}
+          ></div>
         </div>
       )}
       
