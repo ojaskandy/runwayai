@@ -147,8 +147,16 @@ export default function AuthPage() {
           {/* CoachT Logo that stays throughout animation */}
           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-300
             ${logoContrast ? 'scale-110' : 'scale-100'}`}>
-            <div className={`flex items-center justify-center transition-all duration-500 
-              ${logoContrast ? 'ring-4 ring-black p-2 rounded-xl bg-red-600' : ''}`}>
+            <div className={`flex flex-col items-center justify-center transition-all duration-500 
+              ${logoContrast ? 'ring-4 ring-black p-4 rounded-xl bg-red-600' : ''}`}>
+              {/* Logo icon above text */}
+              <div className={`h-24 w-24 rounded-full bg-gradient-to-br from-red-700 to-red-600 flex items-center justify-center 
+                shadow-[0_0_20px_rgba(220,38,38,0.6)] mb-4 transition-all duration-500
+                ${logoContrast ? 'ring-2 ring-black' : ''}`}>
+                <span className="material-icons text-white text-5xl">sports_martial_arts</span>
+              </div>
+              
+              {/* CoachT Text */}
               <h1 className="text-6xl md:text-8xl font-bold relative inline-block">
                 <span className="relative">
                   {typedText}
