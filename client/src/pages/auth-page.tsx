@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useLocation } from "wouter";
 import { useEffect, useState, useRef, useMemo } from "react";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { motion, AnimatePresence, useAnimationControls, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
