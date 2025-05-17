@@ -675,7 +675,7 @@ export default function AuthPage() {
 
       {/* Intro Animation - Logo */}
       {!introComplete && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center">
+        <div className="absolute inset-0 z-30 flex items-center justify-center px-4">
           <div className="flex flex-col items-center justify-center">
             {/* Main logo */}
             <motion.div 
@@ -683,20 +683,20 @@ export default function AuthPage() {
               animate={logoControls}
               initial={{ opacity: 0, scale: 0 }}
             >
-              <div className={`h-32 w-32 rounded-full ${logoColorTransition ? 'bg-black border-4 border-red-500' : 'bg-gradient-to-br from-red-700 to-red-600'} flex items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.6)]`}>
-                <span className={`material-icons ${logoColorTransition ? 'text-red-500' : 'text-white'} text-6xl`}>sports_martial_arts</span>
+              <div className={`h-24 w-24 md:h-32 md:w-32 rounded-full ${logoColorTransition ? 'bg-black border-4 border-red-500' : 'bg-gradient-to-br from-red-700 to-red-600'} flex items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.6)]`}>
+                <span className={`material-icons ${logoColorTransition ? 'text-red-500' : 'text-white'} text-4xl md:text-6xl`}>sports_martial_arts</span>
               </div>
             </motion.div>
             
-            {/* Typed text */}
+            {/* Always display CoachT instead of typed text */}
             <motion.div
               className="text-center mt-2"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              <h1 className={`text-4xl font-bold ${logoColorTransition ? 'text-black' : 'text-white'}`}>
-                {typedText}<span className={`animate-pulse ${logoColorTransition ? 'text-black' : 'text-white'}`}>|</span>
+              <h1 className={`text-3xl md:text-4xl font-bold ${logoColorTransition ? 'text-black' : 'text-white'}`}>
+                CoachT<span className={`animate-pulse ${logoColorTransition ? 'text-black' : 'text-white'}`}>|</span>
               </h1>
             </motion.div>
           </div>
