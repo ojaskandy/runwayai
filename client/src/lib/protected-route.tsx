@@ -14,8 +14,16 @@ export function ProtectedRoute({
   if (isLoading) {
     return (
       <Route path={path}>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+        <div className="flex flex-col items-center justify-center min-h-screen bg-black">
+          <div className="relative mb-2">
+            <Loader2 className="h-12 w-12 md:h-16 md:w-16 animate-spin text-red-600" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-bold text-white">T</span>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-red-500 to-red-300 bg-clip-text text-transparent">CoachT</span>
+          </div>
         </div>
       </Route>
     );

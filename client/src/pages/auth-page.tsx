@@ -748,18 +748,18 @@ export default function AuthPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            {/* CoachT Logo at top */}
+            {/* CoachT Logo at top - mobile responsive */}
             <motion.div
-              className="absolute top-8 z-20"
+              className="absolute top-4 sm:top-8 z-20"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
             >
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-700 to-red-600 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.6)]">
-                  <span className="material-icons text-white text-3xl">sports_martial_arts</span>
+              <div className="flex items-center gap-2 sm:gap-4 px-4 sm:px-0">
+                <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-red-700 to-red-600 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.6)]">
+                  <span className="material-icons text-white text-2xl sm:text-3xl">sports_martial_arts</span>
                 </div>
-                <h1 className="text-4xl font-bold text-white">CoachT</h1>
+                <h1 className="text-2xl sm:text-4xl font-bold text-white">CoachT</h1>
               </div>
             </motion.div>
             
@@ -858,12 +858,12 @@ export default function AuthPage() {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.1, duration: 0.4 }}
                             >
-                              <CardTitle className="text-2xl font-bold">
+                              <CardTitle className="text-xl sm:text-2xl font-bold">
                                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-red-300">
                                   Login to Your Account
                                 </span>
                               </CardTitle>
-                  <CardDescription className="text-gray-300">Enter your credentials to access your CoachT dashboard</CardDescription>
+                  <CardDescription className="text-sm sm:text-base text-gray-300">Enter your credentials to access your CoachT dashboard</CardDescription>
                             </motion.div>
                 </CardHeader>
                           
@@ -1112,8 +1112,8 @@ export default function AuthPage() {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.1, duration: 0.4 }}
                             >
-                  <CardTitle className="text-2xl font-bold text-red-500">Create an Account</CardTitle>
-                  <CardDescription className="text-gray-300">Register to save your training sessions and settings</CardDescription>
+                  <CardTitle className="text-xl sm:text-2xl font-bold text-red-500">Create an Account</CardTitle>
+                  <CardDescription className="text-sm sm:text-base text-gray-300">Register to save your training sessions and settings</CardDescription>
                             </motion.div>
                 </CardHeader>
                 <CardContent>
