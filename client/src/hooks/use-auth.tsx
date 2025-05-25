@@ -19,8 +19,10 @@ type RegisterCredentials = {
 
 type AuthContextType = {
   user: User | null;
+  isLoading: boolean;
   loginMutation: any;
   registerMutation: any;
+  logoutMutation: any;
   showMobileWarning: boolean;
   setShowMobileWarning: (show: boolean) => void;
   isMobileDevice: boolean;
@@ -36,9 +38,20 @@ type AuthProviderProps = {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showMobileWarning, setShowMobileWarning] = useState<boolean>(false);
   const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false);
   
+  // Initialize loading state
+  useEffect(() => {
+    // Simulate checking for existing session
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   // Check if device is mobile
   useEffect(() => {
     const checkMobileDevice = () => {
@@ -112,11 +125,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     }
   });
+
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 300));
+      return true;
+    },
+    onSuccess: () => {
+      setUser(null);
+      console.log('Logout successful');
+    }
+  });
   
   const value = {
     user,
+    isLoading,
     loginMutation,
     registerMutation,
+    logoutMutation,
     showMobileWarning,
     setShowMobileWarning,
     isMobileDevice
