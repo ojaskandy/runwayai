@@ -66,7 +66,7 @@ const MobileLandingPage = () => {
       >
         <div className="flex justify-center items-center mb-6 md:mb-8">
             <motion.span 
-                className="material-icons text-red-500 text-5xl md:text-6xl"
+                className="material-icons text-pink-500 text-5xl md:text-6xl"
                 initial={{ rotate: 0 }}
                 animate={{ rotate: [0, 15, -10, 10, -5, 5, 0] }}
                 transition={{ duration: 1.5, ease: "easeInOut", delay: 0.5, repeat: Infinity, repeatDelay: 3 }}
@@ -76,13 +76,13 @@ const MobileLandingPage = () => {
             <h1 
               className="text-4xl md:text-5xl font-bold ml-2 md:ml-3"
               style={{
-                backgroundImage: 'linear-gradient(to right, #f87171, #fb923c, #facc15)',
+                backgroundImage: 'linear-gradient(to right, #f472b6, #ec4899, #db2777)',
                 WebkitBackgroundClip: 'text',
                 backgroundClip: 'text',
                 color: 'transparent'
               }}
             >
-              CoachT
+              Runway AI
             </h1>
         </div>
 
@@ -96,7 +96,7 @@ const MobileLandingPage = () => {
             Start Now.
           </h2>
           <p className="text-md md:text-lg text-sky-200/80 max-w-xs mx-auto">
-            CoachT delivers the best experience on a bigger screen. Get started now.
+            Runway AI delivers the best experience on a bigger screen. Get started now.
           </p>
         </motion.div>
 
@@ -114,14 +114,14 @@ const MobileLandingPage = () => {
               placeholder="Your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 h-12 md:h-14 text-sm md:text-base bg-gray-800/70 border-gray-700 focus:border-red-500 focus:ring-red-500 placeholder-gray-500 rounded-xl shadow-lg"
+              className="w-full pl-10 pr-4 py-3 h-12 md:h-14 text-sm md:text-base bg-gray-800/70 border-gray-700 focus:border-pink-500 focus:ring-pink-500 placeholder-gray-500 rounded-xl shadow-lg"
               disabled={status === 'loading'}
             />
           </div>
 
           <Button
             type="submit"
-            className="w-full h-12 md:h-14 text-md md:text-lg font-semibold bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-700 hover:to-rose-600 text-white shadow-xl hover:shadow-red-500/40 focus:ring-red-500 rounded-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+            className="w-full h-12 md:h-14 text-md md:text-lg font-semibold bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-700 hover:to-pink-600 text-white shadow-xl hover:shadow-pink-500/40 focus:ring-pink-500 rounded-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
             disabled={status === 'loading'}
           >
             {status === 'loading' ? (
@@ -157,7 +157,7 @@ const MobileLandingPage = () => {
           className="pt-4 md:pt-6"
         >
           <p className="text-xs text-gray-500">
-            Access CoachT on your <Link href="/" className="text-sky-400 hover:text-sky-300 underline">desktop or laptop</Link>.
+            Access Runway AI on your <Link href="/" className="text-pink-400 hover:text-pink-300 underline">desktop or laptop</Link>.
           </p>
         </motion.div>
       </motion.div>
