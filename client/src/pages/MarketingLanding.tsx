@@ -153,11 +153,11 @@ export default function MarketingLanding() {
       <Dialog>
         <DialogTrigger asChild>
           <button 
-            className="fixed top-6 right-6 z-50 px-4 py-2 rounded-md hover:bg-red-900/20 transition-all duration-300 backdrop-blur-sm"
+            className="fixed top-6 right-6 z-50 px-4 py-2 rounded-md hover:bg-pink-300/20 transition-all duration-300 backdrop-blur-sm"
             style={{
               background: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-              border: '1px solid rgba(220, 38, 38, 0.8)',
-              color: 'rgba(220, 38, 38, 0.8)'
+              border: '1px solid rgba(244, 114, 182, 0.8)',
+              color: 'rgba(244, 114, 182, 0.8)'
             }}
           >
             Developers →

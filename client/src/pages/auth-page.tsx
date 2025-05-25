@@ -313,7 +313,7 @@ export default function AuthPage() {
                 {/* Register Form */}
                 <TabsContent value="register" className="m-0">
                   <CardHeader>
-                    <CardTitle className="text-xl sm:text-2xl font-bold text-pink-500">
+                    <CardTitle className="text-xl sm:text-2xl font-bold text-pink-300">
                       Create an Account
                     </CardTitle>
                     <CardDescription className="text-sm sm:text-base text-gray-300">
@@ -479,7 +479,7 @@ export default function AuthPage() {
                     <Button 
                       type="submit"
                       form="register-form"
-                      className="w-full bg-gradient-to-r from-pink-700 to-pink-600 hover:from-pink-600 hover:to-pink-500 text-white py-5"
+                      className="w-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white py-5"
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending ? (
@@ -541,7 +541,7 @@ export default function AuthPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            © 2025 CoachT. All rights reserved.
+            © 2025 Runway AI by Arshia Kathpalia, Miss Teen India USA 2024. All rights reserved.
           </motion.div>
         </>
       )}
