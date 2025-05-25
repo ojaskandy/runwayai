@@ -59,31 +59,31 @@
 
 /* Dark mode logo styles */
 .logo-dark {
-  background: linear-gradient(to right, #ff4b47, #ff0844);
+  background: linear-gradient(to right, #f472b6, #ec4899);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 15px rgba(248, 113, 113, 0.6);
+  text-shadow: 0 0 15px rgba(249, 168, 212, 0.6);
   -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
 }
 
 .logo-dark-glow {
-  color: rgba(220, 38, 38, 0.8);
+  color: rgba(236, 72, 153, 0.8);
   filter: brightness(1.3) contrast(1.5);
   filter: blur(2px);
 }
 
 /* Light mode logo styles */
 .logo-light {
-  background: linear-gradient(to right, #9f1239, #dc2626);
+  background: linear-gradient(to right, #be185d, #ec4899);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+  text-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
   -webkit-text-stroke: 1px rgba(0, 0, 0, 0.1);
   font-weight: bold;
 }
 
 .logo-light-glow {
-  color: rgba(159, 18, 57, 0.8);
+  color: rgba(219, 39, 119, 0.8);
   filter: brightness(1.4) contrast(1.4);
   filter: blur(2px);
   font-weight: bold;
@@ -101,15 +101,15 @@
   --card-foreground: 250, 250, 250;
   --border: 40, 40, 50;
   --input: 40, 40, 50;
-  --primary: 220, 38, 38;
+  --primary: 236, 72, 153;
   --primary-foreground: 255, 255, 255;
-  --secondary: 185, 28, 28;
+  --secondary: 219, 39, 119;
   --secondary-foreground: 255, 255, 255;
-  --accent: 220, 38, 38;
+  --accent: 236, 72, 153;
   --accent-foreground: 255, 255, 255;
-  --destructive: 248, 113, 113;
+  --destructive: 249, 168, 212;
   --destructive-foreground: 255, 255, 255;
-  --ring: 220, 38, 38;
+  --ring: 236, 72, 153;
   --radius: 0.5rem;
 }
 
@@ -125,15 +125,15 @@
   --card-foreground: 10, 10, 10;
   --border: 240, 240, 245;
   --input: 240, 240, 245;
-  --primary: 220, 38, 38;
+  --primary: 236, 72, 153;
   --primary-foreground: 255, 255, 255;
-  --secondary: 185, 28, 28;
+  --secondary: 219, 39, 119;
   --secondary-foreground: 255, 255, 255;
-  --accent: 220, 38, 38;
+  --accent: 236, 72, 153;
   --accent-foreground: 255, 255, 255;
-  --destructive: 248, 113, 113;
+  --destructive: 249, 168, 212;
   --destructive-foreground: 255, 255, 255;
-  --ring: 220, 38, 38;
+  --ring: 236, 72, 153;
 }
 
 @layer base {
@@ -194,21 +194,21 @@
   }
 }
 
-/* Dark Red Color Palette */
+/* Pink Color Palette */
 :root {
-  --dark-red: rgb(185, 28, 28);
-  --red: rgb(220, 38, 38);
-  --light-red: rgb(248, 113, 113);
+  --dark-pink: rgb(219, 39, 119);
+  --pink: rgb(236, 72, 153);
+  --light-pink: rgb(249, 168, 212);
   --dark: rgb(17, 17, 17);
   --darker: rgb(10, 10, 10);
-  --red-gradient-light: linear-gradient(135deg, rgb(220, 38, 38) 0%, rgb(248, 113, 113) 100%);
-  --red-gradient: linear-gradient(135deg, rgb(185, 28, 28) 0%, rgb(220, 38, 38) 100%);
-  --red-gradient-dark: linear-gradient(135deg, rgb(136, 19, 19) 0%, rgb(185, 28, 28) 100%);
+  --pink-gradient-light: linear-gradient(135deg, rgb(236, 72, 153) 0%, rgb(249, 168, 212) 100%);
+  --pink-gradient: linear-gradient(135deg, rgb(219, 39, 119) 0%, rgb(236, 72, 153) 100%);
+  --pink-gradient-dark: linear-gradient(135deg, rgb(190, 24, 93) 0%, rgb(219, 39, 119) 100%);
 }
 
 @layer components {
   .gradient-heading {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-red-600 font-bold;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-pink-600 font-bold;
     background-size: 200% auto;
     animation: gradient-x 15s ease infinite;
   }
@@ -224,11 +224,11 @@
   
   /* Text formatting styles for routine notes */
   .formatted-notes h1 {
-    @apply text-lg font-bold text-red-400 mb-1;
+    @apply text-lg font-bold text-pink-400 mb-1;
   }
   
   .formatted-notes h3 {
-    @apply text-xs font-medium text-red-300 mb-1;
+    @apply text-xs font-medium text-pink-300 mb-1;
   }
   
   /* Styles for formatted text in the textarea */
@@ -259,53 +259,53 @@
     height: 15px;
     top: -5px;
     right: -5px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ec4899' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3C/svg%3E");
     background-size: contain;
     animation: sparkle-rotate 4s linear infinite;
   }
   
   .btn-gradient {
-    @apply bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 text-white;
+    @apply bg-gradient-to-r from-pink-700 to-pink-600 hover:from-pink-800 hover:to-pink-700 text-white;
     transition: all 0.3s ease;
   }
   
   .btn-gradient:hover {
     transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(220, 38, 38, 0.3);
+    box-shadow: 0 5px 15px rgba(236, 72, 153, 0.3);
   }
   
   .btn-gradient-light {
-    @apply bg-gradient-to-r from-red-100 to-red-200 hover:from-red-200 hover:to-red-300 text-red-600;
+    @apply bg-gradient-to-r from-pink-100 to-pink-200 hover:from-pink-200 hover:to-pink-300 text-pink-600;
     transition: all 0.3s ease;
   }
   
   .btn-gradient-light:hover {
     transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(220, 38, 38, 0.15);
+    box-shadow: 0 5px 15px rgba(236, 72, 153, 0.15);
   }
   
   .card-highlight {
-    background: var(--red-gradient-dark);
-    @apply border border-red-700/50 shadow-lg shadow-red-900/20;
+    background: var(--pink-gradient-dark);
+    @apply border border-pink-700/50 shadow-lg shadow-pink-900/20;
     transition: all 0.3s ease;
   }
   
   .card-highlight:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(220, 38, 38, 0.25);
+    box-shadow: 0 10px 25px rgba(236, 72, 153, 0.25);
   }
 
   .camera-container {
     @apply relative w-full aspect-video overflow-hidden rounded-none;
     background-color: #000000;
-    border: 1px solid rgba(185, 28, 28, 0.5);
+    border: 1px solid rgba(219, 39, 119, 0.5);
   }
   
   /* Default dark background - overridden by inline styles for light mode */
   /* Background colors are now controlled directly in components via isDarkMode conditional styles */
 
   .taekwondo-shadow {
-    box-shadow: 0 0 15px rgba(220, 38, 38, 0.2), 0 0 30px rgba(185, 28, 28, 0.1);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.2), 0 0 30px rgba(219, 39, 119, 0.1);
   }
   
   .progress-ring {
@@ -328,7 +328,7 @@
   
   .badge-trust {
     @apply inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-full;
-    border: 1px solid rgba(220, 38, 38, 0.3);
+    border: 1px solid rgba(236, 72, 153, 0.3);
     transition: all 0.3s ease;
   }
   
@@ -339,9 +339,9 @@
   }
   
   .modal-premium {
-    @apply border border-red-900/30 rounded-lg p-6;
+    @apply border border-pink-900/30 rounded-lg p-6;
     /* Light/dark mode styling is applied via inline styles in the component */
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(220, 38, 38, 0.15);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(236, 72, 153, 0.15);
   }
 }
 
