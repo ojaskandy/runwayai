@@ -618,24 +618,24 @@ export default function MarketingLanding() {
                   color: 'rgba(159, 18, 57, 0.8)',
                   filter: 'brightness(1.4) contrast(1.5)'
                 }}>
-                  CoachT
+                  Runway AI
                 </span>
                 {/* Base text layer */}
                 <span className="relative z-10 font-bold" style={{
-                  background: 'linear-gradient(to right, #9f1239, #dc2626)',
+                  background: 'linear-gradient(to right, #be185d, #ec4899)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  textShadow: '0 0 12px rgba(220, 38, 38, 0.5)',
+                  textShadow: '0 0 12px rgba(236, 72, 153, 0.5)',
                   WebkitTextStroke: '1px rgba(0, 0, 0, 0.15)'
                 }}>
-                  CoachT
+                  Runway AI
                 </span>
                 {/* Outline enhancement for better visibility */}
                 <span className="absolute inset-0 text-5xl md:text-7xl font-bold z-5 opacity-50" style={{
                   color: 'transparent',
-                  WebkitTextStroke: '1px rgba(159, 18, 57, 0.8)'
+                  WebkitTextStroke: '1px rgba(219, 39, 119, 0.8)'
                 }}>
-                  CoachT
+                  Runway AI
                 </span>
               </h1>
             )}
@@ -1094,21 +1094,21 @@ export default function MarketingLanding() {
             >
               <h2 className="text-4xl md:text-6xl font-bold mb-4" style={{
                 background: isDarkMode 
-                  ? 'linear-gradient(to right, #ff4b47, #ff0844)' 
-                  : 'linear-gradient(to right, #dc2626, #ef4444)',
+                  ? 'linear-gradient(to right, #f472b6, #ec4899)' 
+                  : 'linear-gradient(to right, #be185d, #db2777)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 textShadow: isDarkMode 
-                  ? '0 0 15px rgba(220, 38, 38, 0.6)' 
-                  : '0 0 15px rgba(220, 38, 38, 0.3)'
+                  ? '0 0 15px rgba(236, 72, 153, 0.6)' 
+                  : '0 0 15px rgba(236, 72, 153, 0.3)'
               }}>
-                Advanced Training Features
+                Advanced Pageantry Training
               </h2>
               <p className="text-xl md:text-2xl max-w-2xl mx-auto font-medium" style={{ 
                 color: isDarkMode ? 'rgba(249, 250, 251, 0.9)' : 'rgba(249, 250, 251, 0.9)'
               }}>
-                CoachT combines cutting-edge AI technology with martial arts
-                expertise to create the ultimate training partner.
+                Runway AI combines cutting-edge AI technology with pageantry
+                expertise to create the ultimate training partner, created by Arshia Kathpalia, the 2024 Miss Teen India USA.
               </p>
             </motion.div>
           </div>
@@ -1846,8 +1846,7 @@ export default function MarketingLanding() {
               <p className="italic" style={{ 
                 color: isDarkMode ? 'rgba(156, 163, 175, 0.9)' : 'rgba(107, 114, 128, 0.9)' 
               }}>
-                "CoachT saves me 30 minutes every class. My students can see exactly what needs
-                fixing in their technique."
+                "Runway AI helps me perfect my pageant walk and posture. I couldn't have won my title without this incredible tool created by Arshia Kathpalia, the 2024 Miss Teen India USA."
               </p>
             </motion.div>
             

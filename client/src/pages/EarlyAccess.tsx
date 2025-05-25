@@ -706,12 +706,12 @@ export default function EarlyAccess() {
             </div>
             
             {/* Visual Section */}
-            <div className="bg-gradient-to-br from-red-950 to-black hidden md:block relative overflow-hidden">
+            <div className="bg-gradient-to-br from-pink-950 to-black hidden md:block relative overflow-hidden">
               <div className="absolute inset-0 bg-black/40 z-10"></div>
               
               <div className="relative z-20 flex flex-col h-full justify-center px-8 py-12">
                 <h2 className="text-3xl font-bold text-white mb-6">
-                  Revolutionize Your Taekwondo Training
+                  Revolutionize Your Pageant Training
                 </h2>
                 
                 <div className="space-y-6">
@@ -720,8 +720,8 @@ export default function EarlyAccess() {
                       <CheckCircle className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white font-semibold">Real-time pose tracking</p>
-                      <p className="text-gray-300 text-sm">Get instant feedback on your form and technique</p>
+                      <p className="text-white font-semibold">Real-time pageant walk tracking</p>
+                      <p className="text-gray-300 text-sm">Get instant feedback on your posture and elegance</p>
                     </div>
                   </div>
                   
@@ -730,8 +730,8 @@ export default function EarlyAccess() {
                       <CheckCircle className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white font-semibold">Movement comparison</p>
-                      <p className="text-gray-300 text-sm">Compare your moves with expert references</p>
+                      <p className="text-white font-semibold">Pageant movement analysis</p>
+                      <p className="text-gray-300 text-sm">Compare your walk and poses with those of pageant winners like Arshia Kathpalia</p>
                     </div>
                   </div>
                   
