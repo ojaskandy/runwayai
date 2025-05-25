@@ -649,15 +649,15 @@ export default function Home() {
 
                 {/* Recordings Log */}
                 <div className={`${!isSessionPanelExpanded ? 'hidden' : 'block'} flex-1 overflow-hidden`}>
-                  <h2 className={`text-2xl font-semibold mb-5 flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  <h2 className="text-2xl font-semibold mb-5 flex items-center text-pink-300">
                     <ListChecks className="mr-3 h-7 w-7" />
-                    Recent Recordings
+                    Runway Moments
                   </h2>
-                  <div className={`overflow-y-auto pr-2 scrollbar-thin scrollbar-track-gray-800 ${isSessionPanelExpanded ? 'max-h-[calc(100vh-480px)]' : 'max-h-0'} ${buttonTheme === 'sky' ? 'scrollbar-thumb-sky-600' : buttonTheme === 'crimson' ? 'scrollbar-thumb-red-600' : buttonTheme === 'emerald' ? 'scrollbar-thumb-emerald-600' : 'scrollbar-thumb-amber-600'}`}>
+                  <div className={`overflow-y-auto pr-2 scrollbar-thin scrollbar-track-gray-800 ${isSessionPanelExpanded ? 'max-h-[calc(100vh-480px)]' : 'max-h-0'} scrollbar-thumb-pink-400`}>
                     {isLoadingRecordings && (
                       <div className="flex items-center justify-center py-10">
-                        <Loader2 className={`h-10 w-10 animate-spin ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
-                      {isSessionPanelExpanded && <p className="ml-4 text-gray-400 text-lg">Loading...</p>}
+                        <Loader2 className="h-10 w-10 animate-spin text-pink-400" />
+                      {isSessionPanelExpanded && <p className="ml-4 text-pink-200 text-lg">Loading...</p>}
                       </div>
                     )}
                     {recordingsError && (
@@ -666,11 +666,11 @@ export default function Home() {
                     {!isLoadingRecordings && recordings && recordings.length > 0 && (
                       <ul className="space-y-3">
                         {recordings.slice().reverse().map(rec => (
-                          <li key={rec.id} className={`bg-gray-900 p-3 rounded-lg border border-gray-800 hover:shadow-md transition-all duration-200 ease-in-out transform ${buttonTheme === 'sky' ? 'hover:border-sky-600/60 hover:shadow-sky-700/20' : buttonTheme === 'crimson' ? 'hover:border-red-600/60 hover:shadow-red-700/20' : buttonTheme === 'emerald' ? 'hover:border-emerald-600/60 hover:shadow-emerald-700/20' : 'hover:border-amber-600/60 hover:shadow-amber-700/20'}`}>
-                            <p className="text-sm text-white font-medium truncate">
-                              {rec.title || `Practice Recording ${rec.id}`}
+                          <li key={rec.id} className="bg-gray-900 p-3 rounded-lg border border-pink-300/20 hover:border-pink-300/40 hover:shadow-md hover:shadow-pink-400/10 transition-all duration-200 ease-in-out transform">
+                            <p className="text-sm text-pink-100 font-medium truncate">
+                              {rec.title || `Runway Performance ${rec.id}`}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-pink-300/60 mt-1">
                               {format(new Date(rec.createdAt), "MMM d, yyyy 'at' h:mm a")}
                             </p>
                           </li>
@@ -678,18 +678,18 @@ export default function Home() {
                       </ul>
                     )}
                     {!isLoadingRecordings && (!recordings || recordings.length === 0) && !recordingsError && (
-                      <p className="text-gray-500 italic text-center py-10 text-sm">No recordings yet.</p>
+                      <p className="text-pink-300/50 italic text-center py-10 text-sm">No runway moments captured yet. Begin a practice session to see your performances here.</p>
                     )}
                   </div>
                 </div>
                  {/* Collapsed State Icons */}
                 {!isSessionPanelExpanded && (
                   <div className="flex flex-col items-center space-y-6 mt-6">
-                    <span title="Current Session">
-                      <Clock className={`h-7 w-7 ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                    <span title="Pageant Session">
+                      <Clock className="h-7 w-7 text-pink-300" />
                     </span>
-                    <span title="Recent Recordings">
-                      <ListChecks className={`h-7 w-7 ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                    <span title="Runway Moments">
+                      <ListChecks className="h-7 w-7 text-pink-300" />
                     </span>
                   </div>
                 )}
