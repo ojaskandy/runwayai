@@ -135,11 +135,11 @@ export default function AuthPage() {
   
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center overflow-hidden relative">
-      {/* Background gradients */}
+      {/* Background gradients - lighter pink and white */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-0 w-1/3 h-1/3 bg-pink-700/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-1/3 h-1/3 bg-pink-700/20 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
-        <div className="absolute top-1/2 left-1/2 w-1/3 h-1/3 bg-pink-700/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute top-0 left-0 w-1/3 h-1/3 bg-pink-300/30 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-1/3 h-1/3 bg-pink-300/30 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
+        <div className="absolute top-1/2 left-1/2 w-1/3 h-1/3 bg-white/20 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
       </div>
       
       {/* Mobile Warning Dialog */}
@@ -151,10 +151,10 @@ export default function AuthPage() {
       {/* Loading screen */}
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden">
-          {/* Sweeping gradient animation that moves from left to right */}
+          {/* Simple white to pink gradient sliding from left to right */}
           <div className="absolute inset-0 overflow-hidden">
             <div 
-              className={`absolute inset-0 bg-gradient-to-r from-pink-600 via-pink-400 to-white 
+              className={`absolute inset-0 bg-gradient-to-r from-white via-pink-200 to-pink-300 
               transition-transform duration-1000 ease-in-out ${colorTransition ? 'translate-x-0' : '-translate-x-full'}`}
             ></div>
             <div 
@@ -163,47 +163,17 @@ export default function AuthPage() {
             ></div>
           </div>
           
-          {/* Runway AI Logo that stays throughout animation */}
-          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-300
-            ${logoContrast ? 'scale-110' : 'scale-100'}`}>
-            <div className={`flex flex-col items-center justify-center transition-all duration-500 
-              ${logoContrast ? 'ring-4 ring-black p-4 rounded-xl bg-pink-600' : ''}`}>
-              {/* Logo icon above text */}
-              <div className={`h-24 w-24 rounded-full bg-gradient-to-br from-pink-700 to-pink-500 flex items-center justify-center 
-                shadow-[0_0_20px_rgba(236,72,153,0.6)] mb-4 transition-all duration-500
-                ${logoContrast ? 'ring-2 ring-black' : ''}`}>
-                <span className="material-icons text-white text-5xl">emoji_people</span>
-              </div>
-              
-              {/* Runway AI Text with properly positioned cursor */}
-              <h1 className="text-6xl md:text-8xl font-bold relative inline-block">
-                <span className="relative">
-                  {typedText}
-                  <span className="inline-block h-[0.8em] w-[3px] ml-[2px] align-middle bg-white animate-blink"></span>
-                </span>
-              </h1>
-            </div>
+          {/* Simple Runway AI text typing in the middle of screen */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+            <h1 className="text-6xl md:text-8xl font-bold text-black relative inline-block">
+              <span className="relative">
+                {typedText}
+                <span className="inline-block h-[0.8em] w-[3px] ml-[2px] align-middle bg-black animate-blink"></span>
+              </span>
+            </h1>
           </div>
           
-          {/* Corner gradients that come toward center */}
-          <div className={`absolute top-0 left-0 w-full h-full transition-all duration-1000 ease-in-out
-            ${cornerGradients ? 'opacity-100' : 'opacity-0'}`}>
-            {/* Top-left corner gradient */}
-            <div className={`absolute top-0 left-0 w-1/3 h-1/3 bg-gradient-to-br from-pink-600 to-transparent transition-all duration-700
-              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
-            
-            {/* Top-right corner gradient */}
-            <div className={`absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-bl from-pink-600 to-transparent transition-all duration-700
-              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
-            
-            {/* Bottom-left corner gradient */}
-            <div className={`absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-pink-600 to-transparent transition-all duration-700
-              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
-            
-            {/* Bottom-right corner gradient */}
-            <div className={`absolute bottom-0 right-0 w-1/3 h-1/3 bg-gradient-to-tl from-pink-600 to-transparent transition-all duration-700
-              ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
-          </div>
+          {/* No corner gradients - clean minimal design */}
         </div>
       )}
       
@@ -218,8 +188,8 @@ export default function AuthPage() {
             transition={{ duration: 0.5 }}
           >
             <div className="flex items-center gap-3">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-pink-700 to-pink-600 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.6)]">
-                <span className="material-icons text-white text-2xl">sports_martial_arts</span>
+              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-pink-400 to-pink-300 flex items-center justify-center shadow-[0_0_20px_rgba(244,114,182,0.6)]">
+                <span className="material-icons text-white text-2xl">emoji_people</span>
               </div>
               <h1 className="text-3xl font-bold text-white">Runway AI</h1>
             </div>
@@ -239,13 +209,13 @@ export default function AuthPage() {
                 <TabsList className="grid grid-cols-2 bg-black/50 border-b border-gray-800 rounded-none w-full h-auto p-0">
                   <TabsTrigger 
                     value="login" 
-                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-700 data-[state=active]:to-pink-800 data-[state=active]:text-white rounded-none py-3 text-gray-400"
+                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-400 data-[state=active]:to-pink-300 data-[state=active]:text-white rounded-none py-3 text-gray-400"
                   >
                     Login
                   </TabsTrigger>
                   <TabsTrigger 
                     value="register" 
-                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-700 data-[state=active]:to-pink-800 data-[state=active]:text-white rounded-none py-3 text-gray-400"
+                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-400 data-[state=active]:to-pink-300 data-[state=active]:text-white rounded-none py-3 text-gray-400"
                   >
                     Register
                   </TabsTrigger>
@@ -255,7 +225,7 @@ export default function AuthPage() {
                 <TabsContent value="login" className="m-0">
                   <CardHeader>
                     <CardTitle className="text-xl sm:text-2xl font-bold">
-                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-pink-300">
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-pink-200">
                         Login to Your Account
                       </span>
                     </CardTitle>
@@ -322,7 +292,7 @@ export default function AuthPage() {
                     <Button 
                       type="submit"
                       form="login-form"
-                      className="w-full bg-gradient-to-r from-pink-700 to-pink-600 hover:from-pink-600 hover:to-pink-500 text-white py-5"
+                      className="w-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white py-5"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
