@@ -163,10 +163,10 @@ export default function MarketingLanding() {
             Developers →
           </button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md bg-black border border-red-900">
+        <DialogContent className="sm:max-w-md bg-black border border-pink-300">
           <div className="p-4 space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center">
-              <span className="material-icons mr-2 text-red-500">code</span>
+              <span className="material-icons mr-2 text-pink-300">code</span>
               Developer Access
             </h2>
             <p className="text-gray-400 text-sm">
@@ -180,7 +180,7 @@ export default function MarketingLanding() {
                 placeholder="Enter password"
                 value={developerPassword}
                 onChange={(e) => setDeveloperPassword(e.target.value)}
-                className="bg-black/50 border-red-900/50 text-white"
+                className="bg-black/50 border-pink-300/50 text-white"
               />
 
               <AnimatePresence>

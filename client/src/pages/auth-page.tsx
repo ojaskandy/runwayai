@@ -509,27 +509,27 @@ export default function AuthPage() {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <div className="p-5 rounded-2xl backdrop-blur-lg border border-red-500/20 bg-gradient-to-br from-gray-900/80 to-black/80 shadow-lg hover:scale-105 transition-transform duration-300">
-                <div className="mb-3 h-10 w-10 rounded-full bg-red-700/20 flex items-center justify-center">
-                  <span className="material-icons text-red-500">analytics</span>
+                <div className="mb-3 h-10 w-10 rounded-full bg-pink-300/20 flex items-center justify-center">
+                  <span className="material-icons text-pink-300">analytics</span>
                 </div>
-                <h3 className="text-lg font-semibold text-red-400 mb-2">Real-time Form Analysis</h3>
-                <p className="text-sm text-gray-300">Perfect your Taekwondo stances with AI-powered pose tracking</p>
+                <h3 className="text-lg font-semibold text-pink-300 mb-2">Real-time Form Analysis</h3>
+                <p className="text-sm text-gray-300">Perfect your pageant poses and runway walks with AI-powered pose tracking</p>
               </div>
               
-              <div className="p-5 rounded-2xl backdrop-blur-lg border border-red-500/20 bg-gradient-to-br from-gray-900/80 to-black/80 shadow-lg hover:scale-105 transition-transform duration-300">
-                <div className="mb-3 h-10 w-10 rounded-full bg-red-700/20 flex items-center justify-center">
-                  <span className="material-icons text-red-500">compare</span>
+              <div className="p-5 rounded-2xl backdrop-blur-lg border border-pink-300/20 bg-gradient-to-br from-gray-900/80 to-black/80 shadow-lg hover:scale-105 transition-transform duration-300">
+                <div className="mb-3 h-10 w-10 rounded-full bg-pink-300/20 flex items-center justify-center">
+                  <span className="material-icons text-pink-300">compare</span>
                 </div>
-                <h3 className="text-lg font-semibold text-red-400 mb-2">Comparison Training</h3>
-                <p className="text-sm text-gray-300">Compare your technique with reference performances</p>
+                <h3 className="text-lg font-semibold text-pink-300 mb-2">Comparison Training</h3>
+                <p className="text-sm text-gray-300">Compare your poses with professional pageant performances</p>
               </div>
               
-              <div className="p-5 rounded-2xl backdrop-blur-lg border border-red-500/20 bg-gradient-to-br from-gray-900/80 to-black/80 shadow-lg hover:scale-105 transition-transform duration-300">
-                <div className="mb-3 h-10 w-10 rounded-full bg-red-700/20 flex items-center justify-center">
-                  <span className="material-icons text-red-500">insights</span>
+              <div className="p-5 rounded-2xl backdrop-blur-lg border border-pink-300/20 bg-gradient-to-br from-gray-900/80 to-black/80 shadow-lg hover:scale-105 transition-transform duration-300">
+                <div className="mb-3 h-10 w-10 rounded-full bg-pink-300/20 flex items-center justify-center">
+                  <span className="material-icons text-pink-300">insights</span>
                 </div>
-                <h3 className="text-lg font-semibold text-red-400 mb-2">Performance Metrics</h3>
-                <p className="text-sm text-gray-300">Track improvement with detailed analysis reports</p>
+                <h3 className="text-lg font-semibold text-pink-300 mb-2">Performance Metrics</h3>
+                <p className="text-sm text-gray-300">Track your pageant performance with detailed progress reports</p>
               </div>
             </motion.div>
           )}
