@@ -89,7 +89,7 @@ export default function AuthPage() {
   
   // Animation sequence for loading
   useEffect(() => {
-    let text = "CoachT";
+    let text = "Runway AI";
     let currentIndex = 0;
     
     const typingInterval = setInterval(() => {
@@ -137,9 +137,9 @@ export default function AuthPage() {
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center overflow-hidden relative">
       {/* Background gradients */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-0 w-1/3 h-1/3 bg-red-700/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-1/3 h-1/3 bg-red-700/20 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
-        <div className="absolute top-1/2 left-1/2 w-1/3 h-1/3 bg-red-700/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute top-0 left-0 w-1/3 h-1/3 bg-pink-700/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-1/3 h-1/3 bg-pink-700/20 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
+        <div className="absolute top-1/2 left-1/2 w-1/3 h-1/3 bg-pink-700/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
       </div>
       
       {/* Mobile Warning Dialog */}
@@ -150,20 +150,32 @@ export default function AuthPage() {
       
       {/* Loading screen */}
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
-          {/* CoachT Logo that stays throughout animation */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden">
+          {/* Sweeping gradient animation that moves from left to right */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div 
+              className={`absolute inset-0 bg-gradient-to-r from-pink-600 via-pink-400 to-white 
+              transition-transform duration-1000 ease-in-out ${colorTransition ? 'translate-x-0' : '-translate-x-full'}`}
+            ></div>
+            <div 
+              className={`absolute inset-0 bg-black transition-transform duration-1000 ease-in-out delay-300
+              ${colorTransition ? 'translate-x-full' : 'translate-x-0'}`}
+            ></div>
+          </div>
+          
+          {/* Runway AI Logo that stays throughout animation */}
           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-300
             ${logoContrast ? 'scale-110' : 'scale-100'}`}>
             <div className={`flex flex-col items-center justify-center transition-all duration-500 
-              ${logoContrast ? 'ring-4 ring-black p-4 rounded-xl bg-red-600' : ''}`}>
+              ${logoContrast ? 'ring-4 ring-black p-4 rounded-xl bg-pink-600' : ''}`}>
               {/* Logo icon above text */}
-              <div className={`h-24 w-24 rounded-full bg-gradient-to-br from-red-700 to-red-600 flex items-center justify-center 
-                shadow-[0_0_20px_rgba(220,38,38,0.6)] mb-4 transition-all duration-500
+              <div className={`h-24 w-24 rounded-full bg-gradient-to-br from-pink-700 to-pink-500 flex items-center justify-center 
+                shadow-[0_0_20px_rgba(236,72,153,0.6)] mb-4 transition-all duration-500
                 ${logoContrast ? 'ring-2 ring-black' : ''}`}>
-                <span className="material-icons text-white text-5xl">sports_martial_arts</span>
+                <span className="material-icons text-white text-5xl">emoji_people</span>
               </div>
               
-              {/* CoachT Text with properly positioned cursor */}
+              {/* Runway AI Text with properly positioned cursor */}
               <h1 className="text-6xl md:text-8xl font-bold relative inline-block">
                 <span className="relative">
                   {typedText}
@@ -177,27 +189,21 @@ export default function AuthPage() {
           <div className={`absolute top-0 left-0 w-full h-full transition-all duration-1000 ease-in-out
             ${cornerGradients ? 'opacity-100' : 'opacity-0'}`}>
             {/* Top-left corner gradient */}
-            <div className={`absolute top-0 left-0 w-1/3 h-1/3 bg-gradient-to-br from-red-600 to-transparent transition-all duration-700
+            <div className={`absolute top-0 left-0 w-1/3 h-1/3 bg-gradient-to-br from-pink-600 to-transparent transition-all duration-700
               ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
             
             {/* Top-right corner gradient */}
-            <div className={`absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-bl from-red-600 to-transparent transition-all duration-700
+            <div className={`absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-bl from-pink-600 to-transparent transition-all duration-700
               ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
             
             {/* Bottom-left corner gradient */}
-            <div className={`absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-red-600 to-transparent transition-all duration-700
+            <div className={`absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-pink-600 to-transparent transition-all duration-700
               ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
             
             {/* Bottom-right corner gradient */}
-            <div className={`absolute bottom-0 right-0 w-1/3 h-1/3 bg-gradient-to-tl from-red-600 to-transparent transition-all duration-700
+            <div className={`absolute bottom-0 right-0 w-1/3 h-1/3 bg-gradient-to-tl from-pink-600 to-transparent transition-all duration-700
               ${cornerGradients ? 'scale-[3]' : 'scale-0'}`}></div>
           </div>
-          
-          {/* Full gradient overlay */}
-          <div 
-            className={`absolute inset-0 bg-gradient-to-r from-red-600 to-red-500 transition-all duration-800 mix-blend-overlay
-              ${colorTransition ? 'opacity-90' : 'opacity-0'}`}
-          ></div>
         </div>
       )}
       
@@ -212,10 +218,10 @@ export default function AuthPage() {
             transition={{ duration: 0.5 }}
           >
             <div className="flex items-center gap-3">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-red-700 to-red-600 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.6)]">
+              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-pink-700 to-pink-600 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.6)]">
                 <span className="material-icons text-white text-2xl">sports_martial_arts</span>
               </div>
-              <h1 className="text-3xl font-bold text-white">CoachT</h1>
+              <h1 className="text-3xl font-bold text-white">Runway AI</h1>
             </div>
           </motion.div>
           
@@ -226,20 +232,20 @@ export default function AuthPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <Card className="border-red-900/30 bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent pointer-events-none"></div>
+            <Card className="border-pink-900/30 bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent pointer-events-none"></div>
               
               <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid grid-cols-2 bg-black/50 border-b border-gray-800 rounded-none w-full h-auto p-0">
                   <TabsTrigger 
                     value="login" 
-                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-red-700 data-[state=active]:to-red-800 data-[state=active]:text-white rounded-none py-3 text-gray-400"
+                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-700 data-[state=active]:to-pink-800 data-[state=active]:text-white rounded-none py-3 text-gray-400"
                   >
                     Login
                   </TabsTrigger>
                   <TabsTrigger 
                     value="register" 
-                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-red-700 data-[state=active]:to-red-800 data-[state=active]:text-white rounded-none py-3 text-gray-400"
+                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-700 data-[state=active]:to-pink-800 data-[state=active]:text-white rounded-none py-3 text-gray-400"
                   >
                     Register
                   </TabsTrigger>
@@ -254,7 +260,7 @@ export default function AuthPage() {
                       </span>
                     </CardTitle>
                     <CardDescription className="text-sm sm:text-base text-gray-300">
-                      Enter your credentials to access your CoachT dashboard
+                      Enter your credentials to access your Runway AI dashboard
                     </CardDescription>
                   </CardHeader>
                   
