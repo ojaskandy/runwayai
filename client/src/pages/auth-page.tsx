@@ -255,7 +255,7 @@ export default function AuthPage() {
                 <TabsContent value="login" className="m-0">
                   <CardHeader>
                     <CardTitle className="text-xl sm:text-2xl font-bold">
-                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-red-300">
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-pink-300">
                         Login to Your Account
                       </span>
                     </CardTitle>
@@ -322,7 +322,7 @@ export default function AuthPage() {
                     <Button 
                       type="submit"
                       form="login-form"
-                      className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white py-5"
+                      className="w-full bg-gradient-to-r from-pink-700 to-pink-600 hover:from-pink-600 hover:to-pink-500 text-white py-5"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
@@ -343,7 +343,7 @@ export default function AuthPage() {
                 {/* Register Form */}
                 <TabsContent value="register" className="m-0">
                   <CardHeader>
-                    <CardTitle className="text-xl sm:text-2xl font-bold text-red-500">
+                    <CardTitle className="text-xl sm:text-2xl font-bold text-pink-500">
                       Create an Account
                     </CardTitle>
                     <CardDescription className="text-sm sm:text-base text-gray-300">
@@ -509,7 +509,7 @@ export default function AuthPage() {
                     <Button 
                       type="submit"
                       form="register-form"
-                      className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white py-5"
+                      className="w-full bg-gradient-to-r from-pink-700 to-pink-600 hover:from-pink-600 hover:to-pink-500 text-white py-5"
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending ? (
