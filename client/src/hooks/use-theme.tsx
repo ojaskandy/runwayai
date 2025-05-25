@@ -17,21 +17,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Get system preference for dark mode
   const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
   
-  // Initialize state with the stored theme or system preference
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const storedTheme = localStorage.getItem('theme') as Theme | null;
-    return storedTheme || (prefersDarkMode ? 'dark' : 'light');
-  });
+  // Force light mode for white background
+  const [theme, setThemeState] = useState<Theme>('light');
   
-  // Helper for setting theme in state and storage
+  // Helper for setting theme in state and storage - force light mode
   const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
+    setThemeState('light');
+    localStorage.setItem('theme', 'light');
   };
   
-  // Toggle between dark and light
+  // Toggle between dark and light - but force light mode
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme('light');
   };
   
   // Apply theme to document when it changes

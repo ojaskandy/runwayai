@@ -142,8 +142,8 @@
   }
 
   html {
-    @apply dark;
-    color-scheme: dark;
+    @apply light;
+    color-scheme: light;
   }
 
   body {
