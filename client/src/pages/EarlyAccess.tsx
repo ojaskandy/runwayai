@@ -751,14 +751,14 @@ export default function EarlyAccess() {
                 <div className="mt-auto">
                   <p className="text-white text-lg font-semibold">Early Access Benefits:</p>
                   <p className="text-gray-300 mt-2">
-                    Get exclusive features, priority support, and be part of shaping the future of martial arts training technology.
+                    Get exclusive features, priority support, and be part of shaping the future of pageant training technology created by Arshia Kathpalia, the 2024 Miss Teen India USA.
                   </p>
                 </div>
               </div>
               
               {/* Geometric patterns for background */}
-              <div className="absolute -bottom-16 -right-16 w-64 h-64 bg-red-600/10 rounded-full blur-3xl"></div>
-              <div className="absolute top-1/4 -left-16 w-64 h-64 bg-red-600/10 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-16 -right-16 w-64 h-64 bg-pink-600/10 rounded-full blur-3xl"></div>
+              <div className="absolute top-1/4 -left-16 w-64 h-64 bg-pink-600/10 rounded-full blur-3xl"></div>
             </div>
           </div>
         </Card>
