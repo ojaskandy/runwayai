@@ -1,14 +1,15 @@
 import { 
-  users, trackingSettings, userProfiles, recordings, earlyAccessSignups, referenceMoves,
+  users, trackingSettings, userProfiles, recordings, earlyAccessSignups, referenceMoves, emailRecords,
   type User, type InsertUser, 
   type TrackingSettings, type InsertTrackingSettings,
   type UserProfile, type InsertUserProfile,
   type Recording, type InsertRecording,
   type EarlyAccessSignup, type InsertEarlyAccess,
-  type ReferenceMove, type InsertReferenceMove
+  type ReferenceMove, type InsertReferenceMove,
+  type EmailRecord, type InsertEmailRecord
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, desc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -47,6 +48,10 @@ export interface IStorage {
   getReferenceMove(moveId: number): Promise<ReferenceMove | undefined>;
   saveReferenceMove(move: InsertReferenceMove): Promise<ReferenceMove>;
   getAllReferenceMoves(): Promise<ReferenceMove[]>;
+  
+  // Email record methods
+  saveEmailRecord(record: InsertEmailRecord): Promise<EmailRecord>;
+  getEmailRecords(): Promise<EmailRecord[]>;
   
   // Session store
   sessionStore: session.Store;
@@ -368,6 +373,23 @@ export class DatabaseStorage implements IStorage {
       .from(referenceMoves)
       .orderBy(referenceMoves.moveId);
     return moves;
+  }
+  
+  // Email record methods
+  async saveEmailRecord(record: InsertEmailRecord): Promise<EmailRecord> {
+    const [created] = await db
+      .insert(emailRecords)
+      .values(record)
+      .returning();
+    return created;
+  }
+  
+  async getEmailRecords(): Promise<EmailRecord[]> {
+    const records = await db
+      .select()
+      .from(emailRecords)
+      .orderBy(desc(emailRecords.sentAt));
+    return records;
   }
 }
 

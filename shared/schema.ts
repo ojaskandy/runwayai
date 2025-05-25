@@ -132,3 +132,23 @@ export const insertReferenceMoveSchema = createInsertSchema(referenceMoves).pick
 
 export type InsertReferenceMove = z.infer<typeof insertReferenceMoveSchema>;
 export type ReferenceMove = typeof referenceMoves.$inferSelect;
+
+// Email records for tracking sent emails
+export const emailRecords = pgTable("email_records", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  sentAt: timestamp("sent_at").defaultNow(),
+  status: text("status").notNull(), // success, failure, etc.
+  source: text("source").default("mobile_landing"), // where the email was sent from
+  responseData: jsonb("response_data"), // Store response data from email service
+});
+
+export const insertEmailRecordSchema = createInsertSchema(emailRecords).pick({
+  email: true,
+  status: true,
+  source: true,
+  responseData: true,
+});
+
+export type InsertEmailRecord = z.infer<typeof insertEmailRecordSchema>;
+export type EmailRecord = typeof emailRecords.$inferSelect;
