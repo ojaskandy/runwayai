@@ -57,7 +57,7 @@ const MobileLandingPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black text-white flex flex-col items-center justify-center p-6 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-pink-900 to-black text-white flex flex-col items-center justify-center p-6 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
