@@ -304,7 +304,7 @@
   /* Default dark background - overridden by inline styles for light mode */
   /* Background colors are now controlled directly in components via isDarkMode conditional styles */
 
-  .taekwondo-shadow {
+  .runway-shadow {
     box-shadow: 0 0 15px rgba(236, 72, 153, 0.2), 0 0 30px rgba(219, 39, 119, 0.1);
   }
   
