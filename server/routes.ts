@@ -594,9 +594,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Email is required" });
     }
 
+    // Always save the email request to the database regardless of Resend API status
+    try {
+      await storage.saveEmailRecord({
+        email,
+        status: 'requested',
+        source: 'mobile_landing',
+        responseData: { timestamp: new Date().toISOString() }
+      });
+    } catch (dbErr) {
+      console.error("Failed to save email record to database:", dbErr);
+      // Continue with email sending even if database record fails
+    }
+
     // If Resend API is not configured, return a successful response without sending an email
     if (!resend) {
       console.log("Email sending skipped - Resend API not configured");
+      
+      // Update the email record in database
+      try {
+        await storage.saveEmailRecord({
+          email,
+          status: 'skipped',
+          source: 'mobile_landing',
+          responseData: { reason: 'Resend API not configured' }
+        });
+      } catch (dbErr) {
+        console.error("Failed to update email record in database:", dbErr);
+      }
+      
       return res.status(200).json({ 
         message: "Setup guide delivery acknowledged", 
         note: "Email sending is currently disabled in this deployment" 
@@ -625,6 +651,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `
       });
 
+      // Save the response to the database
+      try {
+        await storage.saveEmailRecord({
+          email,
+          status: error ? 'failed' : 'sent',
+          source: 'mobile_landing',
+          responseData: error ? { error: error.message } : data
+        });
+      } catch (dbErr) {
+        console.error("Failed to save email response to database:", dbErr);
+      }
+
       if (error) {
         console.error("Resend API Error:", error);
         // Return success anyway to not block the application flow
@@ -637,6 +675,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json({ message: "Setup guide sent successfully!", resendResponse: data });
     } catch (err: any) {
       console.error("Server Error sending email:", err);
+      
+      // Save the error to the database
+      try {
+        await storage.saveEmailRecord({
+          email,
+          status: 'error',
+          source: 'mobile_landing',
+          responseData: { error: err.message }
+        });
+      } catch (dbErr) {
+        console.error("Failed to save email error to database:", dbErr);
+      }
+      
       // Return success anyway to not block the application flow
       return res.status(200).json({ 
         message: "Email sending attempted", 
