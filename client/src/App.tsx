@@ -16,6 +16,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { ThemeProvider } from "./hooks/use-theme";
 import MarketingLanding from "@/pages/MarketingLanding";
 import RootRedirector from "@/pages/RootRedirector";
+import MobileLandingPage from "@/pages/MobileLanding";
 
 function Router() {
   return (
@@ -44,6 +45,9 @@ function Router() {
       
       {/* Early access signup page */}
       <Route path="/early-access" component={EarlyAccess} />
+      
+      {/* Mobile Landing Page route */}
+      <Route path="/mobile-landing" component={MobileLandingPage} />
       
       {/* 404 page */}
       <Route component={NotFound} />

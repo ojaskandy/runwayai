@@ -4,7 +4,9 @@ interface NotesEditorProps {
   initialNotes?: string;
   onChange: (notes: string) => void;
   onStartRoutine?: () => void;
+  onStopRoutine?: () => void;
   onStartTest?: () => void;
+  onStopTest?: () => void;
   onShowResults?: () => void;
   isTracking?: boolean;
   hasReferenceMedia?: boolean;
@@ -13,13 +15,16 @@ interface NotesEditorProps {
   isRecording?: boolean;
   onToggleScreenRecording?: () => void;
   isScreenRecording?: boolean;
+  isTestRunning?: boolean;
 }
 
 export default function NotesEditor({ 
   initialNotes = '', 
   onChange, 
   onStartRoutine, 
+  onStopRoutine,
   onStartTest,
+  onStopTest,
   onShowResults,
   isTracking = false,
   hasReferenceMedia = false,
@@ -27,7 +32,8 @@ export default function NotesEditor({
   onRecord,
   isRecording = false,
   onToggleScreenRecording,
-  isScreenRecording = false
+  isScreenRecording = false,
+  isTestRunning = false
 }: NotesEditorProps) {
   const [notes, setNotes] = useState(initialNotes);
 
@@ -94,75 +100,99 @@ export default function NotesEditor({
       
       {/* Action Buttons */}
       <div className="flex justify-center space-x-2 sm:space-x-4 mt-3 mb-1 flex-wrap">
-        <button
-          onClick={onStartRoutine}
-          className={`px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
-            isTracking 
-              ? 'bg-gray-700 text-gray-300 cursor-default'
-              : 'bg-gradient-to-r from-red-700 to-red-600 text-white hover:from-red-800 hover:to-red-700'
-          }`}
-          disabled={isTracking}
-        >
-          <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">{isTracking ? 'pause' : 'play_arrow'}</span>
-          {isTracking ? 'Tracking Active' : 'Start Routine'}
-        </button>
-
-        {/* Record Button */}
-        {onRecord && (
+        {isTestRunning ? (
           <button
-            onClick={onRecord}
-            className={`px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
-              isRecording
-                ? 'bg-red-500 text-white animate-pulse'
-                : 'bg-purple-600 hover:bg-purple-700 text-white'
-            }`}
-            title={isRecording ? 'Stop Recording' : 'Record Camera'}
+            onClick={onStopTest}
+            className="px-5 sm:px-6 py-3 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-sm sm:text-base bg-gradient-to-r from-orange-600 to-orange-500 text-white hover:from-orange-700 hover:to-orange-600 animate-pulse"
           >
-            <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">{isRecording ? 'stop' : 'videocam'}</span>
-            {isRecording ? 'Stop' : 'Record Camera'}
+            <span className="material-icons mr-1 sm:mr-2 text-base sm:text-lg">stop</span>
+            Stop Test
           </button>
-        )}
+        ) : (
+          <>
+            {!isTracking ? (
+              <button
+                onClick={onStartRoutine}
+                className="px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm bg-gradient-to-r from-red-700 to-red-600 text-white hover:from-red-800 hover:to-red-700"
+              >
+                <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">play_arrow</span>
+                Start Routine
+              </button>
+            ) : (
+              <button
+                onClick={onStopRoutine}
+                className="px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm bg-gradient-to-r from-orange-600 to-orange-500 text-white hover:from-orange-700 hover:to-orange-600"
+              >
+                <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">stop</span>
+                Stop Routine
+              </button>
+            )}
 
-        {/* Screen Recording Button */}
-        {onToggleScreenRecording && (
-          <button
-            onClick={onToggleScreenRecording}
-            className={`px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
-              isScreenRecording
-                ? 'bg-red-500 text-white animate-pulse'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
-            title={isScreenRecording ? 'Stop Screen Recording' : 'Record Entire Screen'}
-          >
-            <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">{isScreenRecording ? 'stop_screen_share' : 'screen_share'}</span>
-            {isScreenRecording ? 'Stop Record' : 'Record Screen'}
-          </button>
-        )}
-        
-        <button
-          onClick={onStartTest}
-          className={`px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
-            !hasReferenceMedia
-              ? 'bg-gray-700 text-gray-300 cursor-not-allowed'
-              : 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600'
-          }`}
-          disabled={!hasReferenceMedia || isRecording || isScreenRecording}
-          title={!hasReferenceMedia ? 'Add reference media first' : isRecording || isScreenRecording ? 'Recording in progress' : 'Start test against reference media'}
-        >
-          <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">fitness_center</span>
-          Test
-        </button>
+            {/* Record Button */}
+            {onRecord && (
+              <button
+                onClick={onRecord}
+                className={`px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
+                  isRecording
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : 'bg-purple-600 hover:bg-purple-700 text-white'
+                }`}
+                title={isRecording ? 'Stop Recording' : 'Record Camera'}
+              >
+                <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">{isRecording ? 'stop' : 'videocam'}</span>
+                {isRecording ? 'Stop' : 'Record Camera'}
+              </button>
+            )}
 
-        {hasCompletedTest && (
-          <button
-            onClick={onShowResults}
-            className="px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 text-xs sm:text-sm"
-            title="View your test results"
-            disabled={isRecording || isScreenRecording}
-          >
-            <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">analytics</span>
-            Test Results
-          </button>
+            {/* Screen Recording Button */}
+            {onToggleScreenRecording && (
+              <button
+                onClick={onToggleScreenRecording}
+                className={`px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
+                  isScreenRecording
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+                title={isScreenRecording ? 'Stop Screen Recording' : 'Record Entire Screen'}
+              >
+                <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">{isScreenRecording ? 'stop_screen_share' : 'screen_share'}</span>
+                {isScreenRecording ? 'Stop Record' : 'Record Screen'}
+              </button>
+            )}
+            
+            {/* Test Button - Light up when media is available */}
+            <button
+              onClick={onStartTest}
+              className={`px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors text-xs sm:text-sm ${
+                !hasReferenceMedia
+                  ? 'bg-gray-700 text-gray-300 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-green-500 to-green-400 text-white hover:from-green-600 hover:to-green-500 border-2 border-green-300 shadow-xl'
+              }`}
+              disabled={!hasReferenceMedia || isRecording || isScreenRecording}
+              title={
+                !hasReferenceMedia 
+                  ? 'Add reference media first' 
+                  : isRecording || isScreenRecording 
+                    ? 'Recording in progress' 
+                    : 'Start test against reference media'
+              }
+            >
+              <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">fitness_center</span>
+              Test
+            </button>
+
+            {hasCompletedTest && (
+              <button
+                onClick={onShowResults}
+                className="px-3 sm:px-4 py-2 rounded-md font-medium shadow-lg flex items-center justify-center transition-colors bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-700 hover:to-green-600 text-xs sm:text-sm"
+                title="View your test results"
+                disabled={isRecording || isScreenRecording}
+              >
+                <span className="material-icons mr-1 sm:mr-2 text-sm sm:text-base">analytics</span>
+                Test Results
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

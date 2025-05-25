@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, ReactNode } from 'react';
+import { useState, createContext, useContext, ReactNode, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 
 // Define types for auth
@@ -21,6 +21,9 @@ type AuthContextType = {
   user: User | null;
   loginMutation: any;
   registerMutation: any;
+  showMobileWarning: boolean;
+  setShowMobileWarning: (show: boolean) => void;
+  isMobileDevice: boolean;
 };
 
 // Create auth context
@@ -33,6 +36,32 @@ type AuthProviderProps = {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [showMobileWarning, setShowMobileWarning] = useState<boolean>(false);
+  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false);
+  
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobileDevice = () => {
+      // Check screen size
+      const isMobileBySize = window.innerWidth < 768;
+      
+      // Check user agent for mobile devices
+      const isMobileByAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+      
+      // We treat iPads as tablets (acceptable), so exclude them from warning
+      const isIPad = /iPad/i.test(navigator.userAgent);
+      
+      setIsMobileDevice(isMobileBySize && (isMobileByAgent && !isIPad));
+    };
+    
+    checkMobileDevice();
+    
+    // Add resize listener
+    window.addEventListener("resize", checkMobileDevice);
+    return () => window.removeEventListener("resize", checkMobileDevice);
+  }, []);
   
   // Simulated login mutation
   const loginMutation = useMutation({
@@ -50,6 +79,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     onSuccess: (data: User) => {
       setUser(data);
       console.log('Login successful:', data);
+      
+      // Show mobile warning if on a mobile device and warning hasn't been shown
+      // We check sessionStorage to ensure it only shows once per session
+      const mobileWarningShown = sessionStorage.getItem('mobileWarningShown');
+      if (isMobileDevice && !mobileWarningShown) {
+        setShowMobileWarning(true);
+        sessionStorage.setItem('mobileWarningShown', 'true');
+      }
     }
   });
   
@@ -65,13 +102,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
     onSuccess: (data: User) => {
       setUser(data);
       console.log('Registration successful:', data);
+      
+      // Show mobile warning if on a mobile device and warning hasn't been shown
+      // We check sessionStorage to ensure it only shows once per session
+      const mobileWarningShown = sessionStorage.getItem('mobileWarningShown');
+      if (isMobileDevice && !mobileWarningShown) {
+        setShowMobileWarning(true);
+        sessionStorage.setItem('mobileWarningShown', 'true');
+      }
     }
   });
   
   const value = {
     user,
     loginMutation,
-    registerMutation
+    registerMutation,
+    showMobileWarning,
+    setShowMobileWarning,
+    isMobileDevice
   };
   
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

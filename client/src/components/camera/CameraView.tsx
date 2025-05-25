@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react'; // Ensure useState and useRef are imported
 import { detectPoses } from '@/lib/poseDetection';
 import { compareAnglesWithDTW } from '@/lib/dtw';
+import { compareRoutines } from '@/lib/fastDtw';
 import GreenGuideOverlay from '../GreenGuideOverlay';
 import RecordingControls from './RecordingControls';
 import ResultsModal from './ResultsModal';
@@ -35,6 +36,7 @@ interface CameraViewProps {
 interface TestResults {
   isRunning: boolean;
   processing: boolean;
+  jointScores?: JointScore[];
   scores: JointScore[];
   overallScore: number;
   feedback: string;
@@ -42,6 +44,20 @@ interface TestResults {
   dtwScores?: Record<string, number>;
   angleData?: any;
   dtwResults?: Record<string, any>;
+  userAngleTable?: {
+    timestamps: string[];
+    angles: { [joint: string]: number[] };
+  };
+  instructorAngleTable?: {
+    timestamps: string[];
+    angles: { [joint: string]: number[] };
+  };
+  fastDtwResults?: {
+    overallScore: number;
+    perFrameScores: number[];
+    jointErrors: number[];
+    jointNames: string[];
+  };
 }
 
 export default function CameraView({
@@ -459,6 +475,207 @@ export default function CameraView({
     console.log("Closed recording popup and revoked URL.");
   };
 
+  const proceedToResultsModal = () => {
+    console.log("[proceedToResultsModal] Entered function.");
+    // Ensure processing is true when this is called, as it might be called from other places
+    setTestResults(prev => ({ ...prev, isRunning: false, processing: true }));
+  
+    // Process both pose sequences and run the test
+    setTimeout(() => {
+      console.log("[proceedToResultsModal] Starting data processing inside setTimeout.");
+      if (userPoseHistory.length < 5 || referencePoseHistory.length < 5) {
+        console.log("[proceedToResultsModal] Not enough pose data. Setting error feedback.");
+        setTestResults(prev => ({
+          ...prev,
+          isRunning: false, // Ensure this is explicitly set to false
+          processing: false,
+          feedback: 'Not enough pose data. Please try again.',
+          overallScore: 0
+        }));
+        setHasCompletedTest(true); 
+        console.log("[proceedToResultsModal] Attempting to show ResultsModal (due to insufficient data).");
+        setShowResultsModal(true); 
+        return;
+      }
+      
+      console.log("[proceedToResultsModal] Processing test results...");
+      console.log("User pose history:", userPoseHistory.length, "frames");
+      console.log("Reference pose history:", referencePoseHistory.length, "frames");
+      
+      const userAnglesData: Record<string, number[]> = {};
+      const refAnglesData: Record<string, number[]> = {};
+      
+      angleJoints.forEach(joint => {
+        if (userAngleHistory[joint]?.length && referenceAngleHistory[joint]?.length) {
+          userAnglesData[joint] = userAngleHistory[joint].map(entry => entry.angle);
+          refAnglesData[joint] = referenceAngleHistory[joint].map(entry => entry.angle);
+        } else if (userAngleSequences[joint]?.length && referenceAngleSequences[joint]?.length) {
+          userAnglesData[joint] = userAngleSequences[joint];
+          refAnglesData[joint] = referenceAngleSequences[joint];
+        }
+      });
+      
+      const dtwScores: Record<string, number> = {};
+      const dtwResultsFromComparison: Record<string, any> = {};
+      let totalDtwScore = 0;
+      let validJointCount = 0;
+      
+      Object.keys(userAnglesData).forEach(joint => {
+        if (userAnglesData[joint].length >= 5 && refAnglesData[joint].length >= 5) {
+          const result = compareAnglesWithDTW(userAnglesData[joint], refAnglesData[joint], joint);
+          const score = result.score;
+          dtwScores[joint] = score;
+          dtwResultsFromComparison[joint] = result;
+          totalDtwScore += score;
+          validJointCount++;
+        }
+      });
+      
+      const avgDtwScore = validJointCount > 0 ? Math.round(totalDtwScore / validJointCount) : 0;
+      
+      // Add FastDTW routine comparison analysis
+      console.log("[proceedToResultsModal] Performing FastDTW routine comparison analysis...");
+      
+      // Convert angle data to vectors for FastDTW analysis
+      const userAngleVectors: number[][] = [];
+      const instructorAngleVectors: number[][] = [];
+      const jointNames = Object.keys(userAnglesData).filter(joint => 
+        userAnglesData[joint].length >= 5 && refAnglesData[joint].length >= 5
+      );
+      
+      // Find the maximum number of frames across all joints
+      const userMaxFrames = Math.max(...jointNames.map(joint => userAnglesData[joint].length));
+      const refMaxFrames = Math.max(...jointNames.map(joint => refAnglesData[joint].length));
+      
+      // Create a vector for each frame with all joint angles
+      // We need to ensure all vectors have the same dimensions by including all joints
+      for (let i = 0; i < userMaxFrames; i++) {
+        const vector: number[] = [];
+        for (const joint of jointNames) {
+          // Use the angle if available for this frame, or the last available angle
+          const angle = i < userAnglesData[joint].length 
+            ? userAnglesData[joint][i] 
+            : userAnglesData[joint][userAnglesData[joint].length - 1];
+          vector.push(angle);
+        }
+        userAngleVectors.push(vector);
+      }
+      
+      for (let i = 0; i < refMaxFrames; i++) {
+        const vector: number[] = [];
+        for (const joint of jointNames) {
+          // Use the angle if available for this frame, or the last available angle
+          const angle = i < refAnglesData[joint].length 
+            ? refAnglesData[joint][i] 
+            : refAnglesData[joint][refAnglesData[joint].length - 1];
+          vector.push(angle);
+        }
+        instructorAngleVectors.push(vector);
+      }
+      
+      // Perform FastDTW comparison if we have enough data
+      let fastDtwAnalysisResults = null;
+      if (userAngleVectors.length >= 5 && instructorAngleVectors.length >= 5) {
+        console.log(`Performing FastDTW analysis with ${userAngleVectors.length} user frames and ${instructorAngleVectors.length} reference frames`);
+        
+        try {
+          fastDtwAnalysisResults = compareRoutines(
+            instructorAngleVectors, 
+            userAngleVectors,
+            5 // radius parameter for FastDTW
+          );
+          
+          console.log("FastDTW analysis complete:", fastDtwAnalysisResults);
+        } catch (error) {
+          console.error("Error performing FastDTW analysis:", error);
+        }
+      } else {
+        console.log("Not enough data for FastDTW analysis");
+      }
+      
+      const latestUserPose = userPoseHistory[userPoseHistory.length - 1]?.pose;
+      const latestRefPose = referencePoseHistory[referencePoseHistory.length - 1]?.pose;
+      
+      let frameComparison: { jointScores: JointScore[]; overallScore: number } = { 
+        jointScores: [], 
+        overallScore: 0 
+      };
+      
+      if (latestUserPose && latestRefPose) {
+        const result = comparePoses(latestUserPose, latestRefPose);
+        if (result.jointScores && Array.isArray(result.jointScores)) {
+          const frameOverallScoreSum = result.overallScore;
+          const frameValidJoints = result.jointScores.filter(s => s.score > 0).length;
+          const avgFrameScore = frameValidJoints > 0 ? Math.round(frameOverallScoreSum / frameValidJoints) : 0;
+          frameComparison = {
+            jointScores: result.jointScores as JointScore[],
+            overallScore: avgFrameScore
+          };
+        }
+      }
+      
+      let calculatedFinalScore = Math.round(0.7 * avgDtwScore + 0.3 * frameComparison.overallScore);
+      calculatedFinalScore = Math.max(0, Math.min(100, calculatedFinalScore));
+
+      const feedback = generateFeedbackFromScore(calculatedFinalScore);
+      
+      // Ensure angleDataForChart contains full user and expected (instructor) angles
+      const angleDataForModal = generateAngleComparisonData(); 
+
+      setTestResults({
+        isRunning: false,
+        processing: false,
+        scores: frameComparison.jointScores,
+        overallScore: calculatedFinalScore,
+        feedback,
+        timing: timingIssues,
+        dtwScores,
+        angleData: angleDataForModal, // Used by Routine Analysis in ResultsModal
+        dtwResults: dtwResultsFromComparison,
+        userAngleTable: { // For "Your Angles" tab
+            timestamps: angleDataForModal.timestamps, // Ensure timestamps are consistent
+            angles: angleDataForModal.userAngles
+        },
+        instructorAngleTable: { // For "Instructor Angles" tab
+            timestamps: angleDataForModal.timestamps, // Ensure timestamps are consistent
+            angles: angleDataForModal.expectedAngles // Use expectedAngles for instructor
+        },
+        fastDtwResults: fastDtwAnalysisResults ? {
+          overallScore: fastDtwAnalysisResults.overallScore,
+          perFrameScores: fastDtwAnalysisResults.perFrameScores,
+          jointErrors: fastDtwAnalysisResults.jointErrors,
+          jointNames: jointNames.map(joint => joint.replace(/_/g, ' '))
+        } : undefined
+      });
+      
+      console.log("[proceedToResultsModal] Results processed. Showing modal dialog.");
+      setShowResultsModal(true);
+    }, 500);
+  };
+
+  /**
+   * Generate appropriate feedback based on a score
+   * @param score The score to generate feedback for (0-100)
+   * @returns A feedback message
+   */
+  const generateFeedbackFromScore = (score: number): string => {
+    if (score >= 90) {
+      return "Excellent work! Your form is nearly perfect and matches the reference movement with high precision.";
+    } else if (score >= 80) {
+      return "Great job! Your movement shows good precision with only minor deviations from the reference.";
+    } else if (score >= 70) {
+      return "Good performance! Your movement is mostly on track, with a few areas that could use improvement.";
+    } else if (score >= 60) {
+      return "Decent effort. Your movement has the right general pattern, but needs refinement in several areas.";
+    } else if (score >= 50) {
+      return "Fair attempt. Your movement shows some similarities to the reference, but needs significant improvement.";
+    } else if (score >= 30) {
+      return "Keep practicing. Your movement needs considerable refinement to match the reference pattern.";
+    } else {
+      return "More practice needed. Try focusing on matching the basic form of the reference movement.";
+    }
+  };
+
   return (
     <div className="m-0 p-0">
       <RecordingControls onRecordingComplete={(url: string) => { /* url is string */ }} />
@@ -487,7 +704,7 @@ export default function CameraView({
         onStartRoutine={toggleTracking} 
         onStartTest={() => { /* Full onStartTest logic */ }}
         isTracking={isTracking}
-        hasReferenceMedia={isSplitView && (!!imageElement || !!referenceVideoRef.current)}
+        hasReferenceMedia={isSplitView && (!!imageElement || !!referenceVideoRef.current || !!mediaUrl)}
         hasCompletedTest={hasCompletedTest}
         onShowResults={() => setShowResultsModal(true)}
         onToggleScreenRecording={toggleScreenRecording} 
@@ -502,11 +719,14 @@ export default function CameraView({
         scores={testResults.scores}
         overallScore={testResults.overallScore}
         feedback={testResults.feedback}
-        timing={timingIssues}
+        timing={testResults.timing}
         recordedVideo={recordedVideo}
         routineNotes={routineNotes}
         angleData={testResults.angleData}
         dtwResults={testResults.dtwResults}
+        userAngleTable={testResults.userAngleTable}
+        instructorAngleTable={testResults.instructorAngleTable}
+        fastDtwResults={testResults.fastDtwResults}
       />
 
       {showRecordingPopup && recordedVideo && (

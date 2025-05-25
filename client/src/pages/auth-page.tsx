@@ -11,6 +11,7 @@ import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import MobileWarningDialog from "@/components/MobileWarningDialog";
 
 // Schemas for form validation
 const loginSchema = z.object({
@@ -34,7 +35,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, loginMutation, registerMutation, showMobileWarning, setShowMobileWarning } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("login");
   const [isMobile, setIsMobile] = useState(false);
@@ -140,6 +141,12 @@ export default function AuthPage() {
         <div className="absolute bottom-0 right-0 w-1/3 h-1/3 bg-red-700/20 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
         <div className="absolute top-1/2 left-1/2 w-1/3 h-1/3 bg-red-700/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
       </div>
+      
+      {/* Mobile Warning Dialog */}
+      <MobileWarningDialog
+        open={showMobileWarning}
+        onOpenChange={setShowMobileWarning}
+      />
       
       {/* Loading screen */}
       {loading && (

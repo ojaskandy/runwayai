@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { JointScore } from './JointScoringEngine';
 import type { TimingIssues } from './TimingAnalyzer';
 import { Line } from 'react-chartjs-2';
@@ -12,6 +12,9 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
+import DTW from 'dtw';
+// import 'react-tabs/style/react-tabs.css'; // Using custom styles
 
 // Register ChartJS components
 ChartJS.register(
@@ -24,219 +27,300 @@ ChartJS.register(
   Legend
 );
 
-interface ResultsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  scores: JointScore[];
-  overallScore: number;
-  feedback: string;
-  timing?: TimingIssues;
-  recordedVideo?: string;
-  routineNotes?: string;
-  angleData?: {
-    timestamps: string[];
-    userAngles: { [joint: string]: number[] };
-    expectedAngles: { [joint: string]: number[] };
-  };
-  dtwResults?: {
-    [joint: string]: {
-      score: number;
-      distance: number;
-      path: Array<[number, number]>;
-      alignment: { user: number; reference: number; distance: number }[];
-      errorWindows: { start: number; end: number; avgError: number }[];
-    }
-  };
+interface ErrorWindow {
+  start: number | string; // Assuming start/end could be string representations of time/frames or numbers
+  end: number | string;
+  avgError: number;
 }
 
-export default function ResultsModal({
-  isOpen,
-  onClose,
-  scores,
+interface AngleDataTableProps { // Replicated from StopTestIntermediatePopup for now
+  timestamps: string[];
+  angles: { [joint: string]: number[] };
+  title: string;
+  isLoading?: boolean;
+}
+
+// Add new interface for comparison table
+interface AngleComparisonTableProps {
+  timestamps: string[];
+  userAngles: { [joint: string]: number[] };
+  referenceAngles: { [joint: string]: number[] };
+  isLoading?: boolean;
+}
+
+const AngleDataTable: React.FC<AngleDataTableProps> = ({ timestamps, angles, title, isLoading }) => {
+  if (isLoading) {
+    return <p className="text-gray-400 text-center py-4">Loading angle data...</p>;
+  }
+  if (!timestamps || timestamps.length === 0) {
+    return <p className="text-gray-400 text-center py-4">No {title.toLowerCase()} data available.</p>;
+  }
+
+  const jointNames = Object.keys(angles);
+  if (jointNames.length === 0) {
+    return <p className="text-gray-400 text-center py-4">No joint data found for {title.toLowerCase()}.</p>;
+  }
+  
+  // Ensure all angle arrays have the same length as timestamps for consistency
+  const consistentAngles: { [joint: string]: (number | null)[] } = {};
+  jointNames.forEach(joint => {
+    consistentAngles[joint] = timestamps.map((_, idx) => angles[joint]?.[idx] ?? null);
+  });
+
+
+  return (
+    <div className="my-4 rounded-lg bg-gray-800/50 p-1 shadow-inner">
+      <h4 className="text-white font-semibold mb-2 text-lg px-3 pt-2">{title}</h4>
+      <div className="max-h-72 overflow-y-auto styled-scrollbar"> {/* Increased max-h and added scrollbar styling */}
+        <table className="min-w-full text-sm text-left text-gray-300">
+          <thead className="text-xs text-gray-400 uppercase bg-gray-700/60 sticky top-0 z-10">
+            <tr>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">Time</th>
+              {jointNames.map(joint => (
+                <th scope="col" className="px-4 py-3 whitespace-nowrap" key={joint}>
+                  {joint.replace(/_/g, ' ')}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-700/50">
+            {timestamps.map((time, idx) => (
+              <tr key={idx} className={`${idx % 2 === 0 ? 'bg-gray-800/70' : 'bg-gray-900/70'} hover:bg-gray-700/80 transition-colors duration-150 ease-in-out`}>
+                <td className="px-4 py-2 whitespace-nowrap">{time}</td>
+                {jointNames.map(joint => (
+                  <td className="px-4 py-2 whitespace-nowrap" key={`${joint}-${idx}`}>
+                    {consistentAngles[joint][idx] !== null ? `${consistentAngles[joint][idx]?.toFixed(1)}°` : 'N/A'}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// New component for showing angle differences with scoring
+const AngleComparisonTable: React.FC<AngleComparisonTableProps> = ({ 
+  timestamps, 
+  userAngles, 
+  referenceAngles, 
+  isLoading 
+}) => {
+  if (isLoading) {
+    return <p className="text-gray-400 text-center py-4">Loading comparison data...</p>;
+  }
+  
+  if (!timestamps || timestamps.length === 0) {
+    return <p className="text-gray-400 text-center py-4">No timestamp data available for comparison.</p>;
+  }
+
+  // Get all joint names from both user and reference angles
+  const userJoints = Object.keys(userAngles);
+  const refJoints = Object.keys(referenceAngles);
+  const allJoints = Array.from(new Set([...userJoints, ...refJoints])).filter(joint => 
+    userAngles[joint]?.some(v => v !== undefined) && 
+    referenceAngles[joint]?.some(v => v !== undefined)
+  );
+
+  if (allJoints.length === 0) {
+    return <p className="text-gray-400 text-center py-4">No matching joint data available for comparison.</p>;
+  }
+
+  // Helper function to calculate DTW score
+  function computeDTWScore(userSeq: number[], refSeq: number[]) {
+    const dtw = new DTW();
+    const cost = dtw.compute(userSeq, refSeq);
+    // Normalize: lower cost = better, scale to 0-100
+    const maxPossible = Math.max(userSeq.length, refSeq.length) * 180; // max angle diff per frame
+    const score = Math.max(0, 100 - (cost / maxPossible) * 100);
+    return { cost, score: Math.round(score) };
+  }
+
+  return (
+    <div className="my-4 rounded-lg bg-gray-800/50 p-1 shadow-inner">
+      <h4 className="text-white font-semibold mb-2 text-lg px-3 pt-2">Angle Comparison Analysis (DTW)</h4>
+      <div className="text-xs text-gray-400 mb-3 flex flex-wrap gap-2">
+        <span className="inline-block px-2 py-1 bg-gray-700 rounded mr-2">Excellent: 0-5°</span>
+        <span className="inline-block px-2 py-1 bg-gray-700 rounded mr-2">Good: 6-15°</span>
+        <span className="inline-block px-2 py-1 bg-gray-700 rounded mr-2">Fair: 16-30°</span>
+        <span className="inline-block px-2 py-1 bg-gray-700 rounded">Poor: &gt;30°</span>
+      </div>
+      <div className="max-h-72 overflow-y-auto styled-scrollbar"> 
+        <table className="min-w-full text-sm text-left text-gray-300">
+          <thead className="text-xs text-gray-400 uppercase bg-gray-700/60 sticky top-0 z-10">
+            <tr>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">Joint</th>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">DTW Score</th>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">DTW Cost</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-700/50">
+            {allJoints.map(joint => {
+              const userSeq = userAngles[joint] || [];
+              const refSeq = referenceAngles[joint] || [];
+              const { cost, score } = computeDTWScore(userSeq, refSeq);
+              let scoreColor = '';
+              if (score >= 90) scoreColor = 'text-green-500';
+              else if (score >= 80) scoreColor = 'text-green-400';
+              else if (score >= 70) scoreColor = 'text-yellow-400';
+              else if (score >= 60) scoreColor = 'text-orange-400';
+              else scoreColor = 'text-red-500';
+              return (
+                <tr key={joint}>
+                  <td className="px-4 py-2 whitespace-nowrap">{joint.replace(/_/g, ' ')}</td>
+                  <td className={`px-4 py-2 whitespace-nowrap font-semibold ${scoreColor}`}>{score}%</td>
+                  <td className="px-4 py-2 whitespace-nowrap">{cost.toFixed(2)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// Add new interface for FastDTW comparison results
+interface FastDTWComparisonProps {
+  overallScore: number;
+  detailedJointScores: Array<{ name: string; score: number; cost: number }>;
+  isLoading?: boolean;
+}
+
+// New component for showing FastDTW comparison results
+const FastDTWComparisonTable: React.FC<FastDTWComparisonProps> = ({
   overallScore,
-  feedback,
-  timing,
-  recordedVideo,
-  routineNotes,
-  angleData,
-  dtwResults
-}: ResultsModalProps) {
-  const [showCopyToast, setShowCopyToast] = useState(false);
-  const [selectedJoint, setSelectedJoint] = useState<string | null>(null);
-  const [showAllJoints, setShowAllJoints] = useState(false);
+  detailedJointScores,
+  isLoading
+}) => {
+  if (isLoading) {
+    return <p className="text-gray-400 text-center py-4">Loading comparison data...</p>;
+  }
+  
+  if (!detailedJointScores || detailedJointScores.length === 0) {
+    return <p className="text-gray-400 text-center py-4">No comparison data available.</p>;
+  }
 
-  if (!isOpen) return null;
-
-  // Generate improvement suggestions based on scores and timing
-  const generateImprovementSuggestions = () => {
-    const suggestions: string[] = [];
-    
-    // Add suggestions based on joint scores
-    const poorJoints = scores.filter(score => score.score < 70);
-    if (poorJoints.length > 0) {
-      suggestions.push(`Work on improving ${poorJoints.map(j => j.joint.replace('_', ' ')).join(', ')} movement.`);
-    }
-    
-    // Add DTW-based suggestions
-    if (dtwResults) {
-      const poorDtwJoints = Object.entries(dtwResults)
-        .filter(([_, result]) => result.score < 70)
-        .map(([joint, _]) => joint);
-      
-      if (poorDtwJoints.length > 0) {
-        suggestions.push(`Focus on matching the expected motion pattern for ${poorDtwJoints.map(j => j.replace('_', ' ')).join(', ')}.`);
-      }
-    }
-    
-    // Add suggestions based on timing
-    if (timing) {
-      if (timing.delays) {
-        suggestions.push('Try to reduce delays between movements for better flow.');
-      }
-      if (timing.gaps) {
-        suggestions.push('Avoid pausing during the routine for smoother execution.');
-      }
-      if (timing.speed === 'slow') {
-        suggestions.push('Increase your speed to match the expected timing.');
-      } else if (timing.speed === 'fast') {
-        suggestions.push('Slow down slightly to maintain proper form.');
-      }
-    }
-    
-    return suggestions.length > 0 ? suggestions : ['Great job! Keep practicing to maintain your performance.'];
+  // Helper function to get severity level based on score (0-100)
+  const getScoreSeverity = (score: number): { label: string; color: string } => {
+    if (score >= 90) return { label: 'Excellent', color: 'text-green-500' };
+    if (score >= 80) return { label: 'Good', color: 'text-green-300' };
+    if (score >= 70) return { label: 'Fair', color: 'text-yellow-400' };
+    if (score >= 50) return { label: 'Okay', color: 'text-orange-400' };
+    return { label: 'Needs Improvement', color: 'text-red-500' };
   };
 
-  const getChartData = (joint: string) => {
-    if (!angleData || !joint) {
-      console.warn("Missing angle data or joint for chart");
-      return null;
-    }
-    
-    console.log(`Getting chart data for joint ${joint}`);
-    console.log(`User angles: ${angleData.userAngles[joint]?.length || 0} points`);
-    console.log(`Expected angles: ${angleData.expectedAngles[joint]?.length || 0} points`);
-    
-    // Check if we have meaningful data
-    const hasUserData = angleData.userAngles[joint]?.length > 0;
-    const hasExpectedData = angleData.expectedAngles[joint]?.length > 0;
-    
-    if (!hasUserData || !hasExpectedData) {
-      console.warn(`Missing angle data for joint ${joint}`);
-      return {
-        labels: angleData.timestamps || [],
-        datasets: [
-          {
-            label: 'Your Movement',
-            data: hasUserData ? angleData.userAngles[joint] : [0, 0],
-            borderColor: 'rgba(255, 99, 132, 1)',
-            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-            tension: 0.2,
-          },
-          {
-            label: 'Expected Movement',
-            data: hasExpectedData ? angleData.expectedAngles[joint] : [0, 0],
-            borderColor: 'rgba(54, 162, 235, 1)',
-            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-            tension: 0.2,
-          }
-        ]
-      };
-    }
-    
-    const data = {
-      labels: angleData.timestamps,
-      datasets: [
-        {
-          label: 'Your Movement',
-          data: angleData.userAngles[joint] || [],
-          borderColor: 'rgba(255, 99, 132, 1)',
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          tension: 0.2,
-        },
-        {
-          label: 'Expected Movement',
-          data: angleData.expectedAngles[joint] || [],
-          borderColor: 'rgba(54, 162, 235, 1)',
-          backgroundColor: 'rgba(54, 162, 235, 0.2)',
-          tension: 0.2,
-        }
-      ]
-    };
-    
-    // Add error highlights from DTW analysis if available
-    if (dtwResults && dtwResults[joint]?.errorWindows?.length > 0) {
-      // Create background colors for error regions
-      const errorRegions = dtwResults[joint].errorWindows.map(window => {
-        return {
-          type: 'box',
-          xMin: window.start,
-          xMax: window.end,
-          backgroundColor: 'rgba(255, 0, 0, 0.1)',
-          borderColor: 'rgba(255, 0, 0, 0.2)',
-          borderWidth: 1
-        };
-      });
-      
-      // Add error annotations
-      data.datasets.push({
-        label: 'Error Regions',
-        data: [],
-        backgroundColor: 'rgba(255, 0, 0, 0.2)',
-        borderColor: 'rgba(255, 0, 0, 0)',
-        pointRadius: 0,
-        annotations: errorRegions
-      } as any);
-    }
-    
-    return data;
-  };
+  // Sort joints by score (lowest first to highlight areas for improvement, or highest first)
+  // Let's sort by score, lowest first
+  const sortedJoints = [...detailedJointScores].sort((a, b) => a.score - b.score);
 
-  const getAllJointsChartData = () => {
-    if (!angleData) return null;
-    
-    const datasets: any[] = [];
-    
-    // Get all joints that have data
-    const joints = Object.keys(angleData.userAngles).filter(
-      joint => angleData.userAngles[joint].length > 0 && angleData.expectedAngles[joint].length > 0
-    );
-    
-    // Create a dataset for each joint
-    joints.forEach(joint => {
-      // Generate random colors for each joint
-      const hue = Math.floor(Math.random() * 360);
-      const userColor = `hsla(${hue}, 80%, 60%, 1)`;
-      const refColor = `hsla(${hue}, 80%, 80%, 0.7)`;
-      
-      datasets.push({
-        label: `Your ${joint.replace('_', ' ')}`,
-        data: angleData.userAngles[joint] || [],
-        borderColor: userColor,
-        backgroundColor: `${userColor}22`,
-        tension: 0.2,
-        borderWidth: 2,
-        pointRadius: 0,
-      });
-      
-      datasets.push({
-        label: `Expected ${joint.replace('_', ' ')}`,
-        data: angleData.expectedAngles[joint] || [],
-        borderColor: refColor,
-        backgroundColor: `${refColor}22`,
-        tension: 0.2,
-        borderWidth: 1.5,
-        borderDash: [5, 5],
-        pointRadius: 0,
-      });
-    });
-    
-    return {
-      labels: angleData.timestamps,
-      datasets
-    };
-  };
+  return (
+    <div className="my-4 rounded-lg bg-gray-800/50 p-1 shadow-inner">
+      <h4 className="text-white font-semibold mb-2 text-lg px-3 pt-2">Routine Comparison Analysis</h4>
+      <div className="text-xs text-gray-400 mb-3 flex flex-wrap gap-2">
+        <span className="inline-block px-2 py-1 bg-gray-700 rounded mr-2">Excellent: 0-5°</span>
+        <span className="inline-block px-2 py-1 bg-gray-700 rounded mr-2">Good: 6-15°</span>
+        <span className="inline-block px-2 py-1 bg-gray-700 rounded mr-2">Fair: 16-30°</span>
+        <span className="inline-block px-2 py-1 bg-gray-700 rounded">Poor: &gt;30°</span>
+      </div>
+      <div className="max-h-72 overflow-y-auto styled-scrollbar"> 
+        <table className="min-w-full text-sm text-left text-gray-300">
+          <thead className="text-xs text-gray-400 uppercase bg-gray-700/60 sticky top-0 z-10">
+            <tr>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">Joint</th>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">Alignment Score (%)</th>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">DTW Cost</th>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">Quality</th>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">Recommendation</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-700/50">
+            {sortedJoints.map((jointData, idx) => {
+              if (jointData.cost === -1) { // Skip joints that couldn't be processed
+                return (
+                  <tr 
+                    key={jointData.name} 
+                    className={`${idx % 2 === 0 ? 'bg-gray-800/40' : 'bg-gray-900/40'} hover:bg-gray-700/50 transition-colors duration-150 ease-in-out`}
+                  >
+                    <td className="px-4 py-2 whitespace-nowrap font-medium text-gray-500">
+                      {jointData.name.replace(/_/g, ' ')}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap text-gray-500" colSpan={4}>
+                      Not enough data to process for DTW.
+                    </td>
+                  </tr>
+                );
+              }
 
-  const chartOptions = {
+              const { label, color } = getScoreSeverity(jointData.score);
+              
+              const getRecommendation = (score: number) => {
+                if (score >= 90) return 'Excellent form! Maintain consistency.';
+                if (score >= 80) return 'Good alignment. Minor refinements possible.';
+                if (score >= 70) return 'Fair. Focus on matching timing and angles more closely.';
+                if (score >= 50) return 'Okay. Consider breaking down the movement.';
+                return 'Significant practice needed. Review reference carefully.';
+              };
+              
+              return (
+                <tr 
+                  key={jointData.name} 
+                  className={`${idx % 2 === 0 ? 'bg-gray-800/70' : 'bg-gray-900/70'} hover:bg-gray-700/80 transition-colors duration-150 ease-in-out`}
+                >
+                  <td className="px-4 py-2 whitespace-nowrap font-medium">
+                    {jointData.name.replace(/_/g, ' ')}
+                  </td>
+                  <td className={`px-4 py-2 whitespace-nowrap font-semibold ${color}`}>
+                    {jointData.score}%
+                  </td>
+                  <td className={`px-4 py-2 whitespace-nowrap`}>
+                    {jointData.cost.toFixed(2)}
+                  </td>
+                  <td className={`px-4 py-2 whitespace-nowrap ${color}`}>
+                    {label}
+                  </td>
+                  <td className="px-4 py-2">
+                    {getRecommendation(jointData.score)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// Performance over time chart component
+const PerformanceChart: React.FC<{ 
+  perFrameScores: number[];
+  timestamps?: string[];
+}> = ({ perFrameScores, timestamps }) => {
+  if (!perFrameScores || perFrameScores.length === 0) {
+    return <p className="text-gray-400 text-center py-4">No performance data available.</p>;
+  }
+
+  // Generate default timestamps if none provided
+  const labels = timestamps || Array.from({ length: perFrameScores.length }, (_, i) => `Frame ${i+1}`);
+  
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: 'Performance',
+        data: perFrameScores.map(score => score * 100), // Convert 0-1 to 0-100
+        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        tension: 0.4,
+        fill: true,
+      }
+    ]
+  };
+  
+  const options = {
     responsive: true,
     plugins: {
       legend: {
@@ -244,36 +328,26 @@ export default function ResultsModal({
         labels: {
           color: 'white',
           font: {
-            size: 11
-          },
-          boxWidth: 15
+            size: 12
+          }
         }
       },
       title: {
         display: true,
-        text: selectedJoint 
-          ? `${selectedJoint.replace('_', ' ')} Angle Comparison`
-          : 'All Joints Angle Comparison',
+        text: 'Performance Throughout Routine',
         color: 'white',
         font: {
           size: 14
-        }
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            const label = context.dataset.label || '';
-            const value = context.parsed.y?.toFixed(1);
-            return `${label}: ${value}°`;
-          }
         }
       }
     },
     scales: {
       y: {
+        min: 0,
+        max: 100,
         title: {
           display: true,
-          text: 'Angle (degrees)',
+          text: 'Similarity (%)',
           color: 'white'
         },
         ticks: {
@@ -286,7 +360,7 @@ export default function ResultsModal({
       x: {
         title: {
           display: true,
-          text: 'Time',
+          text: 'Progress',
           color: 'white'
         },
         ticks: {
@@ -305,8 +379,184 @@ export default function ResultsModal({
       duration: 500
     }
   };
+  
+  return <Line data={data} options={options} />;
+};
 
-  const improvements = generateImprovementSuggestions();
+interface ResultsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  scores?: JointScore[];
+  overallScore?: number;
+  feedback?: string;
+  timing?: TimingIssues;
+  recordedVideo?: string;
+  routineNotes?: string;
+  angleData?: {
+    timestamps: string[];
+    userAngles: { [joint: string]: number[] };
+    expectedAngles: { [joint: string]: number[] };
+  };
+  dtwResults?: Record<string, any>;
+  userAngleTable?: { // Added prop
+    timestamps: string[];
+    angles: { [joint: string]: number[] };
+  };
+  instructorAngleTable?: { // Added prop
+    timestamps:string[];
+    angles: { [joint: string]: number[] };
+  };
+  // Add new prop for FastDTW comparison results
+  fastDtwResults?: {
+    overallScore: number;
+    detailedJointScores: Array<{ name: string; score: number; cost: number }>;
+  };
+}
+
+export default function ResultsModal({
+  isOpen,
+  onClose,
+  scores = [],
+  overallScore = 0,
+  feedback = 'No feedback available.',
+  timing,
+  recordedVideo,
+  routineNotes,
+  angleData,
+  dtwResults,
+  userAngleTable, // Added prop
+  instructorAngleTable, // Added prop
+  fastDtwResults,
+}: ResultsModalProps) {
+  const [showCopyToast, setShowCopyToast] = useState(false);
+  const [activeTab, setActiveTab] = useState<'user' | 'instructor' | 'routine'>('user');
+  const [routineAnalysisLoading, setRoutineAnalysisLoading] = useState(false);
+  const [routineAnalysisResults, setRoutineAnalysisResults] = useState<any>(null);
+  const [dtwProcessingClicked, setDtwProcessingClicked] = useState(false);
+
+  // Helper functions first
+  const generateImprovementSuggestions = () => {
+    const suggestions: string[] = [];
+    if (routineAnalysisResults && routineAnalysisResults.detailedJointScores) {
+      const processableJointCount = routineAnalysisResults.detailedJointScores.filter((j: any) => j.cost !== -1).length;
+
+      const jointsToImprove = routineAnalysisResults.detailedJointScores.filter((j: any) => j.score < 70 && j.cost !== -1); // Score < 70 and was processable
+      if (jointsToImprove.length > 0) {
+        suggestions.push(`Focus on improving: ${jointsToImprove.map((j: any) => j.name.replace('_', ' ')).join(', ')}. Aim for an alignment score of 70% or higher.`);
+      }
+      
+      const excellentJoints = routineAnalysisResults.detailedJointScores.filter((j: any) => j.score >= 90 && j.cost !== -1);
+      if (excellentJoints.length > 0 && jointsToImprove.length === 0 && processableJointCount === excellentJoints.length) {
+        suggestions.push('Fantastic work! All joints show excellent alignment.');
+      } else if (excellentJoints.length > 0 && jointsToImprove.length === 0) {
+         suggestions.push('Great job on maintaining good to excellent form across all processable joints!');
+      }
+
+      if (processableJointCount === 0 && !routineAnalysisResults.error) {
+        suggestions.push("Not enough data points for a reliable comparison for any joint.");
+      }
+
+    } else if (routineAnalysisResults && routineAnalysisResults.error) {
+        suggestions.push(routineAnalysisResults.error);
+    }
+    
+    if (suggestions.length === 0 && (!routineAnalysisResults || (!routineAnalysisResults.detailedJointScores && !routineAnalysisResults.error)) ) {
+        suggestions.push('Click "Process Results" to analyze your routine alignment.');
+    }
+    return suggestions;
+  };
+
+  useEffect(() => {
+    if (activeTab === 'routine' && dtwProcessingClicked && !routineAnalysisLoading) {
+      // Use userAngleTable and instructorAngleTable as primary sources
+      if (userAngleTable && userAngleTable.angles && userAngleTable.timestamps.length > 0 &&
+          instructorAngleTable && instructorAngleTable.angles && instructorAngleTable.timestamps.length > 0) {
+        
+        setRoutineAnalysisLoading(true);
+        setRoutineAnalysisResults(null);
+
+        setTimeout(() => { 
+          const userAnglesData = userAngleTable.angles;
+          const refAnglesData = instructorAngleTable.angles;
+          
+          const commonJointNames = Object.keys(userAnglesData).filter(joint => 
+            refAnglesData[joint] && 
+            userAnglesData[joint]?.length > 0 && 
+            refAnglesData[joint]?.length > 0
+          );
+
+          if (commonJointNames.length === 0) {
+            setRoutineAnalysisResults({ error: "No common joint data with sufficient recordings found between user and instructor." });
+            setRoutineAnalysisLoading(false);
+            setDtwProcessingClicked(false);
+            return;
+          }
+
+          const detailedJointScores: Array<{ name: string, score: number, cost: number }> = [];
+          let totalScoreSum = 0;
+
+          commonJointNames.forEach(joint => {
+            const userSeq = userAnglesData[joint].filter(a => typeof a === 'number') as number[];
+            const refSeq = refAnglesData[joint].filter(a => typeof a === 'number') as number[];
+
+            if (userSeq.length < 2 || refSeq.length < 2) { // DTW usually needs at least 2 points
+              detailedJointScores.push({ name: joint, score: 0, cost: -1 }); // Mark as not processable
+              return;
+            }
+            
+            const dtw = new DTW();
+            const cost = dtw.compute(userSeq, refSeq);
+            const maxLength = Math.max(userSeq.length, refSeq.length);
+            const maxPossibleCost = maxLength * 180; // Max angle diff (180) per frame in the longer sequence
+            
+            // Score: 0-100, higher is better.
+            // Normalize cost: 0 means perfect match, higher means more different.
+            // (1 - (cost / maxPossibleCost)) gives a value where 1 is best.
+            // Multiply by 100. Ensure score is not negative.
+            let score = 0;
+            if (maxPossibleCost > 0) {
+                score = Math.max(0, (1 - (cost / maxPossibleCost)) * 100);
+            }
+            
+            detailedJointScores.push({ name: joint, score: Math.round(score), cost: parseFloat(cost.toFixed(2)) });
+            totalScoreSum += score;
+          });
+
+          const processableJoints = detailedJointScores.filter(j => j.cost !== -1);
+          const overallRoutineScore = processableJoints.length > 0 
+            ? Math.round(processableJoints.reduce((sum, j) => sum + j.score, 0) / processableJoints.length) 
+            : 0;
+          
+          setRoutineAnalysisResults({
+            overallScore: overallRoutineScore,
+            detailedJointScores: detailedJointScores, // This will be used by FastDTWComparisonTable and suggestions
+             // The following are for potential chart compatibility, may need adjustment
+            jointErrors: detailedJointScores.map(j => j.cost), 
+            jointNames: detailedJointScores.map(j => j.name.replace(/_/g, ' ')),
+            perFrameScores: detailedJointScores.map(j => j.score / 100), // Example: individual joint scores (0-1)
+          });
+
+          setRoutineAnalysisLoading(false);
+          setDtwProcessingClicked(false);
+        }, 500); // Reduced simulation time
+      } else {
+        setRoutineAnalysisResults({ error: "User or Instructor angle data is not available for analysis. Ensure both have recorded data." });
+        setRoutineAnalysisLoading(false);
+        setDtwProcessingClicked(false);
+      }
+    }
+  }, [activeTab, dtwProcessingClicked, userAngleTable, instructorAngleTable, routineAnalysisLoading]);
+
+  const handleProcessDtw = () => {
+    setDtwProcessingClicked(true);
+  };
+
+  if (!isOpen) return null;
+
+  // const improvements = scores.length > 0 ? generateImprovementSuggestions() : ['Complete a test to get feedback.']; // Old usage
+  
+  const hasUserAngleTableData = userAngleTable && userAngleTable.timestamps && userAngleTable.timestamps.length > 0;
+  const hasInstructorAngleTableData = instructorAngleTable && instructorAngleTable.timestamps && instructorAngleTable.timestamps.length > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -324,207 +574,132 @@ export default function ResultsModal({
 
         {/* Content */}
         <div className="p-6">
-          {/* Score and Feedback */}
-          <div className="text-center mb-6">
-            {/* Only show the score if we have a valid overallScore and feedback */}
-            {overallScore > 0 && feedback && feedback !== "Test in progress..." ? (
-              <>
-                <div className="text-4xl font-bold text-red-500 mb-4">{overallScore}</div>
-                <p className="text-white">{feedback}</p>
-              </>
-            ) : (
-              <>
-                <div className="text-4xl font-bold text-red-500 mb-4">
-                  {overallScore > 0 ? overallScore : 'N/A'}
-                </div>
-                <p className="text-white">
-                  {feedback && feedback !== "Test in progress..." 
-                    ? feedback 
-                    : "Analysis complete. Check the details below."}
-                </p>
-              </>
-            )}
-          </div>
+          {/* Score and Feedback section removed as per new flow, feedback comes from DTW analysis now */}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Joint Scores */}
-            <div className="bg-black/30 p-4 rounded-lg md:col-span-2">
-              <h4 className="text-white font-medium mb-3 text-lg">Reference Movement - Joint Angles</h4>
-              {angleData && angleData.timestamps && angleData.expectedAngles ? (
-                <div className="overflow-y-auto max-h-[400px] relative">
-                  <table className="w-full text-sm text-left text-gray-300 table-fixed">
-                    <thead className="text-xs text-gray-400 uppercase bg-gray-700/50 sticky top-0">
-                      <tr>
-                        <th scope="col" className="px-4 py-3 w-[25%]">Time</th>
-                        <th scope="col" className="px-4 py-3 w-[45%]">Joint</th>
-                        <th scope="col" className="px-4 py-3 w-[30%] text-center">Reference Angle (°)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        // Use expectedAngles to determine the list of joints
-                        const allJoints = Object.keys(angleData.expectedAngles);
-                        
-                        if (!angleData.timestamps || angleData.timestamps.length === 0) {
-                          return (
-                            <tr>
-                              <td colSpan={3} className="px-4 py-4 text-center text-gray-500">
-                                No timestamp data available.
-                              </td>
-                            </tr>
-                          );
-                        }
-
-                        if (allJoints.length === 0) {
-                          return (
-                            <tr>
-                              <td colSpan={3} className="px-4 py-4 text-center text-gray-500">
-                                No reference joint angle data available.
-                              </td>
-                            </tr>
-                          );
-                        }
-
-                        return angleData.timestamps.flatMap((timestamp, timeIndex) =>
-                          allJoints.map((jointName, jointIndex) => {
-                            const expectedAngle = angleData.expectedAngles[jointName]?.[timeIndex];
-
-                            return (
-                              <tr key={`${timestamp}-${jointName}`} className={`border-b border-gray-700 ${jointIndex % 2 === 0 ? 'bg-black/20' : 'bg-black/30'} hover:bg-gray-700/70`}>
-                                <td className="px-4 py-2 font-medium whitespace-nowrap text-white">
-                                  {/* Display timestamp only for the first joint in a time block for cleaner look */}
-                                  {jointIndex === 0 ? parseFloat(timestamp).toFixed(1) + 's' : ''}
-                                </td>
-                                <td className="px-4 py-2 capitalize">{jointName.replace(/_/g, ' ')}</td>
-                                <td className="px-4 py-2 text-center">
-                                  {expectedAngle !== undefined ? expectedAngle.toFixed(1) : 'N/A'}
-                                </td>
-                              </tr>
-                            );
-                          })
-                        );
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-4">
-                  Reference angle data is not available for this test.
-                </div>
-              )}
-            </div>
-
-            {/* Improvement Suggestions */}
-            <div className="bg-black/30 p-4 rounded-lg">
-              <h4 className="text-white font-medium mb-2">Areas to Improve</h4>
+          {/* Areas to Improve - now based on DTW */}
+          <div className="bg-black/30 p-4 rounded-lg mb-6">
+              <h4 className="text-white font-medium mb-2">Feedback</h4>
               <ul className="list-disc list-inside text-gray-300">
-                {improvements.map((suggestion, index) => (
+                {generateImprovementSuggestions().map((suggestion, index) => (
                   <li key={index}>{suggestion}</li>
                 ))}
               </ul>
+          </div>
+
+          {/* Tab navigation for charts/tables */}
+          <div className="mb-6">
+            <div className="flex border-b border-gray-700 overflow-x-auto">
+              <button
+                onClick={() => setActiveTab('user')}
+                className={`py-2 px-4 font-medium whitespace-nowrap ${activeTab === 'user' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-400 hover:text-white'}`}
+              >
+                Your Angles
+              </button>
+              <button
+                onClick={() => setActiveTab('instructor')}
+                className={`py-2 px-4 font-medium whitespace-nowrap ${activeTab === 'instructor' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-400 hover:text-white'}`}
+              >
+                Instructor Angles
+              </button>
+              <button
+                onClick={() => setActiveTab('routine')}
+                className={`py-2 px-4 font-medium whitespace-nowrap ${activeTab === 'routine' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-400 hover:text-white'}`}
+              >
+                Routine Analysis
+              </button>
             </div>
           </div>
 
-          {/* Movement Data Visualization */}
-          <div className="bg-black/30 p-4 rounded-lg mt-4">
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="text-white font-medium">Movement Analysis</h4>
-              <div className="flex space-x-2">
-                <button 
-                  className={`px-3 py-1 rounded text-sm ${showAllJoints ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-                  onClick={() => {
-                    setShowAllJoints(true);
-                    setSelectedJoint(null);
-                  }}
-                >
-                  Show All Joints
-                </button>
-                <button 
-                  className={`px-3 py-1 rounded text-sm ${!showAllJoints && selectedJoint ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-                  onClick={() => {
-                    setShowAllJoints(false);
-                    if (!selectedJoint && scores.length > 0) {
-                      setSelectedJoint(scores[0].joint);
-                    }
-                  }}
-                  disabled={!selectedJoint && scores.length === 0}
-                >
-                  Show Selected Joint
-                </button>
+          {/* User Angle Table Section */}
+          {activeTab === 'user' && (
+            <AngleDataTable
+              timestamps={userAngleTable?.timestamps || []}
+              angles={userAngleTable?.angles || {}}
+              title="Your Joint Angles"
+              isLoading={!hasUserAngleTableData}
+            />
+          )}
+
+          {/* Instructor Angle Table Section */}
+          {activeTab === 'instructor' && (
+            <AngleDataTable
+              timestamps={instructorAngleTable?.timestamps || []}
+              angles={instructorAngleTable?.angles || {}}
+              title="Instructor Joint Angles"
+              isLoading={!hasInstructorAngleTableData}
+            />
+          )}
+
+          {/* Routine Comparison Analysis Section */}
+          {activeTab === 'routine' && (
+            <div>
+              <div className="bg-black/30 p-3 rounded mb-4">
+                <h4 className="text-white font-medium mb-2">Routine DTW Analysis</h4>
+                <p className="text-gray-300 text-sm">
+                  Compare your entire movement sequence against the instructor using Dynamic Time Warping (DTW) for each joint.
+                  Lower DTW cost signifies better alignment. Scores are normalized (0-100).
+                </p>
               </div>
-            </div>
-            
-            <p className="text-gray-300 text-sm mb-3">
-              This graph shows your movement compared to the expected movement over time.
-              Areas where the lines diverge indicate where your form needs improvement.
-            </p>
-            
-            <div className="h-64 mb-4">
-              {showAllJoints && angleData ? (
-                angleData.timestamps?.length > 0 ? (
-                  <Line data={getAllJointsChartData()!} options={chartOptions} />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-red-400">
-                    No angle data available for visualization
+
+              {!routineAnalysisResults && !routineAnalysisLoading && (
+                <div className="text-center py-10">
+                  <button 
+                    onClick={handleProcessDtw}
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg text-lg transition-all duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 glow-on-hover"
+                  >
+                    Process Results
+                  </button>
+                   <p className="text-gray-400 text-xs mt-2">Click to perform DTW analysis on recorded angle data.</p>
+                </div>
+              )}
+
+              {routineAnalysisLoading && (
+                <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+                  <svg className="animate-spin h-8 w-8 mb-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <p className="text-lg mb-2">Processing DTW Analysis...</p>
+                  <p className="text-sm">This may take a moment.</p>
+                </div>
+              )}
+
+              {routineAnalysisResults && !routineAnalysisLoading && (
+                routineAnalysisResults.error ? (
+                  <div className="text-center py-10 text-red-400">
+                    <p className="text-lg mb-2">Error during analysis:</p>
+                    <p className="text-sm">{routineAnalysisResults.error}</p>
                   </div>
-                )
-              ) : (
-                selectedJoint && angleData ? (
-                  angleData.timestamps?.length > 0 ? (
-                    <Line data={getChartData(selectedJoint)!} options={chartOptions} />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-red-400">
-                      No angle data available for {selectedJoint.replace('_', ' ')}
+                ) : (
+                  <>
+                    <FastDTWComparisonTable 
+                      overallScore={routineAnalysisResults.overallScore}
+                      detailedJointScores={routineAnalysisResults.detailedJointScores}
+                      isLoading={routineAnalysisLoading}
+                    />
+                     <div className="mt-2 text-xs text-gray-400 px-3">
+                        <p><strong>How scoring works:</strong></p>
+                        <ul className="list-disc list-inside ml-4">
+                            <li>DTW (Dynamic Time Warping) calculates a 'cost' for aligning your joint movements with the instructor's. Lower cost is better.</li>
+                            <li>This cost is normalized to a score from 0 to 100 for each joint.</li>
+                            <li>The overall score is the average of these individual joint scores.</li>
+                            <li>'Joint Errors' in the table above represent the raw DTW cost for that joint.</li>
+                        </ul>
                     </div>
-                  )
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    Select a joint from the analysis above to see detailed comparison
-                  </div>
+                    {/* Performance chart might be less relevant here unless perFrameScores are truly frame-by-frame alignment scores */}
+                    {/* <div className="mt-4 bg-black/30 p-3 rounded">
+                      <h4 className="text-white font-medium mb-2">Performance Throughout Routine</h4>
+                      <div className="h-64">
+                        <PerformanceChart 
+                          perFrameScores={routineAnalysisResults.perFrameScores}
+                          timestamps={angleData?.timestamps}
+                        />
+                      </div>
+                    </div> */}
+                  </>
                 )
               )}
             </div>
-            
-            {/* DTW Results */}
-            {dtwResults && selectedJoint && dtwResults[selectedJoint] && (
-              <div className="bg-black/40 p-3 rounded mt-2">
-                <h5 className="text-white text-sm font-medium mb-2">Dynamic Time Warping Analysis</h5>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-black/30 p-2 rounded">
-                    <p className="text-gray-400">Match Score</p>
-                    <p className={`text-lg font-bold ${
-                      dtwResults[selectedJoint].score >= 85 ? 'text-green-500' : 
-                      dtwResults[selectedJoint].score >= 70 ? 'text-yellow-500' : 
-                      dtwResults[selectedJoint].score >= 50 ? 'text-orange-500' : 
-                      'text-red-500'
-                    }`}>{dtwResults[selectedJoint].score}%</p>
-                  </div>
-                  <div className="bg-black/30 p-2 rounded">
-                    <p className="text-gray-400">Error Regions</p>
-                    <p className="text-lg font-bold text-white">
-                      {dtwResults[selectedJoint].errorWindows.length}
-                    </p>
-                  </div>
-                </div>
-                
-                {dtwResults[selectedJoint].errorWindows.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-gray-400 text-xs">Regions needing improvement:</p>
-                    <div className="text-xs text-gray-300 mt-1">
-                      {dtwResults[selectedJoint].errorWindows.map((window, idx) => (
-                        <div key={idx} className="py-1 border-b border-gray-800 flex justify-between">
-                          <span>Region {idx+1}: {window.start} - {window.end}</span>
-                          <span className="text-red-400">Avg Error: {window.avgError.toFixed(1)}°</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          )}
 
-          {/* Video Recording */}
+          {/* Video Recording - Kept as it's independent */}
           {recordedVideo && (
             <div className="mt-4">
               <h4 className="text-white font-medium mb-2">Your Performance</h4>
@@ -587,7 +762,7 @@ Joint Analysis:
 ${scores.map(s => `- ${s.joint.replace('_', ' ')}: ${s.score}%`).join('\n')}
 ${dtwResults ? `\nDTW Analysis:\n${Object.entries(dtwResults).map(([joint, result]) => `- ${joint.replace('_', ' ')}: ${result.score}%`).join('\n')}` : ''}
 Areas to Improve:
-${improvements.map(i => `- ${i}`).join('\n')}
+${generateImprovementSuggestions().map(i => `- ${i}`).join('\n')}
                   `.trim();
                   
                   navigator.clipboard.writeText(summary).then(() => {

@@ -62,8 +62,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use port 5000 to match workflow configuration
-  const port = 5000;
+  // Use port 5173 for Vite's default port
+  const port = 5173;
   server.listen({
     port,
     host: "0.0.0.0" // Listen on all interfaces to make it accessible in deployment

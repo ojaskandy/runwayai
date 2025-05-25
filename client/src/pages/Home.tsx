@@ -13,7 +13,7 @@ import {
   Sun, Moon, User, LogOut, Settings, Clock, Calendar, Award, Play, 
   Dumbbell, HelpCircle, MessageSquare, BarChart, Info, RefreshCw, Trash2,
   Home as HomeIcon, ListChecks, Loader2, PanelRightOpen, PanelRightClose, Palette,
-  ChevronDown, ChevronUp, ScrollText
+  ChevronDown, ChevronUp, ScrollText, Smartphone
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -44,6 +44,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { isMobileDevice } from '@/lib/deviceUtils';
 
 export type TrackingStatus = 'inactive' | 'loading' | 'ready' | 'active' | 'error';
 export type CameraFacing = 'user' | 'environment';
@@ -110,7 +111,7 @@ export default function Home() {
   const [backgroundOpacity, setBackgroundOpacity] = useState<number>(0.8);
   const [backgroundBlur, setBackgroundBlur] = useState<number>(0);
   
-  // Reference view settings
+  // Reference settings
   const [showReferenceOverlay, setShowReferenceOverlay] = useState<boolean>(false);
   
   // UI state
@@ -120,7 +121,7 @@ export default function Home() {
   
   // Camera view options
   const [skeletonColorChoice, setSkeletonColorChoice] = useState<'red' | 'blue' | 'green' | 'purple' | 'orange'>('red');
-  const [blackoutMode, setBlackoutMode] = useState<boolean>(false);
+  const [blackoutMode, setBlackoutMode] = useState<boolean>(true);
   
   // Dialog states
   const [showHowItWorksDialog, setShowHowItWorksDialog] = useState<boolean>(false);
@@ -130,6 +131,9 @@ export default function Home() {
   
   // Added for Record button
   const [isRecording, setIsRecording] = useState<boolean>(false);
+  
+  // State for mobile warning popup
+  const [showMobileWarningDialog, setShowMobileWarningDialog] = useState<boolean>(false);
   
   // Customize background state
   const [backgroundImages, setBackgroundImages] = useState<string[]>([]);
@@ -182,7 +186,16 @@ export default function Home() {
     if (!hasSeenGuide) {
       setShowHowItWorksDialog(true); // Show dialog on first visit
     }
-  }, []);
+
+    // Check for mobile device after user context is available
+    if (user) {
+      if (isMobileDevice()) {
+        // Optionally, check localStorage here to show only once per session/device
+        // For now, show every time on mobile after login
+        setShowMobileWarningDialog(true);
+      }
+    }
+  }, [user]); // Add user to dependency array to run when user loads
 
   // Screenshot modal
   const [screenshotData, setScreenshotData] = useState<string | null>(null);
@@ -450,9 +463,9 @@ export default function Home() {
                 <User className="h-4 w-4 text-white mr-2" />
                 <span className="text-sm text-white font-medium">Profile</span>
               </Button>
-              <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md transform group-hover:scale-110 transition-transform z-10">
+              {/* <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md transform group-hover:scale-110 transition-transform z-10">
                 In Development
-              </span>
+              </span> */}
             </motion.div>
           </Link>
             
@@ -589,9 +602,9 @@ export default function Home() {
                       <Play className="mr-2 h-5 w-5" />
                       Start Live Routine
                     </motion.button>
-                    <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md transform group-hover:scale-110 transition-transform z-10">
+                    {/* <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md transform group-hover:scale-110 transition-transform z-10">
                       In Development
-                    </span>
+                    </span> */}
                   </div>
                 
                   <Link href="/practice">
@@ -659,7 +672,7 @@ export default function Home() {
                     {isLoadingRecordings && (
                       <div className="flex items-center justify-center py-10">
                         <Loader2 className={`h-10 w-10 animate-spin ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
-                        {isSessionPanelExpanded && <p className="ml-4 text-gray-400 text-lg">Loading...</p>}
+                      {isSessionPanelExpanded && <p className="ml-4 text-gray-400 text-lg">Loading...</p>}
                       </div>
                     )}
                     {recordingsError && (
@@ -732,7 +745,7 @@ export default function Home() {
 
               {/* Camera Settings Panel */}
               {sourceType === 'camera' && hasPermission && !isLoading && (
-                <div className="absolute top-4 right-4 bg-gray-950/80 border border-gray-800 rounded-lg p-3 shadow-lg z-20">
+                <div className="absolute bottom-4 left-4 bg-black/90 border border-red-900/40 rounded-lg p-3 shadow-lg z-20">
                   <h3 className={`text-sm font-semibold mb-2 ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
                     Camera Options
                   </h3>
@@ -758,17 +771,6 @@ export default function Home() {
                           />
                         ))}
                       </div>
-                    </div>
-                    
-                    {/* Blackout Mode Toggle */}
-                    <div>
-                      <label className="text-xs text-gray-400 block mb-1">Blackout Mode</label>
-                      <button
-                        onClick={() => setBlackoutMode(!blackoutMode)}
-                        className={`w-full py-1 px-3 rounded text-sm font-medium ${blackoutMode ? 'bg-gray-200 text-black' : 'bg-gray-800 text-white'}`}
-                      >
-                        {blackoutMode ? 'On (Skeleton Only)' : 'Off (Show Camera)'}
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -1027,6 +1029,36 @@ export default function Home() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Device Warning Dialog */}
+      {user && showMobileWarningDialog && (
+        <Dialog open={showMobileWarningDialog} onOpenChange={setShowMobileWarningDialog}>
+          <DialogContent className={`bg-gray-950 border text-white max-w-md ${getButtonClasses(buttonTheme, 'outline').split(' ').find(c => c.startsWith('border-')) || 'border-sky-800'}`}>
+            <DialogHeader>
+              <DialogTitle className={`text-2xl flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                <Smartphone className="mr-3 h-6 w-6" />
+                Mobile Device Detected
+              </DialogTitle>
+              <DialogDescription className="text-gray-400 mt-2">
+                For the best experience with CoachT, including optimal pose tracking and interface usability, we recommend using a tablet or laptop/desktop computer.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 text-gray-300">
+              <p>
+                While CoachT may function on mobile devices, its features are optimized for larger screens. You might experience layout issues or reduced performance on a smaller screen.
+              </p>
+            </div>
+            <DialogFooter className="mt-2">
+              <Button
+                onClick={() => setShowMobileWarningDialog(false)}
+                className={`text-white px-6 py-2 text-base ${getButtonClasses(buttonTheme, 'primary')}`}
+              >
+                Understood, Continue
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Gallery frames for welcome screen (only shown if not tracking and backgroundImages exist) */}
       {(!hasPermission || trackingStatus === 'inactive') && !isTracking && backgroundImages.length > 0 && (

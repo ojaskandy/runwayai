@@ -13,6 +13,14 @@ import {
 import { z } from "zod";
 import * as fs from 'fs';
 import * as path from 'path';
+import { Resend } from 'resend';
+import { Request, Response, NextFunction } from "express";
+
+// Initialize Resend with your API key
+// IMPORTANT: In a production environment, use an environment variable for the API key.
+// const resend = new Resend(process.env.RESEND_API_KEY);
+// const resend = new Resend('re_EVad7ofd_ERDZcpkaxzNba4G3xfAAm6j1');
+const resend = new Resend('re_1ADvCcNq_PSWcM39YYiz7TxPEHksjcCPh');
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -567,6 +575,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting reference move:", error);
       res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // New endpoint for sending the setup guide email
+  app.post("/api/send-guide", async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    try {
+      const { data, error } = await resend.emails.send({
+        from: 'CoachT <onboarding@coacht.ai>', // Replace with your desired sender email
+        to: [email],
+        subject: 'Your CoachT Setup Guide is Here!',
+        html: `
+          <h1>Welcome to CoachT!</h1>
+          <p>Thanks for your interest! We\'re excited to help you elevate your training.</p>
+          <p>To get the best experience and access all features, please use CoachT on a <strong>laptop or desktop computer</strong>.</p>
+          <p><strong>Here\'s a quick guide to get started:</strong></p>
+          <ul>
+            <li>Ensure you have a stable internet connection.</li>
+            <li>Use a modern browser like Chrome or Firefox.</li>
+            <li>Allow camera access when prompted.</li>
+            <li>Explore the different modes: Practice, Test, and Routine.</li>
+          </ul>
+          <p>If you have any questions, don\'t hesitate to reach out to our support team.</p>
+          <p>Happy Training!</p>
+          <p>The CoachT Team</p>
+        `
+      });
+
+      if (error) {
+        console.error("Resend API Error:", error);
+        return res.status(500).json({ message: "Failed to send email", errorDetail: error.message });
+      }
+
+      return res.status(200).json({ message: "Setup guide sent successfully!", resendResponse: data });
+    } catch (err: any) {
+      console.error("Server Error sending email:", err);
+      res.status(500).json({ message: "Failed to send email due to server error", errorDetail: err.message });
     }
   });
 
