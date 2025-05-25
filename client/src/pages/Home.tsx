@@ -421,20 +421,19 @@ export default function Home() {
           <CurrentTime className="ml-2 text-pink-100" showSeconds={false} />
         </div>
 
-        {/* Belt Display - moved to header */}
+        {/* Pageant Title Display */}
         <div className="flex-1 mx-4 max-w-lg">
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 100, damping: 15 }}
+            className="bg-gradient-to-r from-pink-400/10 to-pink-300/20 border border-pink-300/30 rounded-lg py-2 px-4 flex items-center justify-center"
           >
-            <BeltDisplay 
-              beltColor={userBelt.color} 
-              beltName={userBelt.name} 
-              beltLevel={userBelt.level} 
-              stretched={true} 
-              username={user?.username?.toUpperCase()} 
-            />
+            <div className="flex flex-col items-center">
+              <span className="text-xs text-pink-200 uppercase tracking-widest">Presented by</span>
+              <span className="text-white font-semibold text-lg">Arshia Kathpalia</span>
+              <span className="text-pink-300 text-sm">Miss Teen India USA 2024</span>
+            </div>
           </motion.div>
         </div>
         
@@ -446,7 +445,7 @@ export default function Home() {
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
           >
             <SessionTimer className="transition-transform duration-300" />
-            <div className="absolute inset-0 bg-red-500/10 rounded-md scale-105 animate-pulse -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 bg-pink-400/10 rounded-md scale-105 animate-pulse -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </motion.div>
           
           {/* Profile button */}
@@ -454,18 +453,15 @@ export default function Home() {
             <motion.div 
               whileHover={{ scale: 1.05 }} 
               whileTap={{ scale: 0.95 }} 
-              className="relative group" // Added relative group for badge positioning
+              className="relative group"
             >
               <Button 
                 variant="outline" 
-                className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3 transition-all duration-300 hover:shadow-red-500/30 hover:shadow-sm"
+                className="h-8 rounded-full border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center px-3 transition-all duration-300 hover:shadow-pink-300/30 hover:shadow-sm"
               >
-                <User className="h-4 w-4 text-white mr-2" />
-                <span className="text-sm text-white font-medium">Profile</span>
+                <User className="h-4 w-4 text-pink-200 mr-2" />
+                <span className="text-sm text-pink-100 font-medium">Profile</span>
               </Button>
-              {/* <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md transform group-hover:scale-110 transition-transform z-10">
-                In Development
-              </span> */}
             </motion.div>
           </Link>
             
@@ -474,33 +470,33 @@ export default function Home() {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button 
                   variant="outline" 
-                  className="h-8 rounded-full border-red-600 bg-transparent hover:bg-red-700/20 flex items-center px-3"
+                  className="h-8 rounded-full border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center px-3"
                 >
-                  <Settings className="h-4 w-4 text-white mr-2" />
-                  <span className="text-sm text-white font-medium">Menu</span>
+                  <Settings className="h-4 w-4 text-pink-200 mr-2" />
+                  <span className="text-sm text-pink-100 font-medium">Menu</span>
                 </Button>
               </motion.div>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40 border border-red-600 bg-gray-900">
+            <DropdownMenuContent align="end" className="w-40 border border-pink-300 bg-gray-900">
               <DropdownMenuItem 
-                className="cursor-pointer flex items-center text-white hover:bg-red-700/30"
+                className="cursor-pointer flex items-center text-white hover:bg-pink-400/20"
               >
-                <Settings className="mr-2 h-4 w-4" />
+                <Settings className="mr-2 h-4 w-4 text-pink-200" />
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuItem 
-                className="cursor-pointer flex items-center text-white hover:bg-red-700/30"
+                className="cursor-pointer flex items-center text-white hover:bg-pink-400/20"
                 onClick={() => setShowTips(true)}
               >
-                <Info className="mr-2 h-4 w-4" />
-                <span>Training Tips</span>
+                <Info className="mr-2 h-4 w-4 text-pink-200" />
+                <span>Pageant Tips</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-red-900/30" />
+              <DropdownMenuSeparator className="bg-pink-300/30" />
               <DropdownMenuItem 
-                className="cursor-pointer flex items-center text-white hover:bg-red-700/30" 
+                className="cursor-pointer flex items-center text-white hover:bg-pink-400/20" 
                 onClick={() => logoutMutation.mutate()}
               >
-                <LogOut className="mr-2 h-4 w-4" />
+                <LogOut className="mr-2 h-4 w-4 text-pink-200" />
                 <span>Logout</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -585,26 +581,26 @@ export default function Home() {
                   <div className="relative group"> {/* Wrapper for badge */}
                     <motion.button 
                       onClick={handlePermissionRequest}
-                      className={`w-full py-4 md:py-5 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
+                      className="w-full py-5 md:py-6 text-lg font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 shadow-md"
                       whileTap={{ scale: 0.97 }}
                     >
                       <Play className="mr-2 h-5 w-5" />
-                      Start Live Routine
+                      Begin Runway Practice
                     </motion.button>
-                    {/* <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-md transform group-hover:scale-110 transition-transform z-10">
-                      In Development
-                    </span> */}
                   </div>
                 
-                  <Link href="/practice">
-                    <motion.button
-                      className={`w-full py-4 md:py-5 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 ${getButtonClasses(buttonTheme, 'primary')}`}
-                      whileTap={{ scale: 0.97 }}
+                  <motion.div
+                    className="w-full flex justify-center"
+                  >
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowCustomizeDialog(true)}
+                      className="mt-4 border-pink-300/40 text-pink-100 hover:bg-pink-400/10 hover:text-white rounded-full"
                     >
-                      <Dumbbell className="mr-2 h-5 w-5" />
-                      Practice Library
-                    </motion.button>
-                  </Link>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Customize Your Experience
+                    </Button>
+                  </motion.div>
                 </motion.div>
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
@@ -623,7 +619,7 @@ export default function Home() {
 
               {/* Right Column: Session Log - Collapsible */}
               <motion.div 
-                className={`bg-gray-950/70 border shadow-xl h-full flex flex-col fixed top-[220px] right-0 md:right-4 lg:right-8 transition-all duration-300 ease-in-out z-20 ${isSessionPanelExpanded ? 'lg:col-span-3 w-[350px] p-6' : 'lg:col-span-1 w-[70px] p-3 items-center'} ${buttonTheme === 'sky' ? 'border-sky-800/40' : buttonTheme === 'crimson' ? 'border-red-800/40' : buttonTheme === 'emerald' ? 'border-emerald-800/40' : 'border-amber-800/40'} rounded-xl`}
+                className={`bg-gray-950/70 border shadow-xl h-full flex flex-col fixed top-[220px] right-0 md:right-4 lg:right-8 transition-all duration-300 ease-in-out z-20 ${isSessionPanelExpanded ? 'lg:col-span-3 w-[350px] p-6' : 'lg:col-span-1 w-[70px] p-3 items-center'} border-pink-300/30 rounded-xl`}
                 initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}
                 layout // Animate layout changes
               >
@@ -631,22 +627,22 @@ export default function Home() {
                   variant="ghost" 
                   size="icon"
                   onClick={() => setIsSessionPanelExpanded(!isSessionPanelExpanded)} 
-                  className={`absolute -left-10 top-2 hover:bg-opacity-20 ${buttonTheme === 'sky' ? 'text-sky-400 hover:text-sky-300 hover:bg-sky-700/20' : buttonTheme === 'crimson' ? 'text-red-400 hover:text-red-300 hover:bg-red-700/20' : buttonTheme === 'emerald' ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-700/20' : 'text-amber-400 hover:text-amber-300 hover:bg-amber-700/20'} ${isSessionPanelExpanded ? 'rounded-l-md rounded-r-none' : 'rounded-md'}`}
+                  className={`absolute -left-10 top-2 hover:bg-opacity-20 text-pink-300 hover:text-pink-200 hover:bg-pink-500/20 ${isSessionPanelExpanded ? 'rounded-l-md rounded-r-none' : 'rounded-md'}`}
                   title={isSessionPanelExpanded ? "Collapse Panel" : "Expand Panel"}
                 >
                   {isSessionPanelExpanded ? <PanelRightClose className="h-6 w-6" /> : <PanelRightOpen className="h-6 w-6" />}
                 </Button>
 
                 {/* Current Session Info */}
-                <div className={`mb-6 pb-6 border-b ${!isSessionPanelExpanded ? 'hidden' : 'block'} ${buttonTheme === 'sky' ? 'border-sky-800/50' : buttonTheme === 'crimson' ? 'border-red-800/50' : buttonTheme === 'emerald' ? 'border-emerald-800/50' : 'border-amber-800/50'}`}>
-                  <h2 className={`text-2xl font-semibold mb-3 flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                <div className={`mb-6 pb-6 border-b ${!isSessionPanelExpanded ? 'hidden' : 'block'} border-pink-300/30`}>
+                  <h2 className="text-2xl font-semibold mb-3 flex items-center text-pink-300">
                     <Clock className="mr-3 h-6 w-6" />
-                    Current Session
+                    Pageant Session
                   </h2>
-                  <p className="text-gray-300">
-                    Time on this page: <CurrentPageTimer />
+                  <p className="text-pink-100">
+                    Practice time: <CurrentPageTimer />
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-pink-200/50 mt-1">
                     This timer resets if you refresh or leave the page.
                   </p>
                 </div>
