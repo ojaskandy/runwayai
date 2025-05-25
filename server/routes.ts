@@ -16,11 +16,18 @@ import * as path from 'path';
 import { Resend } from 'resend';
 import { Request, Response, NextFunction } from "express";
 
-// Initialize Resend with your API key
+// Initialize Resend with your API key if available
 // IMPORTANT: In a production environment, use an environment variable for the API key.
-// const resend = new Resend(process.env.RESEND_API_KEY);
-// const resend = new Resend('re_EVad7ofd_ERDZcpkaxzNba4G3xfAAm6j1');
-const resend = new Resend('re_1ADvCcNq_PSWcM39YYiz7TxPEHksjcCPh');
+let resend: Resend | null = null;
+try {
+  if (process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  } else {
+    console.log("No Resend API key found. Email functionality will be disabled.");
+  }
+} catch (error) {
+  console.error("Failed to initialize Resend:", error);
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -586,9 +593,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Email is required" });
     }
 
+    // If Resend API is not configured, return a successful response without sending an email
+    if (!resend) {
+      console.log("Email sending skipped - Resend API not configured");
+      return res.status(200).json({ 
+        message: "Setup guide delivery acknowledged", 
+        note: "Email sending is currently disabled in this deployment" 
+      });
+    }
+
     try {
       const { data, error } = await resend.emails.send({
-        from: 'CoachT <onboarding@coacht.ai>', // Replace with your desired sender email
+        from: 'CoachT <onboarding@coacht.ai>',
         to: [email],
         subject: 'Your CoachT Setup Guide is Here!',
         html: `
@@ -610,13 +626,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (error) {
         console.error("Resend API Error:", error);
-        return res.status(500).json({ message: "Failed to send email", errorDetail: error.message });
+        // Return success anyway to not block the application flow
+        return res.status(200).json({ 
+          message: "Email sending attempted", 
+          note: "There was an issue with the email service, but you can continue using the application" 
+        });
       }
 
       return res.status(200).json({ message: "Setup guide sent successfully!", resendResponse: data });
     } catch (err: any) {
       console.error("Server Error sending email:", err);
-      res.status(500).json({ message: "Failed to send email due to server error", errorDetail: err.message });
+      // Return success anyway to not block the application flow
+      return res.status(200).json({ 
+        message: "Email sending attempted", 
+        note: "There was an issue with the email service, but you can continue using the application" 
+      });
     }
   });
 
