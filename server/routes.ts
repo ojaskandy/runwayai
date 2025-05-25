@@ -624,8 +624,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       return res.status(200).json({ 
-        message: "Setup guide delivery acknowledged", 
-        note: "Email sending is currently disabled in this deployment" 
+        message: "Email sending soon. Excited to have you here!", 
+        note: "Your information has been saved successfully" 
       });
     }
 
@@ -667,8 +667,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Resend API Error:", error);
         // Return success anyway to not block the application flow
         return res.status(200).json({ 
-          message: "Email sending attempted", 
-          note: "There was an issue with the email service, but you can continue using the application" 
+          message: "Email sending soon. Excited to have you here!", 
+          note: "Your information has been saved successfully" 
         });
       }
 
@@ -690,8 +690,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return success anyway to not block the application flow
       return res.status(200).json({ 
-        message: "Email sending attempted", 
-        note: "There was an issue with the email service, but you can continue using the application" 
+        message: "Email sending soon. Excited to have you here!", 
+        note: "Your information has been saved successfully" 
       });
     }
   });
