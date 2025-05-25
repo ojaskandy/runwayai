@@ -153,22 +153,27 @@ export default function AuthPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden">
           {/* Simple white to pink gradient sliding from left to right */}
           <div className="absolute inset-0 overflow-hidden">
+            {/* Elegant sweeping gradient animation */}
             <div 
               className={`absolute inset-0 bg-gradient-to-r from-white via-pink-200 to-pink-300 
-              transition-transform duration-1000 ease-in-out ${colorTransition ? 'translate-x-0' : '-translate-x-full'}`}
+              transition-transform duration-1500 ease-in-out ${colorTransition ? 'translate-x-0' : '-translate-x-full'}`}
             ></div>
             <div 
-              className={`absolute inset-0 bg-black transition-transform duration-1000 ease-in-out delay-300
+              className={`absolute inset-0 bg-black transition-transform duration-1500 ease-in-out delay-300
               ${colorTransition ? 'translate-x-full' : 'translate-x-0'}`}
             ></div>
+            {/* Subtle sparkle effects */}
+            <div className={`absolute top-1/4 left-1/4 w-1 h-1 rounded-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.8)] transition-opacity duration-700 ${cornerGradients ? 'opacity-70' : 'opacity-0'}`}></div>
+            <div className={`absolute top-1/3 right-1/3 w-2 h-2 rounded-full bg-pink-200 shadow-[0_0_10px_rgba(236,72,153,0.6)] transition-opacity duration-700 delay-200 ${cornerGradients ? 'opacity-70' : 'opacity-0'}`}></div>
+            <div className={`absolute bottom-1/4 right-1/5 w-1 h-1 rounded-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.8)] transition-opacity duration-700 delay-300 ${cornerGradients ? 'opacity-70' : 'opacity-0'}`}></div>
           </div>
           
-          {/* Simple Runway AI text typing in the middle of screen */}
+          {/* Enhanced Runway AI text typing with elegant animation */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-            <h1 className="text-6xl md:text-8xl font-bold text-black relative inline-block">
-              <span className="relative">
+            <h1 className="text-6xl md:text-8xl font-bold relative inline-block">
+              <span className={`relative bg-gradient-to-r from-black to-pink-900 bg-clip-text text-transparent transition-all duration-500 ${logoContrast ? 'blur-[0.5px]' : 'blur-0'}`}>
                 {typedText}
-                <span className="inline-block h-[0.8em] w-[3px] ml-[2px] align-middle bg-black animate-blink"></span>
+                <span className="inline-block h-[0.8em] w-[3px] ml-[2px] align-middle bg-pink-400 animate-blink"></span>
               </span>
             </h1>
           </div>
@@ -247,7 +252,7 @@ export default function AuthPage() {
                                 <Input 
                                   placeholder="Enter your username" 
                                   {...field} 
-                                  className="bg-gray-800/70 border-gray-700/50 text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
+                                  className="bg-gray-800/70 border-gray-700/50 text-white focus:border-pink-400/50 focus:ring-1 focus:ring-pink-400/30"
                                 />
                               </FormControl>
                               <FormMessage className="text-red-400" />
