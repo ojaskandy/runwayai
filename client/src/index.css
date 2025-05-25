@@ -35,8 +35,8 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(220, 38, 38, 0.6); }
-  50% { box-shadow: 0 0 15px rgba(220, 38, 38, 0.8), 0 0 20px rgba(220, 38, 38, 0.4); }
+  0%, 100% { box-shadow: 0 0 5px rgba(236, 72, 153, 0.6); }
+  50% { box-shadow: 0 0 15px rgba(236, 72, 153, 0.8), 0 0 20px rgba(236, 72, 153, 0.4); }
 }
 
 @keyframes sparkle-rotate {
@@ -357,12 +357,12 @@
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(185, 28, 28, 0.6);
+  background: rgba(219, 39, 119, 0.6);
   border-radius: 4px;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(220, 38, 38, 0.8);
+  background: rgba(236, 72, 153, 0.8);
 }
 
 /* Light mode scrollbar */
@@ -371,21 +371,21 @@
 }
 
 .light ::-webkit-scrollbar-thumb {
-  background: rgba(220, 38, 38, 0.4);
+  background: rgba(236, 72, 153, 0.4);
   border-radius: 4px;
 }
 
 .light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(220, 38, 38, 0.6);
+  background: rgba(236, 72, 153, 0.6);
 }
 
 /* Loader animation */
 .loader {
   width: 48px;
   height: 48px;
-  border: 3px solid rgba(185, 28, 28, 0.2);
+  border: 3px solid rgba(219, 39, 119, 0.2);
   border-radius: 50%;
-  border-top-color: rgba(220, 38, 38, 1);
+  border-top-color: rgba(236, 72, 153, 1);
   animation: spin 1s ease-in-out infinite;
 }
 
@@ -397,12 +397,12 @@
 
 /* Glow effect */
 .glow {
-  box-shadow: 0 0 15px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
   transition: box-shadow 0.3s ease;
 }
 
 .glow:hover {
-  box-shadow: 0 0 25px rgba(220, 38, 38, 0.6);
+  box-shadow: 0 0 25px rgba(236, 72, 153, 0.6);
 }
 
 /* Fullscreen mode styles */
@@ -603,7 +603,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: linear-gradient(to bottom, transparent, rgba(220, 38, 38, 0.3), rgba(220, 38, 38, 0.5), rgba(220, 38, 38, 0.7), rgba(220, 38, 38, 0.5), rgba(220, 38, 38, 0.3), transparent);
+  background: linear-gradient(to bottom, transparent, rgba(236, 72, 153, 0.3), rgba(236, 72, 153, 0.5), rgba(236, 72, 153, 0.7), rgba(236, 72, 153, 0.5), rgba(236, 72, 153, 0.3), transparent);
   transform: translateX(-50%);
   z-index: 0;
 }
@@ -615,9 +615,9 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: linear-gradient(to bottom right, #b91c1c, #dc2626);
+  background: linear-gradient(to bottom right, #be185d, #ec4899);
   border: 3px solid rgba(0, 0, 0, 0.8);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.3), 0 0 15px rgba(220, 38, 38, 0.5);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.3), 0 0 15px rgba(236, 72, 153, 0.5);
   z-index: 1;
 }
 
@@ -648,7 +648,7 @@
   bottom: 0;
   left: 0;
   height: 3px;
-  background: linear-gradient(to right, #b91c1c, #dc2626);
+  background: linear-gradient(to right, #be185d, #ec4899);
   transition: width 0.3s ease-out;
 }
 
@@ -659,7 +659,7 @@
 
 .testimonial-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(220, 38, 38, 0.3);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(236, 72, 153, 0.3);
 }
 
 /* Engraved text effect for belt */

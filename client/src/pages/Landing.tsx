@@ -74,10 +74,10 @@ export default function Landing() {
               {isDarkMode ? (
                 <>
                   <h1 className="text-2xl font-serif font-bold logo-dark absolute">
-                    CoachT
+                    Runway AI
                   </h1>
                   <h1 className="text-2xl font-serif font-bold logo-dark-glow absolute">
-                    CoachT
+                    Runway AI
                   </h1>
                 </>
               ) : (
