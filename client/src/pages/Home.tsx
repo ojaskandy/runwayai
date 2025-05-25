@@ -13,7 +13,7 @@ import {
   Sun, Moon, User, LogOut, Settings, Clock, Calendar, Award, Play, 
   Dumbbell, HelpCircle, MessageSquare, BarChart, Info, RefreshCw, Trash2,
   Home as HomeIcon, ListChecks, Loader2, PanelRightOpen, PanelRightClose, Palette,
-  ChevronDown, ChevronUp, ScrollText, Smartphone
+  ChevronDown, ChevronUp, ScrollText, Smartphone, Crown, Trophy
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -400,25 +400,25 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-black overflow-hidden">
       {/* Enhanced Header with belt display, app title and user menu */}
-      <header className="bg-gradient-to-r from-black to-red-950/90 border-b border-red-900/30 px-6 py-3 flex justify-between items-center shadow-md">
+      <header className="bg-gradient-to-r from-black to-pink-950/30 border-b border-pink-300/30 px-6 py-4 flex justify-between items-center shadow-md">
         <div className="flex items-center gap-4">
           <Link to="/welcome" className="cursor-pointer">
-            <h1 className="text-2xl font-bold gradient-heading flex items-center group z-50 relative">
+            <h1 className="text-2xl font-bold flex items-center group z-50 relative">
               <motion.span 
-                className="material-icons text-red-600 mr-2"
+                className="material-icons text-pink-400 mr-2"
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.5 }}
               >
-                sports_martial_arts
+                emoji_people
               </motion.span>
-              <span className="group-hover:text-red-500 transition-colors">CoachT</span>
+              <span className="bg-gradient-to-r from-pink-300 to-white bg-clip-text text-transparent group-hover:from-white group-hover:to-pink-200 transition-all duration-300">Runway AI</span>
             </h1>
           </Link>
           
-          <div className="h-8 w-px bg-red-900/30 mx-2"></div>
+          <div className="h-8 w-px bg-pink-300/30 mx-2"></div>
           
           {/* Current time */}
-          <CurrentTime className="ml-2" showSeconds={false} />
+          <CurrentTime className="ml-2 text-pink-100" showSeconds={false} />
         </div>
 
         {/* Belt Display - moved to header */}
@@ -508,62 +508,51 @@ export default function Home() {
         </div>
       </header>
       
-      {/* Navigation buttons bar */}
-      <div className="bg-black/70 border-b border-red-900/30 px-6 py-2 flex justify-center items-center shadow-md">
+      {/* Navigation buttons bar - Redesigned with pageant theme */}
+      <div className="bg-gradient-to-r from-pink-500/20 to-pink-300/10 border-b border-pink-300/30 px-6 py-3 flex justify-center items-center shadow-md">
         <div className="w-full max-w-4xl flex justify-between">
           <div className="flex items-center gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="h-10 rounded-full px-4 py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors"
+              className="h-10 rounded-full px-4 py-2 border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
               onClick={() => setShowHowItWorksDialog(true)}
             >
-              <HelpCircle className="h-4 w-4 mr-2" />
-              <span className="font-medium text-sm">How it Works</span>
+              <Crown className="h-4 w-4 mr-2 text-pink-200" />
+              <span className="font-medium text-sm text-pink-100">Pageant Guide</span>
             </motion.button>
             
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="h-10 rounded-full px-4 py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors"
+              className="h-10 rounded-full px-4 py-2 border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
               onClick={() => setShowLeaderboardDialog(true)}
             >
-              <BarChart className="h-4 w-4 mr-2" />
-              <span className="font-medium text-sm">Leaderboard</span>
+              <Trophy className="h-4 w-4 mr-2 text-pink-200" />
+              <span className="font-medium text-sm text-pink-100">Top Performers</span>
             </motion.button>
-
-            <Link href="/welcome">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="h-10 rounded-full px-4 py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors"
-              >
-                <HomeIcon className="h-4 w-4 mr-2" />
-                <span className="font-medium text-sm">View Welcome Page</span>
-              </motion.button>
-            </Link>
           </div>
           
           <div className="flex items-center gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="h-10 rounded-full px-4 py-2 border border-red-600 bg-transparent hover:bg-red-700/20 flex items-center text-white transition-colors"
+              className="h-10 rounded-full px-4 py-2 border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
               onClick={handleFeedbackSubmit}
             >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              <span className="font-medium text-sm">Feedback</span>
+              <MessageSquare className="h-4 w-4 mr-2 text-pink-200" />
+              <span className="font-medium text-sm text-pink-100">Feedback</span>
             </motion.button>
             
             <Button 
               variant="outline" 
               size="icon" 
               onClick={toggleDarkMode} 
-              className="h-10 w-10 rounded-full border-red-600 bg-transparent hover:bg-red-700/20"
+              className="h-10 w-10 rounded-full border-pink-300 bg-transparent hover:bg-pink-400/10"
             >
               {isDarkMode ? 
-                <Sun className="h-5 w-5 text-white" /> : 
-                <Moon className="h-5 w-5 text-white" />
+                <Sun className="h-5 w-5 text-pink-100" /> : 
+                <Moon className="h-5 w-5 text-pink-100" />
               }
             </Button>
           </div>
@@ -582,10 +571,10 @@ export default function Home() {
               <div className={`lg:mx-auto ${isSessionPanelExpanded ? 'lg:col-span-8' : 'lg:col-span-10 lg:col-start-2'} space-y-8 flex flex-col items-center transition-all duration-300 ease-in-out mt-16 md:mt-24`}>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-center w-full">
                   <h1 className="text-4xl md:text-5xl font-bold text-white">
-                    Ready to train, <span className="gradient-heading">{user?.username || 'User'}</span>?
+                    Welcome to the <span className="bg-gradient-to-r from-pink-300 to-white bg-clip-text text-transparent">Runway</span>, <span className="bg-gradient-to-r from-pink-400 to-pink-200 bg-clip-text text-transparent">{user?.username || 'Queen'}</span>!
                   </h1>
-                  <p className="text-sky-200 mt-3 text-lg md:text-xl">
-                    Track progress. Perfect your form.
+                  <p className="text-pink-200 mt-3 text-lg md:text-xl">
+                    Perfect your poise. Capture your elegance. Own the stage.
                   </p>
                 </motion.div>
 
