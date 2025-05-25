@@ -16,12 +16,13 @@ import * as path from 'path';
 import { Resend } from 'resend';
 import { Request, Response, NextFunction } from "express";
 
-// Initialize Resend with your API key if available
+// Initialize Resend with the API key from environment variables
 // IMPORTANT: In a production environment, use an environment variable for the API key.
 let resend: Resend | null = null;
 try {
   if (process.env.RESEND_API_KEY) {
     resend = new Resend(process.env.RESEND_API_KEY);
+    console.log("Resend API initialized successfully");
   } else {
     console.log("No Resend API key found. Email functionality will be disabled.");
   }

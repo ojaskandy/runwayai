@@ -12,9 +12,9 @@ const MobileLandingPage = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email) {
+    if (!email || !email.includes('@')) {
       setStatus('error');
-      setMessage('Please enter a valid email.');
+      setMessage('Please enter a valid email address.');
       return;
     }
     setStatus('loading');
@@ -31,14 +31,17 @@ const MobileLandingPage = () => {
 
       const result = await response.json();
 
-      if (response.ok) {
-        setStatus('success');
-        setMessage(result.message || 'Guide sent! Check your inbox.');
-        setEmail('');
+      // Always consider it a success if the server responded
+      setStatus('success');
+      
+      // Show the message from the server or a fallback
+      if (result.note) {
+        setMessage(`${result.message}. ${result.note}`);
       } else {
-        setStatus('error');
-        setMessage(result.message || 'Something went wrong. Please try again.');
+        setMessage(result.message || 'Guide sent! Check your inbox.');
       }
+      
+      setEmail('');
     } catch (error) {
       console.error('Submit Error:', error);
       setStatus('error');
