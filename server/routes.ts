@@ -37,117 +37,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Early Access Signup - no authentication required
   app.post("/api/early-access", async (req, res) => {
     try {
-      // Validate the request body
       const result = insertEarlyAccessSchema.safeParse(req.body);
       
       if (!result.success) {
-        return res.status(400).json({ 
-          error: "Invalid data", 
-          details: result.error.format() 
-        });
+        return res.status(400).json({ error: result.error.message });
+      }
+      
+      // Check if email already exists
+      const existing = await storage.getEarlyAccessByEmail(result.data.email);
+      if (existing) {
+        return res.status(200).json({ message: "Thank you! Your email is already registered for early access." });
       }
       
       const signupData: InsertEarlyAccess = result.data;
-      
-      // Check if email is already registered
-      const existingSignup = await storage.getEarlyAccessByEmail(signupData.email);
-      if (existingSignup) {
-        return res.status(409).json({ 
-          message: "This email is already on our waitlist!"
-        });
-      }
-      
-      // Save the signup
       const signup = await storage.saveEarlyAccess(signupData);
       
-      // Return success
-      res.status(201).json({
-        success: true,
-        message: "You've successfully joined our early access list!",
-        timestamp: signup.createdAt
-      });
-      
+      res.status(201).json({ message: "Thank you for your interest! We'll notify you when early access is available." });
     } catch (error) {
-      console.error("Error processing early access signup:", error);
-      res.status(500).json({ 
-        error: "Server error",
-        message: "Something went wrong. Please try again later."
-      });
+      res.status(500).json({ error: (error as Error).message });
     }
   });
 
-  // API endpoints for user settings (protected by auth)
-  app.get('/api/settings/:userId', async (req, res) => {
+  // List all early access signups (should be protected in a real app)
+  app.get("/api/early-access", async (req, res) => {
     try {
-      // Check if user is authenticated
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
-      const userId = parseInt(req.params.userId);
-      
-      // Check if user is requesting their own settings
-      if (req.user && req.user.id !== userId) {
-        return res.status(403).json({ message: 'Forbidden' });
-      }
-      
-      const settings = await storage.getTrackingSettings(userId);
-      
-      if (settings) {
-        res.json(settings);
-      } else {
-        res.status(404).json({ message: 'Settings not found' });
-      }
+      const signups = await storage.listEarlyAccessSignups();
+      res.json(signups);
     } catch (error) {
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ error: (error as Error).message });
     }
   });
 
-  app.post('/api/settings', async (req, res) => {
-    try {
-      // Check if user is authenticated
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
-      // Ensure the settings belong to the authenticated user
-      if (req.user && req.body.userId !== req.user.id) {
-        return res.status(403).json({ message: 'Forbidden' });
-      }
-
-      const settings = await storage.saveTrackingSettings(req.body);
-      res.status(201).json(settings);
-    } catch (error) {
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  // Profile routes
+  // User profile routes
   app.get("/api/profile", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).send("Unauthorized");
     }
+    
     try {
       const profile = await storage.getUserProfile(req.user.id);
-      const user = await storage.getUser(req.user.id);
-      
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
       }
-      
-      // Combine user and profile data
-      const userData = {
-        userId: req.user.id,
-        username: user.username,
-        lastPracticeDate: user.lastPracticeDate || null,
-        recordingsCount: user.recordingsCount || 0,
-        goal: profile?.goal || "",
-        goalDueDate: profile?.goalDueDate || null,
-        galleryImages: profile?.galleryImages || [],
-        profileImageUrl: profile?.profileImageUrl || null
-      };
-      
-      res.json(userData);
+      res.json(profile);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
@@ -157,42 +89,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).send("Unauthorized");
     }
+    
     try {
-      // Update the profile
-      const profileSchema = insertUserProfileSchema.partial().extend({
-        userId: z.number().optional()
+      const schema = insertUserProfileSchema.pick({
+        goal: true,
+        goalDueDate: true,
+        profileImageUrl: true,
       });
       
-      const data = profileSchema.parse({
-        ...req.body,
-        userId: req.user.id
-      });
+      const result = schema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
       
-      const updatedProfile = await storage.updateUserProfile(req.user.id, data);
-      res.json(updatedProfile);
+      const existingProfile = await storage.getUserProfile(req.user.id);
+      
+      if (existingProfile) {
+        // Update existing profile
+        const updatedProfile = await storage.updateUserProfile(req.user.id, result.data);
+        res.json(updatedProfile);
+      } else {
+        // Create new profile
+        const newProfile = await storage.createUserProfile({
+          userId: req.user.id,
+          ...result.data,
+          galleryImages: []
+        });
+        res.status(201).json(newProfile);
+      }
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
   });
   
-  // Goal routes
-  app.post("/api/goal", async (req, res) => {
+  // Tracking settings routes
+  app.get("/api/tracking-settings", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).send("Unauthorized");
     }
+    
     try {
-      const goalSchema = z.object({
-        goal: z.string(),
-        goalDueDate: z.string().optional().nullable()
+      const settings = await storage.getTrackingSettings(req.user.id);
+      if (!settings) {
+        return res.status(404).json({ message: "Settings not found" });
+      }
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  app.post("/api/tracking-settings", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+    
+    try {
+      const schema = insertTrackingSettingsSchema.pick({
+        shoulderWidthCalibration: true,
+        distanceCalibration: true,
+        cameraSettings: true,
+        preferredRoutines: true,
       });
       
-      const { goal, goalDueDate } = goalSchema.parse(req.body);
-      const updatedProfile = await storage.updateUserGoal(
-        req.user.id, 
-        goal, 
-        goalDueDate ? new Date(goalDueDate) : undefined
-      );
-      res.json(updatedProfile);
+      const result = schema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+      
+      const settings = await storage.saveTrackingSettings({
+        userId: req.user.id,
+        ...result.data
+      });
+      
+      res.status(201).json(settings);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  // Gallery image routes
+  app.post("/api/gallery", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+    
+    try {
+      const schema = z.object({
+        imageUrl: z.string(),
+      });
+      
+      const result = schema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+      
+      const galleryImages = await storage.addGalleryImage(req.user.id, result.data.imageUrl);
+      res.json({ galleryImages });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  app.delete("/api/gallery", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+    
+    try {
+      const schema = z.object({
+        imageUrl: z.string(),
+      });
+      
+      const result = schema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+      
+      const galleryImages = await storage.removeGalleryImage(req.user.id, result.data.imageUrl);
+      res.json({ galleryImages });
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
@@ -231,16 +246,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recordingData: InsertRecording = {
         userId: req.user.id,
         fileUrl: parsedData.fileUrl,
-        title: parsedData.title || null,
-        notes: parsedData.notes || null
+        title: parsedData.title || 'Untitled Recording',
+        notes: parsedData.notes || '',
       };
       
+      // Increment the user's recordings count
+      await storage.incrementRecordingsCount(req.user.id);
+      
+      // Save the recording
       const recording = await storage.saveRecording(recordingData);
-      
-      // Update last practice date
-      await storage.updateUserLastPractice(req.user.id);
-      
-      res.json(recording);
+      res.status(201).json(recording);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
@@ -258,242 +273,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const success = await storage.deleteRecording(id, req.user.id);
       if (!success) {
-        return res.status(404).json({ error: "Recording not found" });
+        return res.status(404).json({ error: "Recording not found or you don't have permission to delete it" });
       }
       
-      res.status(200).json({ success: true });
+      res.status(200).json({ message: "Recording deleted successfully" });
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
   });
   
-  // Gallery routes
-  app.post("/api/gallery", async (req, res) => {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).send("Unauthorized");
-    }
-    try {
-      const schema = z.object({
-        imageUrl: z.string()
-      });
-      
-      const { imageUrl } = schema.parse(req.body);
-      const updatedGallery = await storage.addGalleryImage(req.user.id, imageUrl);
-      res.json({ galleryImages: updatedGallery });
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-  
-  app.delete("/api/gallery", async (req, res) => {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).send("Unauthorized");
-    }
-    try {
-      const schema = z.object({
-        imageUrl: z.string()
-      });
-      
-      const { imageUrl } = schema.parse(req.body);
-      const updatedGallery = await storage.removeGalleryImage(req.user.id, imageUrl);
-      res.json({ galleryImages: updatedGallery });
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-  
-  // Practice session update route
-  app.post("/api/practice", async (req, res) => {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).send("Unauthorized");
-    }
-    try {
-      // Update the user's last practice date
-      const user = await storage.updateUserLastPractice(req.user.id);
-      res.json({ lastPracticeDate: user.lastPracticeDate });
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-  
-  // User stats and activity endpoint
-  app.get("/api/user-stats", async (req, res) => {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).send("Unauthorized");
-    }
-    try {
-      const recordings = await storage.getRecordings(req.user.id);
-      const user = await storage.getUser(req.user.id);
-      
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      // Calculate stats based on recordings
-      const totalSessions = recordings.length;
-      
-      // Calculate total hours (assume average 30 minutes per session if not tracked)
-      const totalMinutes = recordings.reduce((total, recording) => {
-        // In a real implementation, recording duration would be stored
-        return total + 30; // Assuming 30 minutes per recording for now
-      }, 0);
-      const totalHours = Math.round(totalMinutes / 60);
-      
-      // Create activity heatmap data
-      const activityData = [];
-      const today = new Date();
-      const startDate = new Date(today);
-      startDate.setFullYear(today.getFullYear() - 1);
-      
-      // Group recordings by date for activity data
-      const recordingsByDate = recordings.reduce((acc, recording) => {
-        const date = new Date(recording.createdAt);
-        const dateString = date.toISOString().split('T')[0];
-        
-        if (!acc[dateString]) {
-          acc[dateString] = { count: 0, minutes: 0 };
-        }
-        
-        acc[dateString].count += 1;
-        acc[dateString].minutes += 30; // Assuming 30 minutes per recording
-        
-        return acc;
-      }, {} as Record<string, { count: number, minutes: number }>);
-      
-      // Fill in the activity data for the past year
-      let date = new Date(startDate);
-      while (date <= today) {
-        const dateString = date.toISOString().split('T')[0];
-        const dateActivity = recordingsByDate[dateString];
-        
-        // Activity level (0-4): 0 = no activity, 4 = high activity
-        let level = 0;
-        let minutes = 0;
-        
-        if (dateActivity) {
-          minutes = dateActivity.minutes;
-          // Convert activity count to level (0-4)
-          if (dateActivity.count === 1) level = 1;
-          else if (dateActivity.count === 2) level = 2;
-          else if (dateActivity.count === 3) level = 3;
-          else if (dateActivity.count > 3) level = 4;
-        }
-        
-        activityData.push({
-          date: new Date(date),
-          level,
-          minutes
-        });
-        
-        // Move to next day
-        date.setDate(date.getDate() + 1);
-      }
-      
-      // Calculate current and longest streak
-      let currentStreak = 0;
-      let longestStreak = 0;
-      let tempStreak = 0;
-      
-      // Sort recordings by date (newest first)
-      const sortedRecordings = [...recordings].sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      
-      // Calculate current streak
-      if (sortedRecordings.length > 0) {
-        const mostRecentDate = new Date(sortedRecordings[0].createdAt);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        mostRecentDate.setHours(0, 0, 0, 0);
-        
-        // Calculate days difference
-        const diffTime = Math.abs(today.getTime() - mostRecentDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        // If practiced today or yesterday, check for streak
-        if (diffDays <= 1) {
-          currentStreak = 1; // At least 1 day
-          
-          // Check for more streak days
-          let checkDate = new Date(mostRecentDate);
-          checkDate.setDate(checkDate.getDate() - 1); // Start checking from previous day
-          
-          for (let i = 1; i < sortedRecordings.length; i++) {
-            const recordingDate = new Date(sortedRecordings[i].createdAt);
-            recordingDate.setHours(0, 0, 0, 0);
-            
-            // If dates match, increase streak
-            if (recordingDate.getTime() === checkDate.getTime()) {
-              currentStreak++;
-              checkDate.setDate(checkDate.getDate() - 1);
-            } else if (recordingDate.getTime() < checkDate.getTime()) {
-              // Skip ahead to this date
-              checkDate = new Date(recordingDate);
-              checkDate.setDate(checkDate.getDate() - 1);
-              currentStreak++;
-            } else {
-              // Streak broken
-              break;
-            }
-          }
-        }
-      }
-      
-      // Calculate longest streak (analyze all recordings)
-      sortedRecordings.forEach((recording, index) => {
-        if (index === 0) {
-          tempStreak = 1;
-          longestStreak = 1;
-          return;
-        }
-        
-        const currentDate = new Date(recording.createdAt);
-        const prevDate = new Date(sortedRecordings[index - 1].createdAt);
-        
-        currentDate.setHours(0, 0, 0, 0);
-        prevDate.setHours(0, 0, 0, 0);
-        
-        // Calculate days difference
-        const diffTime = Math.abs(prevDate.getTime() - currentDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 1) {
-          // Consecutive day
-          tempStreak++;
-          longestStreak = Math.max(longestStreak, tempStreak);
-        } else {
-          // Streak broken
-          tempStreak = 1;
-        }
-      });
-      
-      // Format the response
-      const stats = {
-        totalSessions,
-        totalHours,
-        averageSessionLength: totalSessions > 0 ? Math.round(totalMinutes / totalSessions) : 0,
-        currentStreak,
-        longestStreak,
-        lastSession: sortedRecordings.length > 0 ? sortedRecordings[0].createdAt.toISOString() : null,
-        createdAt: user.createdAt ? user.createdAt.toISOString() : new Date().toISOString(),
-        activityData,
-        beltHistory: [
-          { belt: "white", achievedAt: user.createdAt ? user.createdAt.toISOString() : new Date().toISOString() }
-          // In a real implementation, belt history would be fetched from a belt_history table
-        ]
-      };
-      
-      res.json(stats);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
-  
-  // Landing page image update route
-  app.post("/api/landing-images", async (req, res) => {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).send("Unauthorized");
-    }
+  // Landing page image upload - Temporary endpoint for development
+  app.post("/api/landing-image", async (req, res) => {
     try {
       const schema = z.object({
         section: z.string(),
@@ -624,8 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       return res.status(200).json({ 
-        message: "Email sending soon. Excited to have you here!", 
-        note: "Your information has been saved successfully" 
+        message: "Email sending soon. Excited to have you here!"
       });
     }
 
@@ -667,12 +456,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Resend API Error:", error);
         // Return success anyway to not block the application flow
         return res.status(200).json({ 
-          message: "Email sending soon. Excited to have you here!", 
-          note: "Your information has been saved successfully" 
+          message: "Email sending soon. Excited to have you here!"
         });
       }
 
-      return res.status(200).json({ message: "Setup guide sent successfully!", resendResponse: data });
+      return res.status(200).json({ message: "Setup guide sent successfully!" });
     } catch (err: any) {
       console.error("Server Error sending email:", err);
       
@@ -690,8 +478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return success anyway to not block the application flow
       return res.status(200).json({ 
-        message: "Email sending soon. Excited to have you here!", 
-        note: "Your information has been saved successfully" 
+        message: "Email sending soon. Excited to have you here!"
       });
     }
   });
