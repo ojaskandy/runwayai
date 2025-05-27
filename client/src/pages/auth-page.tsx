@@ -134,7 +134,7 @@ export default function AuthPage() {
   };
   
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center overflow-hidden relative">
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center overflow-hidden relative">
       {/* Background gradients - lighter pink and white */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-1/3 h-1/3 bg-pink-300/30 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
@@ -150,7 +150,7 @@ export default function AuthPage() {
       
       {/* Loading screen */}
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white overflow-hidden">
           {/* Simple white to pink gradient sliding from left to right */}
           <div className="absolute inset-0 overflow-hidden">
             {/* Elegant sweeping gradient animation */}
@@ -196,7 +196,7 @@ export default function AuthPage() {
               <div className="h-14 w-14 rounded-full bg-gradient-to-br from-pink-400 to-pink-300 flex items-center justify-center shadow-[0_0_20px_rgba(244,114,182,0.6)]">
                 <span className="material-icons text-white text-2xl">emoji_people</span>
               </div>
-              <h1 className="text-3xl font-bold text-white">Runway AI</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Runway AI</h1>
             </div>
           </motion.div>
           
@@ -207,20 +207,20 @@ export default function AuthPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <Card className="border-pink-900/30 bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent pointer-events-none"></div>
+            <Card className="border-pink-300/50 bg-white/90 backdrop-blur-lg shadow-[0_10px_30px_rgba(236,72,153,0.15)]">
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-50/80 to-transparent pointer-events-none"></div>
               
               <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-2 bg-black/50 border-b border-gray-800 rounded-none w-full h-auto p-0">
+                <TabsList className="grid grid-cols-2 bg-pink-50/50 border-b border-pink-200 rounded-none w-full h-auto p-0">
                   <TabsTrigger 
                     value="login" 
-                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-400 data-[state=active]:to-pink-300 data-[state=active]:text-white rounded-none py-3 text-gray-400"
+                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-400 data-[state=active]:to-pink-300 data-[state=active]:text-white rounded-none py-3 text-gray-600"
                   >
                     Login
                   </TabsTrigger>
                   <TabsTrigger 
                     value="register" 
-                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-400 data-[state=active]:to-pink-300 data-[state=active]:text-white rounded-none py-3 text-gray-400"
+                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-400 data-[state=active]:to-pink-300 data-[state=active]:text-white rounded-none py-3 text-gray-600"
                   >
                     Register
                   </TabsTrigger>
