@@ -234,7 +234,7 @@ export default function AuthPage() {
                         Login to Your Account
                       </span>
                     </CardTitle>
-                    <CardDescription className="text-sm sm:text-base text-gray-300">
+                    <CardDescription className="text-sm sm:text-base text-gray-600">
                       Enter your credentials to access your Runway AI dashboard
                     </CardDescription>
                   </CardHeader>
@@ -247,12 +247,12 @@ export default function AuthPage() {
                           name="username"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Username</FormLabel>
+                              <FormLabel className="text-gray-800 font-medium">Username</FormLabel>
                               <FormControl>
                                 <Input 
                                   placeholder="Enter your username" 
                                   {...field} 
-                                  className="bg-gray-800/70 border-gray-700/50 text-white focus:border-pink-400/50 focus:ring-1 focus:ring-pink-400/30"
+                                  className="bg-white border-gray-300 text-gray-900 focus:border-pink-400 focus:ring-1 focus:ring-pink-400/30"
                                 />
                               </FormControl>
                               <FormMessage className="text-red-400" />
@@ -265,20 +265,20 @@ export default function AuthPage() {
                           name="password"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Password</FormLabel>
+                              <FormLabel className="text-gray-800 font-medium">Password</FormLabel>
                               <div className="relative">
                                 <FormControl>
                                   <Input 
                                     type={showLoginPassword ? "text" : "password"}
                                     placeholder="Enter your password" 
                                     {...field}
-                                    className="bg-gray-800/70 border-gray-700/50 text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 pr-10"
+                                    className="bg-white border-gray-300 text-gray-900 focus:border-pink-400 focus:ring-1 focus:ring-pink-400/30 pr-10"
                                   />
                                 </FormControl>
                                 <button 
                                   type="button"
                                   onClick={() => setShowLoginPassword(!showLoginPassword)}
-                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
                                 >
                                   <span className="material-icons text-xl">
                                     {showLoginPassword ? "visibility_off" : "visibility"}
@@ -318,11 +318,13 @@ export default function AuthPage() {
                 {/* Register Form */}
                 <TabsContent value="register" className="m-0">
                   <CardHeader>
-                    <CardTitle className="text-xl sm:text-2xl font-bold text-pink-300">
-                      Create an Account
+                    <CardTitle className="text-xl sm:text-2xl font-bold">
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-pink-400">
+                        Create an Account
+                      </span>
                     </CardTitle>
-                    <CardDescription className="text-sm sm:text-base text-gray-300">
-                      Register to save your training sessions and settings
+                    <CardDescription className="text-sm sm:text-base text-gray-600">
+                      Register to save your pageant training sessions and settings
                     </CardDescription>
                   </CardHeader>
                   
