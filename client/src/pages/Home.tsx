@@ -138,14 +138,13 @@ export default function Home() {
             
             {/* Description */}
             <div className="text-lg text-gray-700 mb-12 leading-relaxed space-y-2">
-              <p>Perfect your poise. Capture your elegance. Own the stage.</p>
-              <p>Elevate your confidence, refine your technique, and</p>
-              <p>master the art of pageant excellence with AI-powered</p>
-              <p>movement analysis and personalized coaching.</p>
+              <p className="font-bold">Perfect your poise.</p>
+              <p className="font-bold">Capture your elegance.</p>
+              <p className="font-bold">Own the stage.</p>
             </div>
             
             {/* Main CTA Button */}
-            <Link href="/practice">
+            <Link href="/dashboard">
               <Button 
                 size="lg" 
                 className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold px-8 py-6 text-lg rounded-full shadow-lg"
