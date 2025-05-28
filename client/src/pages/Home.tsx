@@ -83,19 +83,19 @@ export default function Home() {
       {/* Navigation Bar */}
       <nav className="bg-pink-200 px-6 py-3">
         <div className="flex items-center gap-6">
-          <Link href="/camera">
+          <Link href="/practice">
             <Button variant="ghost" size="sm" className="text-pink-800 hover:bg-pink-300">
               <Crown className="h-4 w-4 mr-2" />
               Pageant Training
             </Button>
           </Link>
-          <Link href="/leaderboard">
+          <Link href="/app">
             <Button variant="ghost" size="sm" className="text-pink-800 hover:bg-pink-300">
               <Award className="h-4 w-4 mr-2" />
               Top Performers
             </Button>
           </Link>
-          <Link href="/recordings">
+          <Link href="/practice">
             <Button variant="ghost" size="sm" className="text-pink-800 hover:bg-pink-300">
               <Trophy className="h-4 w-4 mr-2" />
               For Pageant Titles
@@ -107,7 +107,7 @@ export default function Home() {
               Miss USA
             </Button>
           </Link>
-          <Link href="/settings">
+          <Link href="/practice">
             <Button variant="ghost" size="sm" className="text-pink-800 hover:bg-pink-300">
               <Crown className="h-4 w-4 mr-2" />
               Training Sessions
@@ -145,7 +145,7 @@ export default function Home() {
             </div>
             
             {/* Main CTA Button */}
-            <Link href="/camera">
+            <Link href="/practice">
               <Button 
                 size="lg" 
                 className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold px-8 py-6 text-lg rounded-full shadow-lg"
@@ -167,17 +167,17 @@ export default function Home() {
         
         {/* Right Sidebar */}
         <aside className="w-16 bg-pink-300 flex flex-col items-center py-6 gap-4">
-          <Link href="/timer">
-            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Session Timer">
+          <Link href="/app">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Dashboard">
               <Clock className="h-5 w-5" />
             </Button>
           </Link>
-          <Link href="/leaderboard">
+          <Link href="/app">
             <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Leaderboard">
               <Trophy className="h-5 w-5" />
             </Button>
           </Link>
-          <Link href="/analytics">
+          <Link href="/profile">
             <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Analytics">
               <BarChart className="h-5 w-5" />
             </Button>
@@ -187,22 +187,22 @@ export default function Home() {
               <User className="h-5 w-5" />
             </Button>
           </Link>
-          <Link href="/chat">
+          <Link href="/app">
             <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Community">
               <MessageSquare className="h-5 w-5" />
             </Button>
           </Link>
-          <Link href="/achievements">
-            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Achievements">
+          <Link href="/practice">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Practice">
               <Crown className="h-5 w-5" />
             </Button>
           </Link>
-          <Link href="/competitions">
-            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Competitions">
+          <Link href="/practice">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Training">
               <Award className="h-5 w-5" />
             </Button>
           </Link>
-          <Link href="/settings">
+          <Link href="/profile">
             <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Settings">
               <Settings className="h-5 w-5" />
             </Button>
