@@ -134,13 +134,8 @@ export default function AuthPage() {
   };
   
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center overflow-hidden relative">
-      {/* Background gradients - lighter pink and white */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-0 w-1/3 h-1/3 bg-pink-300/30 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-1/3 h-1/3 bg-pink-300/30 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
-        <div className="absolute top-1/2 left-1/2 w-1/3 h-1/3 bg-white/20 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
-      </div>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4">
+      {/* Clean minimal background - no gradients */}
       
       {/* Mobile Warning Dialog */}
       <MobileWarningDialog
@@ -185,42 +180,42 @@ export default function AuthPage() {
       {/* Main content - only show after loading */}
       {!loading && (
         <>
-          {/* Logo */}
+          {/* Minimal Logo */}
           <motion.div
-            className="relative z-10 mb-8"
+            className="mb-12"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center gap-3">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-pink-400 to-pink-300 flex items-center justify-center shadow-[0_0_20px_rgba(244,114,182,0.6)]">
-                <span className="material-icons text-white text-2xl">emoji_people</span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900">Runway AI</h1>
-            </div>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+              Runway AI
+            </h1>
+            <p className="text-gray-500 text-sm mt-2 font-medium">
+              Pageant Training Platform
+            </p>
           </motion.div>
           
-          {/* Auth Card */}
+          {/* Minimal Auth Card */}
           <motion.div
-            className="w-full max-w-md px-4"
+            className="w-full max-w-sm"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <Card className="border-pink-300/50 bg-white/90 backdrop-blur-lg shadow-[0_10px_30px_rgba(236,72,153,0.15)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-50/80 to-transparent pointer-events-none"></div>
+            <Card className="border-gray-200 bg-white shadow-sm border rounded-lg">
+              {/* No background gradients for minimal look */}
               
               <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-2 bg-pink-50/50 border-b border-pink-200 rounded-none w-full h-auto p-0">
+                <TabsList className="grid grid-cols-2 bg-gray-50 rounded-lg w-full h-auto p-1 mb-6">
                   <TabsTrigger 
                     value="login" 
-                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-400 data-[state=active]:to-pink-300 data-[state=active]:text-white rounded-none py-3 text-gray-600"
+                    className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md py-2 text-gray-600 font-semibold text-sm"
                   >
                     Login
                   </TabsTrigger>
                   <TabsTrigger 
                     value="register" 
-                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-pink-400 data-[state=active]:to-pink-300 data-[state=active]:text-white rounded-none py-3 text-gray-600"
+                    className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md py-2 text-gray-600 font-semibold text-sm"
                   >
                     Register
                   </TabsTrigger>
@@ -228,14 +223,12 @@ export default function AuthPage() {
                 
                 {/* Login Form */}
                 <TabsContent value="login" className="m-0">
-                  <CardHeader>
-                    <CardTitle className="text-xl sm:text-2xl font-bold">
-                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-pink-200">
-                        Login to Your Account
-                      </span>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl font-black text-gray-900 mb-1">
+                      Welcome Back
                     </CardTitle>
-                    <CardDescription className="text-sm sm:text-base text-gray-600">
-                      Enter your credentials to access your Runway AI dashboard
+                    <CardDescription className="text-sm text-gray-600 font-medium">
+                      Sign in to continue your pageant training
                     </CardDescription>
                   </CardHeader>
                   
@@ -247,12 +240,12 @@ export default function AuthPage() {
                           name="username"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-gray-800 font-medium">Username</FormLabel>
+                              <FormLabel className="text-gray-900 font-bold text-sm mb-2">Username</FormLabel>
                               <FormControl>
                                 <Input 
                                   placeholder="Enter your username" 
                                   {...field} 
-                                  className="bg-white border-gray-300 text-gray-900 focus:border-pink-400 focus:ring-1 focus:ring-pink-400/30"
+                                  className="bg-gray-50 border-gray-300 text-gray-900 font-medium placeholder:text-gray-400 focus:bg-white focus:border-gray-400 focus:ring-0 h-11 rounded-lg"
                                 />
                               </FormControl>
                               <FormMessage className="text-red-400" />
@@ -265,20 +258,20 @@ export default function AuthPage() {
                           name="password"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-gray-800 font-medium">Password</FormLabel>
+                              <FormLabel className="text-gray-900 font-bold text-sm mb-2">Password</FormLabel>
                               <div className="relative">
                                 <FormControl>
                                   <Input 
                                     type={showLoginPassword ? "text" : "password"}
                                     placeholder="Enter your password" 
                                     {...field}
-                                    className="bg-white border-gray-300 text-gray-900 focus:border-pink-400 focus:ring-1 focus:ring-pink-400/30 pr-10"
+                                    className="bg-gray-50 border-gray-300 text-gray-900 font-medium placeholder:text-gray-400 focus:bg-white focus:border-gray-400 focus:ring-0 h-11 rounded-lg pr-10"
                                   />
                                 </FormControl>
                                 <button 
                                   type="button"
                                   onClick={() => setShowLoginPassword(!showLoginPassword)}
-                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                                 >
                                   <span className="material-icons text-xl">
                                     {showLoginPassword ? "visibility_off" : "visibility"}
@@ -293,23 +286,20 @@ export default function AuthPage() {
                     </Form>
                   </CardContent>
                   
-                  <CardFooter className="flex flex-col gap-4">
+                  <CardFooter className="pt-6">
                     <Button 
                       type="submit"
                       form="login-form"
-                      className="w-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white py-5"
+                      className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold h-11 rounded-lg transition-colors"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
                         <div className="flex items-center">
-                          <span className="material-icons animate-spin mr-2">autorenew</span>
+                          <span className="material-icons animate-spin mr-2 text-sm">autorenew</span>
                           Signing In...
                         </div>
                       ) : (
-                        <>
-                          <span className="material-icons mr-2">login</span>
-                          Sign In
-                        </>
+                        "Sign In"
                       )}
                     </Button>
                   </CardFooter>
