@@ -67,7 +67,13 @@ export default function Home() {
               <span className="text-sm font-bold text-pink-700">9000 hrs/8h</span>
             </div>
             
-            <Button size="sm" variant="ghost" className="text-gray-600">
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="text-gray-600 hover:bg-gray-100"
+              onClick={() => logoutMutation.mutate()}
+              title="Logout"
+            >
               <User className="h-4 w-4" />
             </Button>
           </div>
@@ -161,34 +167,56 @@ export default function Home() {
         
         {/* Right Sidebar */}
         <aside className="w-16 bg-pink-300 flex flex-col items-center py-6 gap-4">
-          <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2">
-            <Clock className="h-5 w-5" />
-          </Button>
-          <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2">
-            <Trophy className="h-5 w-5" />
-          </Button>
-          <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2">
-            <BarChart className="h-5 w-5" />
-          </Button>
-          <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2">
-            <User className="h-5 w-5" />
-          </Button>
-          <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2">
-            <MessageSquare className="h-5 w-5" />
-          </Button>
-          <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2">
-            <Crown className="h-5 w-5" />
-          </Button>
-          <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2">
-            <Award className="h-5 w-5" />
-          </Button>
-          <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2">
-            <Settings className="h-5 w-5" />
-          </Button>
+          <Link href="/timer">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Session Timer">
+              <Clock className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/leaderboard">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Leaderboard">
+              <Trophy className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/analytics">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Analytics">
+              <BarChart className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/profile">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Profile">
+              <User className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/chat">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Community">
+              <MessageSquare className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/achievements">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Achievements">
+              <Crown className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/competitions">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Competitions">
+              <Award className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/settings">
+            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2" title="Settings">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </Link>
           
           {/* Bottom icon */}
           <div className="mt-auto">
-            <Button size="sm" variant="ghost" className="text-pink-800 hover:bg-pink-400 p-2">
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="text-pink-800 hover:bg-pink-400 p-2" 
+              title="Refresh"
+              onClick={() => window.location.reload()}
+            >
               <RefreshCw className="h-5 w-5" />
             </Button>
           </div>
