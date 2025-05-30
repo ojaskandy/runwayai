@@ -504,56 +504,7 @@ export default function Home() {
         </div>
       </header>
       
-      {/* Navigation buttons bar - Redesigned with pageant theme */}
-      <div className="bg-gradient-to-r from-pink-500/20 to-pink-300/10 border-b border-pink-300/30 px-6 py-3 flex justify-center items-center shadow-md">
-        <div className="w-full max-w-4xl flex justify-between">
-          <div className="flex items-center gap-3">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="h-10 rounded-full px-4 py-2 border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
-              onClick={() => setShowHowItWorksDialog(true)}
-            >
-              <Crown className="h-4 w-4 mr-2 text-pink-200" />
-              <span className="font-medium text-sm text-pink-100">Pageant Guide</span>
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="h-10 rounded-full px-4 py-2 border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
-              onClick={() => setShowLeaderboardDialog(true)}
-            >
-              <Trophy className="h-4 w-4 mr-2 text-pink-200" />
-              <span className="font-medium text-sm text-pink-100">Top Performers</span>
-            </motion.button>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="h-10 rounded-full px-4 py-2 border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
-              onClick={handleFeedbackSubmit}
-            >
-              <MessageSquare className="h-4 w-4 mr-2 text-pink-200" />
-              <span className="font-medium text-sm text-pink-100">Feedback</span>
-            </motion.button>
-            
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={toggleDarkMode} 
-              className="h-10 w-10 rounded-full border-pink-300 bg-transparent hover:bg-pink-400/10"
-            >
-              {isDarkMode ? 
-                <Sun className="h-5 w-5 text-pink-100" /> : 
-                <Moon className="h-5 w-5 text-pink-100" />
-              }
-            </Button>
-          </div>
-        </div>
-      </div>
+
       
       <main className="flex-1 flex flex-col">
         {/* Adjusted padding for the main content area */}
@@ -561,138 +512,153 @@ export default function Home() {
           {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
-            // New layout for the home screen
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-x-8 items-start max-w-screen-xl mx-auto w-full h-full">
-              {/* Left Column: Welcome Text and Actions - Centered */}
-              <div className={`lg:mx-auto ${isSessionPanelExpanded ? 'lg:col-span-8' : 'lg:col-span-10 lg:col-start-2'} space-y-8 flex flex-col items-center transition-all duration-300 ease-in-out mt-16 md:mt-24`}>
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-center w-full">
-                  <h1 className="text-4xl md:text-5xl font-bold text-white">
-                    Welcome to the <span className="bg-gradient-to-r from-pink-300 to-white bg-clip-text text-transparent">Runway</span>, <span className="bg-gradient-to-r from-pink-400 to-pink-200 bg-clip-text text-transparent">{user?.username || 'Queen'}</span>!
+            // New simplified layout for the home screen
+            <div className="flex-1 flex">
+              {/* Main Content Area - Welcome Message and Begin Button */}
+              <div className="flex-1 flex flex-col items-center justify-center text-center pr-8">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  transition={{ delay: 0.1 }} 
+                  className="space-y-8"
+                >
+                  <h1 className="text-4xl md:text-6xl font-bold text-white">
+                    Welcome to <span className="bg-gradient-to-r from-pink-300 to-white bg-clip-text text-transparent">Runway</span>, <span className="bg-gradient-to-r from-pink-400 to-pink-200 bg-clip-text text-transparent">{user?.username || 'Queen'}</span>!
                   </h1>
-                  <p className="text-pink-200 mt-3 text-lg md:text-xl">
+                  <p className="text-pink-200 text-xl md:text-2xl max-w-2xl">
                     Perfect your poise. Capture your elegance. Own the stage.
                   </p>
-                </motion.div>
-
-                <motion.div 
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 relative group w-full max-w-2xl"
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                >
-                  <div className="relative group"> {/* Wrapper for badge */}
-                    <motion.button 
-                      onClick={handlePermissionRequest}
-                      className="w-full py-5 md:py-6 text-lg font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-103 shadow-md"
-                      whileTap={{ scale: 0.97 }}
-                    >
-                      <Play className="mr-2 h-5 w-5" />
-                      Begin Runway Practice
-                    </motion.button>
-                  </div>
-                
-                  <motion.div
-                    className="w-full flex justify-center"
+                  
+                  <motion.button 
+                    onClick={handlePermissionRequest}
+                    className="py-6 px-12 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg mt-12"
+                    whileTap={{ scale: 0.97 }}
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.3 }}
                   >
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowCustomizeDialog(true)}
-                      className="mt-4 border-pink-300/40 text-pink-100 hover:bg-pink-400/10 hover:text-white rounded-full"
-                    >
-                      <Settings className="mr-2 h-4 w-4" />
-                      Customize Your Experience
-                    </Button>
-                  </motion.div>
-                </motion.div>
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                  className="pt-6" 
-                >
-                   <Button
-                    onClick={() => setShowCustomizeDialog(true)}
-                    variant="outline"
-                    className={`px-6 py-3 text-base transition-all duration-300 ease-in-out rounded-lg ${getButtonClasses(buttonTheme, 'outline')}`}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Customize Screen
-                  </Button>
+                    <Play className="mr-3 h-6 w-6" />
+                    Begin Runway Practice
+                  </motion.button>
                 </motion.div>
               </div>
 
-              {/* Right Column: Session Log - Collapsible */}
+              {/* Right Side Panel - All Buttons */}
               <motion.div 
-                className={`bg-gray-950/70 border shadow-xl h-full flex flex-col fixed top-[220px] right-0 md:right-4 lg:right-8 transition-all duration-300 ease-in-out z-20 ${isSessionPanelExpanded ? 'lg:col-span-3 w-[350px] p-6' : 'lg:col-span-1 w-[70px] p-3 items-center'} border-pink-300/30 rounded-xl`}
-                initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}
-                layout // Animate layout changes
+                className="bg-gray-950/70 border border-pink-300/30 shadow-xl w-80 flex flex-col p-6 rounded-xl"
+                initial={{ opacity: 0, x: 50 }} 
+                animate={{ opacity: 1, x: 0 }} 
+                transition={{ delay: 0.25 }}
               >
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => setIsSessionPanelExpanded(!isSessionPanelExpanded)} 
-                  className={`absolute -left-10 top-2 hover:bg-opacity-20 text-pink-300 hover:text-pink-200 hover:bg-pink-500/20 ${isSessionPanelExpanded ? 'rounded-l-md rounded-r-none' : 'rounded-md'}`}
-                  title={isSessionPanelExpanded ? "Collapse Panel" : "Expand Panel"}
-                >
-                  {isSessionPanelExpanded ? <PanelRightClose className="h-6 w-6" /> : <PanelRightOpen className="h-6 w-6" />}
-                </Button>
+                {/* Action Buttons */}
+                <div className="space-y-4 mb-8">
+                  <h3 className="text-lg font-semibold text-pink-300 mb-4 flex items-center">
+                    <Settings className="mr-2 h-5 w-5" />
+                    Quick Actions
+                  </h3>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-3 px-4 rounded-lg border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
+                    onClick={() => setShowHowItWorksDialog(true)}
+                  >
+                    <Crown className="h-5 w-5 mr-3 text-pink-200" />
+                    <span className="font-medium">Pageant Guide</span>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-3 px-4 rounded-lg border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
+                    onClick={() => setShowLeaderboardDialog(true)}
+                  >
+                    <Trophy className="h-5 w-5 mr-3 text-pink-200" />
+                    <span className="font-medium">Top Performers</span>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-3 px-4 rounded-lg border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
+                    onClick={() => setShowCustomizeDialog(true)}
+                  >
+                    <Palette className="h-5 w-5 mr-3 text-pink-200" />
+                    <span className="font-medium">Customize Experience</span>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-3 px-4 rounded-lg border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
+                    onClick={handleFeedbackSubmit}
+                  >
+                    <MessageSquare className="h-5 w-5 mr-3 text-pink-200" />
+                    <span className="font-medium">Send Feedback</span>
+                  </motion.button>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={toggleDarkMode} 
+                    className="w-full py-3 px-4 rounded-lg border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white"
+                  >
+                    {isDarkMode ? 
+                      <Sun className="h-5 w-5 mr-3 text-pink-200" /> : 
+                      <Moon className="h-5 w-5 mr-3 text-pink-200" />
+                    }
+                    <span className="font-medium">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                  </Button>
+                </div>
 
-                {/* Current Session Info */}
-                <div className={`mb-6 pb-6 border-b ${!isSessionPanelExpanded ? 'hidden' : 'block'} border-pink-300/30`}>
-                  <h2 className="text-2xl font-semibold mb-3 flex items-center text-pink-300">
-                    <Clock className="mr-3 h-6 w-6" />
-                    Pageant Session
-                  </h2>
+                {/* Session Info */}
+                <div className="border-t border-pink-300/30 pt-6 mb-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center text-pink-300">
+                    <Clock className="mr-2 h-5 w-5" />
+                    Current Session
+                  </h3>
                   <p className="text-pink-100">
                     Practice time: <CurrentPageTimer />
                   </p>
                   <p className="text-xs text-pink-200/50 mt-1">
-                    This timer resets if you refresh or leave the page.
+                    Timer resets on page refresh
                   </p>
                 </div>
 
                 {/* Recordings Log */}
-                <div className={`${!isSessionPanelExpanded ? 'hidden' : 'block'} flex-1 overflow-hidden`}>
-                  <h2 className="text-2xl font-semibold mb-5 flex items-center text-pink-300">
-                    <ListChecks className="mr-3 h-7 w-7" />
-                    Runway Moments
-                  </h2>
-                  <div className={`overflow-y-auto pr-2 scrollbar-thin scrollbar-track-gray-800 ${isSessionPanelExpanded ? 'max-h-[calc(100vh-480px)]' : 'max-h-0'} scrollbar-thumb-pink-400`}>
+                <div className="flex-1 border-t border-pink-300/30 pt-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center text-pink-300">
+                    <ListChecks className="mr-2 h-5 w-5" />
+                    Recent Moments
+                  </h3>
+                  <div className="overflow-y-auto max-h-64 pr-2 scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-pink-400">
                     {isLoadingRecordings && (
-                      <div className="flex items-center justify-center py-10">
-                        <Loader2 className="h-10 w-10 animate-spin text-pink-400" />
-                      {isSessionPanelExpanded && <p className="ml-4 text-pink-200 text-lg">Loading...</p>}
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-pink-400" />
+                        <p className="ml-3 text-pink-200 text-sm">Loading...</p>
                       </div>
                     )}
                     {recordingsError && (
-                      <p className="text-red-400 text-center py-5">Error: {recordingsError.message}</p>
+                      <p className="text-red-400 text-center py-4 text-sm">Error: {recordingsError.message}</p>
                     )}
                     {!isLoadingRecordings && recordings && recordings.length > 0 && (
-                      <ul className="space-y-3">
-                        {recordings.slice().reverse().map(rec => (
-                          <li key={rec.id} className="bg-gray-900 p-3 rounded-lg border border-pink-300/20 hover:border-pink-300/40 hover:shadow-md hover:shadow-pink-400/10 transition-all duration-200 ease-in-out transform">
+                      <ul className="space-y-2">
+                        {recordings.slice(-5).reverse().map(rec => (
+                          <li key={rec.id} className="bg-gray-900 p-3 rounded-lg border border-pink-300/20 hover:border-pink-300/40 transition-all duration-200">
                             <p className="text-sm text-pink-100 font-medium truncate">
-                              {rec.title || `Runway Performance ${rec.id}`}
+                              {rec.title || `Performance ${rec.id}`}
                             </p>
                             <p className="text-xs text-pink-300/60 mt-1">
-                              {format(new Date(rec.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                              {format(new Date(rec.createdAt), "MMM d, h:mm a")}
                             </p>
                           </li>
                         ))}
                       </ul>
                     )}
                     {!isLoadingRecordings && (!recordings || recordings.length === 0) && !recordingsError && (
-                      <p className="text-pink-300/50 italic text-center py-10 text-sm">No runway moments captured yet. Begin a practice session to see your performances here.</p>
+                      <p className="text-pink-300/50 italic text-center py-8 text-sm">No performances yet. Start practicing to see your moments here.</p>
                     )}
                   </div>
                 </div>
-                 {/* Collapsed State Icons */}
-                {!isSessionPanelExpanded && (
-                  <div className="flex flex-col items-center space-y-6 mt-6">
-                    <span title="Pageant Session">
-                      <Clock className="h-7 w-7 text-pink-300" />
-                    </span>
-                    <span title="Runway Moments">
-                      <ListChecks className="h-7 w-7 text-pink-300" />
-                    </span>
-                  </div>
-                )}
               </motion.div>
             </div>
           ) : (
