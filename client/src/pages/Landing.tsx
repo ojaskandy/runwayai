@@ -58,16 +58,16 @@ export default function Landing() {
     <div className={`min-h-screen flex flex-col overflow-hidden relative ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
       {/* Animated background shapes */}
       <div className="absolute w-full h-full overflow-hidden z-0">
-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-pink-900/10 blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-pink-800/10 blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-[30%] left-[20%] w-[30%] h-[30%] rounded-full bg-pink-700/10 blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-pink-900/20 blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-pink-800/20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-[30%] left-[20%] w-[30%] h-[30%] rounded-full bg-pink-700/20 blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
       
       {/* Header */}
-      <header className={`${isDarkMode ? 'bg-black/50' : 'bg-white/70'} backdrop-blur-sm py-4 border-b ${isDarkMode ? 'border-pink-900/20' : 'border-pink-300/30'} sticky top-0 z-50`}>
+      <header className={`${isDarkMode ? 'bg-black/80' : 'bg-white/90'} backdrop-blur-sm py-4 border-b ${isDarkMode ? 'border-pink-900/30' : 'border-pink-300/50'} sticky top-0 z-50`}>
         <div className="container mx-auto px-4 flex justify-between items-center">
           <div className="flex items-center">
-            <div className="w-10 h-10 text-pink-600 mr-2 animate-bounce" style={{ animationDuration: '3s' }}>
+            <div className="w-10 h-10 text-pink-500 mr-2 animate-bounce" style={{ animationDuration: '3s' }}>
               <span className="material-icons text-3xl">sports_martial_arts</span>
             </div>
             <div className="relative">
@@ -206,13 +206,13 @@ export default function Landing() {
           <div className="min-h-[90vh] flex flex-col items-center justify-center relative">
             {/* Animated floating martial arts icons */}
             <div className="absolute inset-0 z-0 overflow-hidden">
-              <div className="absolute top-[10%] left-[10%] text-red-900/20 animate-float" style={{ animationDuration: '15s' }}>
+              <div className="absolute top-[10%] left-[10%] text-pink-900/30 animate-float" style={{ animationDuration: '15s' }}>
                 <span className="material-icons text-[120px]">sports_martial_arts</span>
               </div>
-              <div className="absolute top-[30%] right-[15%] text-red-900/20 animate-float" style={{ animationDuration: '20s', animationDelay: '2s' }}>
+              <div className="absolute top-[30%] right-[15%] text-pink-900/30 animate-float" style={{ animationDuration: '20s', animationDelay: '2s' }}>
                 <span className="material-icons text-[80px]">sports_kabaddi</span>
               </div>
-              <div className="absolute bottom-[20%] left-[20%] text-red-900/20 animate-float" style={{ animationDuration: '18s', animationDelay: '1s' }}>
+              <div className="absolute bottom-[20%] left-[20%] text-pink-900/30 animate-float" style={{ animationDuration: '18s', animationDelay: '1s' }}>
                 <span className="material-icons text-[100px]">fitness_center</span>
               </div>
             </div>
@@ -250,7 +250,7 @@ export default function Landing() {
                     Runway AI
                   </h2>
                 </div>
-                <p className={`text-xl md:text-2xl max-w-2xl mx-auto mb-10 ${isDarkMode ? 'text-pink-100' : 'text-pink-800'}`}>
+                <p className={`text-xl md:text-2xl max-w-2xl mx-auto mb-10 font-medium ${isDarkMode ? 'text-pink-100' : 'text-pink-800'}`}>
                   AI-powered martial arts form perfection.
                 </p>
               </div>
@@ -261,29 +261,29 @@ export default function Landing() {
                   <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-pink-800 to-pink-600 flex items-center justify-center shadow-lg shadow-pink-900/30 hover:shadow-pink-500/30 transition-all duration-300 hover:scale-110">
                     <span className="material-icons text-white text-3xl md:text-4xl">motion_photos_on</span>
                   </div>
-                  <p className={`text-sm mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Real-time tracking</p>
+                  <p className={`text-sm mt-2 font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Real-time tracking</p>
                 </div>
                 
                 <div className="feature-icon-container animate-float" style={{animationDelay: '0.4s'}}>
                   <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-pink-800 to-pink-600 flex items-center justify-center shadow-lg shadow-pink-900/30 hover:shadow-pink-500/30 transition-all duration-300 hover:scale-110">
                     <span className="material-icons text-white text-3xl md:text-4xl">auto_fix_high</span>
                   </div>
-                  <p className={`text-sm mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Form analysis</p>
+                  <p className={`text-sm mt-2 font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Form analysis</p>
                 </div>
                 
                 <div className="feature-icon-container animate-float" style={{animationDelay: '0.6s'}}>  
                   <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-pink-800 to-pink-600 flex items-center justify-center shadow-lg shadow-pink-900/30 hover:shadow-pink-500/30 transition-all duration-300 hover:scale-110">
                     <span className="material-icons text-white text-3xl md:text-4xl">compare</span>
                   </div>
-                  <p className={`text-sm mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Video comparison</p>
+                  <p className={`text-sm mt-2 font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Video comparison</p>
                 </div>
               </div>
               
               {/* Routine Notes Section */}
-              <div className={`w-full max-w-lg mx-auto mb-10 ${isDarkMode ? 'bg-black/30 border-pink-900/30' : 'bg-white/70 border-pink-300/40'} border rounded-lg p-4 animate-fade-in`}>
+              <div className={`w-full max-w-lg mx-auto mb-10 ${isDarkMode ? 'bg-black/50 border-pink-900/40' : 'bg-white/80 border-pink-300/50'} border rounded-lg p-4 animate-fade-in shadow-lg`}>
                 <div className="flex items-center mb-3">
                   <span className="material-icons text-pink-500 mr-2">edit_note</span>
-                  <h3 className={`text-lg font-medium ${isDarkMode ? 'text-pink-100' : 'text-pink-700'}`}>Routine Notes</h3>
+                  <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-pink-100' : 'text-pink-800'}`}>Routine Notes</h3>
                 </div>
                 <textarea 
                   className={`w-full h-32 rounded p-3 ${
@@ -320,12 +320,12 @@ export default function Landing() {
       {/* Footer */}
       <footer className={`mt-auto backdrop-blur-sm py-6 border-t relative z-10 ${
         isDarkMode 
-          ? 'bg-black/80 border-pink-900/20' 
-          : 'bg-white/80 border-pink-300/20'
+          ? 'bg-black/90 border-pink-900/30' 
+          : 'bg-white/90 border-pink-300/30'
       }`}>
         <div className="container mx-auto px-4 text-center">
-          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>© 2025 Runway AI</p>
-          <p className={`${isDarkMode ? 'text-gray-600' : 'text-gray-500'} text-sm mt-1`}>
+          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700 font-medium'}>© 2025 Runway AI</p>
+          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-sm mt-1 font-medium`}>
             Powered by TensorFlow.js
           </p>
         </div>
