@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -17,10 +17,16 @@ import { ThemeProvider } from "./hooks/use-theme";
 import MarketingLanding from "@/pages/MarketingLanding";
 import RootRedirector from "@/pages/RootRedirector";
 import MobileLandingPage from "@/pages/MobileLanding";
+import QuestionPractice from "@/pages/QuestionPractice";
+import Dock from "@/components/Dock";
 
 function Router() {
+  const [location] = useLocation();
+  const hideDock = ['/welcome', '/auth', '/early-access', '/mobile-landing', '/'].includes(location);
+  
   return (
-    <Switch>
+    <div className={`min-h-screen ${!hideDock ? 'pb-24' : ''}`}>
+      <Switch>
       {/* Root path now uses RootRedirector */}
       <Route path="/" component={RootRedirector} />
       
@@ -36,6 +42,9 @@ function Router() {
       
       {/* Practice page with moves library */}
       <ProtectedRoute path="/practice" component={Practice} />
+      
+      {/* Question practice page */}
+      <ProtectedRoute path="/question-practice" component={QuestionPractice} />
 
       {/* User profile page */}
       <ProtectedRoute path="/profile" component={Profile} />
@@ -49,9 +58,12 @@ function Router() {
       {/* Mobile Landing Page route */}
       <Route path="/mobile-landing" component={MobileLandingPage} />
       
-      {/* 404 page */}
-      <Route component={NotFound} />
-    </Switch>
+        {/* 404 page */}
+        <Route component={NotFound} />
+      </Switch>
+      
+      {!hideDock && <Dock />}
+    </div>
   );
 }
 

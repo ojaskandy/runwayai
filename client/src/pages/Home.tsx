@@ -123,11 +123,12 @@ export default function Home() {
   const [skeletonColorChoice, setSkeletonColorChoice] = useState<'red' | 'blue' | 'green' | 'purple' | 'orange'>('red');
   const [blackoutMode, setBlackoutMode] = useState<boolean>(true);
   
-  // Dialog states
-  const [showHowItWorksDialog, setShowHowItWorksDialog] = useState<boolean>(false);
-  const [showLeaderboardDialog, setShowLeaderboardDialog] = useState<boolean>(false);
-  const [showTips, setShowTips] = useState<boolean>(false);
-  const [showCustomizeDialog, setShowCustomizeDialog] = useState<boolean>(false);
+  // State for dialogs
+  const [showCreditsDialog, setShowCreditsDialog] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showCustomizeDialog, setShowCustomizeDialog] = useState(false);
+  const [showLeaderboardDialog, setShowLeaderboardDialog] = useState(false);
+  const [showTips, setShowTips] = useState(false);
   
   // Added for Record button
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -146,8 +147,8 @@ export default function Home() {
     level: 2
   });
   
-  // Theme state for buttons
-  const [buttonTheme, setButtonTheme] = useState<'sky' | 'crimson' | 'emerald' | 'amber'>('sky');
+  // Theme state for buttons - default to crimson (pink/red)
+  const [buttonTheme, setButtonTheme] = useState<'sky' | 'crimson' | 'emerald' | 'amber'>('crimson');
   
   // Fetch recordings for the session log
   const { data: recordings, isLoading: isLoadingRecordings, error: recordingsError } = useQuery<Recording[], Error>({
@@ -175,17 +176,12 @@ export default function Home() {
       setSelectedBackground(savedSelectedBackground);
     }
 
-    // Load button theme
-    const savedButtonTheme = localStorage.getItem('buttonTheme') as typeof buttonTheme;
-    if (savedButtonTheme) {
-      setButtonTheme(savedButtonTheme);
-    }
+    // Set button theme to crimson (pink/red) by default
+    setButtonTheme('crimson');
+    localStorage.setItem('buttonTheme', 'crimson');
 
-    // Check if user has seen the welcome guide
-    const hasSeenGuide = localStorage.getItem('hasSeenWelcomeGuide');
-    if (!hasSeenGuide) {
-      setShowHowItWorksDialog(true); // Show dialog on first visit
-    }
+    // Skip welcome guide by default
+    localStorage.setItem('hasSeenWelcomeGuide', 'true');
 
     // Check for mobile device after user context is available
     if (user) {
@@ -398,9 +394,9 @@ export default function Home() {
 
   // Render main component
   return (
-    <div className="min-h-screen flex flex-col bg-black overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-white overflow-hidden">
       {/* Enhanced Header with belt display, app title and user menu */}
-      <header className="bg-gradient-to-r from-black to-pink-950/30 border-b border-pink-300/30 px-6 py-4 flex justify-between items-center shadow-md">
+      <header className="bg-gradient-to-r from-pink-50 to-pink-100 border-b border-pink-200 px-6 py-4 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-4">
           <Link to="/welcome" className="cursor-pointer">
             <h1 className="text-2xl font-bold flex items-center group z-50 relative">
@@ -411,7 +407,7 @@ export default function Home() {
               >
                 emoji_people
               </motion.span>
-              <span className="bg-gradient-to-r from-pink-300 to-white bg-clip-text text-transparent group-hover:from-white group-hover:to-pink-200 transition-all duration-300">Runway AI</span>
+              <span className="bg-gradient-to-r from-pink-600 to-pink-400 bg-clip-text text-transparent group-hover:from-pink-700 group-hover:to-pink-500 transition-all duration-300 font-bold text-2xl">Runway AI</span>
             </h1>
           </Link>
           
@@ -427,12 +423,12 @@ export default function Home() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 100, damping: 15 }}
-            className="bg-gradient-to-r from-pink-400/10 to-pink-300/20 border border-pink-300/30 rounded-lg py-2 px-4 flex items-center justify-center"
+            className="bg-white/80 backdrop-blur-sm border border-pink-200 shadow-sm rounded-lg py-2 px-6 flex items-center justify-center"
           >
             <div className="flex flex-col items-center">
-              <span className="text-xs text-pink-200 uppercase tracking-widest">Presented by</span>
-              <span className="text-white font-semibold text-lg">Arshia Kathpalia</span>
-              <span className="text-pink-300 text-sm">Miss Teen India USA 2024</span>
+              <span className="text-xs text-pink-600 uppercase tracking-widest font-medium">Presented by</span>
+              <span className="text-pink-800 font-bold text-xl">Arshia Kathpalia</span>
+              <span className="text-pink-600 text-sm font-medium">Miss Teen India USA 2024</span>
             </div>
           </motion.div>
         </div>
@@ -477,26 +473,26 @@ export default function Home() {
                 </Button>
               </motion.div>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40 border border-pink-300 bg-gray-900">
+            <DropdownMenuContent align="end" className="w-40 border border-pink-200 bg-white shadow-lg">
               <DropdownMenuItem 
-                className="cursor-pointer flex items-center text-white hover:bg-pink-400/20"
+                className="cursor-pointer flex items-center text-pink-900 hover:bg-pink-100"
               >
-                <Settings className="mr-2 h-4 w-4 text-pink-200" />
+                <Settings className="mr-2 h-4 w-4 text-pink-600" />
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuItem 
-                className="cursor-pointer flex items-center text-white hover:bg-pink-400/20"
+                className="cursor-pointer flex items-center text-pink-900 hover:bg-pink-100"
                 onClick={() => setShowTips(true)}
               >
-                <Info className="mr-2 h-4 w-4 text-pink-200" />
+                <Info className="mr-2 h-4 w-4 text-pink-600" />
                 <span>Pageant Tips</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-pink-300/30" />
+              <DropdownMenuSeparator className="bg-pink-200" />
               <DropdownMenuItem 
-                className="cursor-pointer flex items-center text-white hover:bg-pink-400/20" 
+                className="cursor-pointer flex items-center text-pink-900 hover:bg-pink-100" 
                 onClick={() => logoutMutation.mutate()}
               >
-                <LogOut className="mr-2 h-4 w-4 text-pink-200" />
+                <LogOut className="mr-2 h-4 w-4 text-pink-600" />
                 <span>Logout</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -522,24 +518,39 @@ export default function Home() {
                   transition={{ delay: 0.1 }} 
                   className="space-y-8"
                 >
-                  <h1 className="text-4xl md:text-6xl font-bold text-white">
-                    Welcome to <span className="bg-gradient-to-r from-pink-300 to-white bg-clip-text text-transparent">Runway</span>, <span className="bg-gradient-to-r from-pink-400 to-pink-200 bg-clip-text text-transparent">{user?.username || 'Queen'}</span>!
+                  <h1 className="text-4xl md:text-6xl font-bold text-gray-900">
+                    Welcome to <span className="bg-gradient-to-r from-pink-600 to-pink-800 bg-clip-text text-transparent">Runway</span>, <span className="bg-gradient-to-r from-pink-600 to-pink-800 bg-clip-text text-transparent">{user?.username || 'Queen'}</span>!
                   </h1>
-                  <p className="text-pink-200 text-xl md:text-2xl max-w-2xl">
+                  <p className="text-gray-800 text-xl md:text-2xl max-w-2xl">
                     Perfect your poise. Capture your elegance. Own the stage.
                   </p>
                   
-                  <motion.button 
-                    onClick={handlePermissionRequest}
-                    className="py-6 px-12 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg mt-12"
-                    whileTap={{ scale: 0.97 }}
-                    initial={{ opacity: 0, y: 20 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    transition={{ delay: 0.3 }}
-                  >
-                    <Play className="mr-3 h-6 w-6" />
-                    Begin Runway Practice
-                  </motion.button>
+                  <div className="flex flex-col sm:flex-row gap-4 mt-12">
+                    <motion.button 
+                      onClick={handlePermissionRequest}
+                      className="py-6 px-8 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white focus:outline-none focus:ring-2 focus:ring-pink-600 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+                      whileTap={{ scale: 0.97 }}
+                      initial={{ opacity: 0, y: 20 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      transition={{ delay: 0.3 }}
+                    >
+                      <Play className="mr-3 h-6 w-6" />
+                      Begin Runway Practice
+                    </motion.button>
+                    
+                    <Link href="/question-practice" className="block">
+                      <motion.button 
+                        className="py-6 px-8 text-xl font-semibold rounded-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg w-full"
+                        whileTap={{ scale: 0.97 }}
+                        initial={{ opacity: 0, y: 20 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        transition={{ delay: 0.4 }}
+                      >
+                        <MessageSquare className="mr-3 h-6 w-6" />
+                        Begin Question Practice
+                      </motion.button>
+                    </Link>
+                  </div>
                 </motion.div>
               </div>
 
@@ -561,10 +572,10 @@ export default function Home() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="w-full py-3 px-4 rounded-lg border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
-                    onClick={() => setShowHowItWorksDialog(true)}
+                    onClick={() => setShowTips(true)}
                   >
-                    <Crown className="h-5 w-5 mr-3 text-pink-200" />
-                    <span className="font-medium">Pageant Guide</span>
+                    <Info className="h-5 w-5 mr-3 text-pink-200" />
+                    <span className="font-medium">Pageant Tips</span>
                   </motion.button>
                   
                   <motion.button
@@ -643,7 +654,7 @@ export default function Home() {
                     {!isLoadingRecordings && recordings && recordings.length > 0 && (
                       <ul className="space-y-2">
                         {recordings.slice(-5).reverse().map(rec => (
-                          <li key={rec.id} className="bg-gray-900 p-3 rounded-lg border border-pink-300/20 hover:border-pink-300/40 transition-all duration-200">
+                          <li key={rec.id} className="bg-white p-3 rounded-lg border border-pink-100 hover:border-pink-200 transition-all duration-200 shadow-sm">
                             <p className="text-sm text-pink-100 font-medium truncate">
                               {rec.title || `Performance ${rec.id}`}
                             </p>
@@ -696,7 +707,7 @@ export default function Home() {
 
               {/* Camera Settings Panel */}
               {sourceType === 'camera' && hasPermission && !isLoading && (
-                <div className="absolute bottom-4 left-4 bg-black/90 border border-red-900/40 rounded-lg p-3 shadow-lg z-20">
+                <div className="absolute bottom-4 left-4 bg-white/95 border border-pink-200 rounded-lg p-3 shadow-lg z-20">
                   <h3 className={`text-sm font-semibold mb-2 ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
                     Camera Options
                   </h3>
@@ -746,119 +757,6 @@ export default function Home() {
         />
       )}
 
-      {/* "How It Works" Dialog */}
-      <Dialog open={showHowItWorksDialog} onOpenChange={(isOpen) => {
-        setShowHowItWorksDialog(isOpen);
-        if (!isOpen) {
-          localStorage.setItem('hasSeenWelcomeGuide', 'true'); // Mark as seen when closed
-        }
-      }}>
-        <DialogContent className={`bg-gray-950 border text-white max-w-3xl ${getButtonClasses(buttonTheme, 'outline').split(' ').find(c => c.startsWith('border-')) || 'border-sky-800'}`}>
-          <DialogHeader>
-            <DialogTitle className={`text-3xl flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
-              <HelpCircle className="mr-3 h-7 w-7" /> 
-              How CoachT Works
-            </DialogTitle>
-            <DialogDescription className="text-gray-400 mt-1">
-              Welcome to CoachT! Here's a quick guide to get you started.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4 text-gray-300 h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-track-gray-800 ${buttonTheme === 'sky' ? 'scrollbar-thumb-sky-600' : buttonTheme === 'crimson' ? 'scrollbar-thumb-red-600' : buttonTheme === 'emerald' ? 'scrollbar-thumb-emerald-600' : 'scrollbar-thumb-amber-600'}">
-            <Accordion type="single" collapsible className="space-y-4">
-              <AccordionItem value="item-1" className="border-b-0">
-                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
-                  <div className="flex items-center">
-                    <Play className="mr-2 h-5 w-5" />
-                    Start Live Routine
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-3 pb-2 px-2">
-                  <p className="mb-2">
-                    This is your main training ground! Clicking 'Start Live Routine' will activate your camera for real-time AI pose tracking.
-                  </p>
-                  <ul className="list-disc pl-6 space-y-1 text-sm">
-                    <li><strong>Permissions:</strong> Your browser will ask for camera access. Please allow it for CoachT to see your movements.</li>
-                    <li><strong>Real-time Feedback:</strong> Once active, CoachT analyzes your form and provides instant visual cues and (soon!) audio feedback.</li>
-                    <li><strong>During the Routine:</strong> You'll have options to record your session, pause, and adjust settings (like skeleton visibility) directly on the screen.</li>
-                    <li><strong>Goal:</strong> Focus on matching the target poses and refining your technique based on the AI's guidance.</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-2" className="border-b-0">
-                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
-                  <div className="flex items-center">
-                    <Dumbbell className="mr-2 h-5 w-5" />
-                    Practice Library
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-3 pb-2 px-2">
-                  <p className="mb-2">
-                    The 'Practice Library' is where you can explore and master individual Taekwondo moves or other exercises.
-                  </p>
-                  <ul className="list-disc pl-6 space-y-1 text-sm">
-                    <li><strong>Browse Moves:</strong> Navigate through categories to find specific techniques, forms, or drills.</li>
-                    <li><strong>Detailed View:</strong> Each move has a dedicated page with reference visuals, key joint angle data, and (eventually) video demonstrations.</li>
-                    <li><strong>Focused Practice:</strong> Launch a targeted practice session for any move directly from its library page. This works similarly to the 'Start Live Routine' but focuses on that single move.</li>
-                    <li><strong>Reference Poses:</strong> For developers or advanced users, you can contribute by saving your own reference poses for moves.</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-3" className="border-b-0">
-                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
-                  <div className="flex items-center">
-                    <MessageSquare className="mr-2 h-5 w-5" />
-                    Providing Feedback
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-3 pb-2 px-2">
-                  <p className="mb-2">
-                    Your input is invaluable for making CoachT better! Use the 'Feedback' button (usually in the top navigation or menu) to share your thoughts.
-                  </p>
-                  <ul className="list-disc pl-6 space-y-1 text-sm">
-                    <li><strong>How it Works:</strong> Clicking 'Feedback' will typically open your default email client with a pre-filled subject line.</li>
-                    <li><strong>What to Share:</strong> Tell us about your experience, any bugs you encounter, features you'd love to see, or general suggestions.</li>
-                    <li><strong>Be Specific:</strong> The more detail you provide, the better we can understand and address your feedback.</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-4" className="border-b-0">
-                <AccordionTrigger className={`text-xl font-semibold ${buttonTheme === 'sky' ? 'text-sky-300' : buttonTheme === 'crimson' ? 'text-red-300' : buttonTheme === 'emerald' ? 'text-emerald-300' : 'text-amber-300'} hover:no-underline`}>
-                  <div className="flex items-center">
-                    <Info className="mr-2 h-5 w-5" />
-                    General Tips for Best Results
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-3 pb-2 px-2">
-                  <ul className="list-disc pl-6 space-y-2 text-sm">
-                    <li>Position yourself 6-8 feet from the camera for full-body tracking.</li>
-                    <li>Ensure your entire body is visible within the camera frame.</li>
-                    <li>Train in a well-lit area with a contrasting background if possible.</li>
-                    <li>Wear clothing that doesn't blend in too much with your surroundings.</li>
-                    <li>Start with slower movements to help the AI calibrate and for you to get used to the feedback.</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-          
-          <DialogFooter className="mt-2">
-            <Button 
-              onClick={() => {
-                setShowHowItWorksDialog(false);
-                localStorage.setItem('hasSeenWelcomeGuide', 'true'); // Explicitly set on click too
-              }}
-              className={`text-white px-6 py-2 text-base ${getButtonClasses(buttonTheme, 'primary')}`}
-            >
-              Got it, Let's Train!
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
       {/* Leaderboard Dialog */}
       <Dialog open={showLeaderboardDialog} onOpenChange={setShowLeaderboardDialog}>
         <DialogContent className={`bg-gray-950 border text-white max-w-3xl ${getButtonClasses(buttonTheme, 'outline').split(' ').find(c => c.startsWith('border-')) || 'border-sky-800'}`}>
@@ -901,27 +799,27 @@ export default function Home() {
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            <div className="bg-black/50 p-4 rounded-lg border border-red-900/30">
-              <h3 className="font-bold text-lg mb-2">Stance Tips</h3>
-              <ul className="list-disc pl-5 space-y-1 text-gray-300">
+            <div className="bg-white/90 p-4 rounded-lg border border-pink-200 shadow-sm">
+              <h3 className="text-lg font-semibold text-pink-900 mb-2">Stance Tips</h3>
+              <ul className="list-disc pl-5 space-y-1 text-gray-700">
                 <li>Keep your knees bent at the proper angle</li>
                 <li>Distribute weight evenly between feet</li>
                 <li>Maintain straight back and proper posture</li>
               </ul>
             </div>
             
-            <div className="bg-black/50 p-4 rounded-lg border border-red-900/30">
-              <h3 className="font-bold text-lg mb-2">Kick Techniques</h3>
-              <ul className="list-disc pl-5 space-y-1 text-gray-300">
+            <div className="bg-white/90 p-4 rounded-lg border border-pink-200 shadow-sm">
+              <h3 className="text-lg font-semibold text-pink-900 mb-2">Kick Techniques</h3>
+              <ul className="list-disc pl-5 space-y-1 text-gray-700">
                 <li>Chamber your knee properly before extending</li>
                 <li>Keep your supporting foot firmly planted</li>
                 <li>Focus on hip rotation for power</li>
               </ul>
             </div>
             
-            <div className="bg-black/50 p-4 rounded-lg border border-red-900/30">
-              <h3 className="font-bold text-lg mb-2">Training Consistency</h3>
-              <ul className="list-disc pl-5 space-y-1 text-gray-300">
+            <div className="bg-white/90 p-4 rounded-lg border border-pink-200 shadow-sm">
+              <h3 className="text-lg font-semibold text-pink-900 mb-2">Training Consistency</h3>
+              <ul className="list-disc pl-5 space-y-1 text-gray-700">
                 <li>Train at least 3-4 times per week</li>
                 <li>Balance technical practice with conditioning</li>
                 <li>Record and review your movements regularly</li>
