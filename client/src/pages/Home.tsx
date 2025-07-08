@@ -508,167 +508,100 @@ export default function Home() {
           {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
-            // New simplified layout for the home screen
-            <div className="flex-1 flex">
-              {/* Main Content Area - Welcome Message and Begin Button */}
-              <div className="flex-1 flex flex-col items-center justify-center text-center pr-8">
-                <motion.div 
+            // Centered layout for the home screen
+            <div className="flex-1 flex flex-col items-center justify-center text-center relative">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ delay: 0.1 }} 
+                className="space-y-8 mb-32"
+              >
+                <h1 className="text-4xl md:text-6xl font-bold text-white">
+                  Welcome to <span className="bg-gradient-to-r from-pink-300 to-white bg-clip-text text-transparent">Runway</span>, <span className="bg-gradient-to-r from-pink-400 to-pink-200 bg-clip-text text-transparent">{user?.username || 'Queen'}</span>!
+                </h1>
+                <p className="text-pink-200 text-xl md:text-2xl max-w-2xl">
+                  Perfect your poise. Capture your elegance. Own the stage.
+                </p>
+                
+                <motion.button 
+                  onClick={handlePermissionRequest}
+                  className="py-6 px-12 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg mt-12"
+                  whileTap={{ scale: 0.97 }}
                   initial={{ opacity: 0, y: 20 }} 
                   animate={{ opacity: 1, y: 0 }} 
-                  transition={{ delay: 0.1 }} 
-                  className="space-y-8"
+                  transition={{ delay: 0.3 }}
                 >
-                  <h1 className="text-4xl md:text-6xl font-bold text-gray-900">
-                    Welcome to <span className="bg-gradient-to-r from-pink-600 to-pink-800 bg-clip-text text-transparent">Runway</span>, <span className="bg-gradient-to-r from-pink-600 to-pink-800 bg-clip-text text-transparent">{user?.username || 'Queen'}</span>!
-                  </h1>
-                  <p className="text-gray-800 text-xl md:text-2xl max-w-2xl">
-                    Perfect your poise. Capture your elegance. Own the stage.
-                  </p>
-                  
-                  <div className="flex flex-col sm:flex-row gap-4 mt-12">
-                    <motion.button 
-                      onClick={handlePermissionRequest}
-                      className="py-6 px-8 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white focus:outline-none focus:ring-2 focus:ring-pink-600 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
-                      whileTap={{ scale: 0.97 }}
-                      initial={{ opacity: 0, y: 20 }} 
-                      animate={{ opacity: 1, y: 0 }} 
-                      transition={{ delay: 0.3 }}
-                    >
-                      <Play className="mr-3 h-6 w-6" />
-                      Begin Runway Practice
-                    </motion.button>
-                    
-                    <Link href="/question-practice" className="block">
-                      <motion.button 
-                        className="py-6 px-8 text-xl font-semibold rounded-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg w-full"
-                        whileTap={{ scale: 0.97 }}
-                        initial={{ opacity: 0, y: 20 }} 
-                        animate={{ opacity: 1, y: 0 }} 
-                        transition={{ delay: 0.4 }}
-                      >
-                        <MessageSquare className="mr-3 h-6 w-6" />
-                        Begin Question Practice
-                      </motion.button>
-                    </Link>
-                  </div>
-                </motion.div>
-              </div>
+                  <Play className="mr-3 h-6 w-6" />
+                  Begin Runway Practice
+                </motion.button>
+              </motion.div>
 
-              {/* Right Side Panel - All Buttons */}
+              {/* iOS-style Dock at Bottom */}
               <motion.div 
-                className="bg-gray-950/70 border border-pink-300/30 shadow-xl w-80 flex flex-col p-6 rounded-xl"
-                initial={{ opacity: 0, x: 50 }} 
-                animate={{ opacity: 1, x: 0 }} 
-                transition={{ delay: 0.25 }}
+                className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900/80 backdrop-blur-xl border border-pink-300/20 rounded-2xl px-6 py-4 shadow-2xl z-50"
+                initial={{ opacity: 0, y: 100 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ delay: 0.5, type: "spring", stiffness: 100, damping: 15 }}
               >
-                {/* Action Buttons */}
-                <div className="space-y-4 mb-8">
-                  <h3 className="text-lg font-semibold text-pink-300 mb-4 flex items-center">
-                    <Settings className="mr-2 h-5 w-5" />
-                    Quick Actions
-                  </h3>
-                  
+                <div className="flex items-center space-x-4">
+                  {/* Pageant Tips */}
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full py-3 px-4 rounded-lg border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
-                    onClick={() => setShowTips(true)}
+                    whileHover={{ scale: 1.1, y: -8 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-3 rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-400/20 hover:from-pink-500/30 hover:to-pink-400/30 border border-pink-300/30 transition-all duration-200"
+                    onClick={() => setShowHowItWorksDialog(true)}
+                    title="Pageant Tips"
                   >
-                    <Info className="h-5 w-5 mr-3 text-pink-200" />
-                    <span className="font-medium">Pageant Tips</span>
+                    <Crown className="h-6 w-6 text-pink-300" />
                   </motion.button>
-                  
+
+                  {/* Send Feedback */}
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full py-3 px-4 rounded-lg border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
-                    onClick={() => setShowLeaderboardDialog(true)}
-                  >
-                    <Trophy className="h-5 w-5 mr-3 text-pink-200" />
-                    <span className="font-medium">Top Performers</span>
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full py-3 px-4 rounded-lg border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
-                    onClick={() => setShowCustomizeDialog(true)}
-                  >
-                    <Palette className="h-5 w-5 mr-3 text-pink-200" />
-                    <span className="font-medium">Customize Experience</span>
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full py-3 px-4 rounded-lg border border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white transition-colors"
+                    whileHover={{ scale: 1.1, y: -8 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-400/20 hover:from-blue-500/30 hover:to-blue-400/30 border border-blue-300/30 transition-all duration-200"
                     onClick={handleFeedbackSubmit}
+                    title="Send Feedback"
                   >
-                    <MessageSquare className="h-5 w-5 mr-3 text-pink-200" />
-                    <span className="font-medium">Send Feedback</span>
+                    <MessageSquare className="h-6 w-6 text-blue-300" />
                   </motion.button>
-                  
-                  <Button 
-                    variant="outline" 
-                    onClick={toggleDarkMode} 
-                    className="w-full py-3 px-4 rounded-lg border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center text-white"
+
+                  {/* Question Practice */}
+                  <Link href="/question-practice">
+                    <motion.button
+                      whileHover={{ scale: 1.1, y: -8 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-400/20 hover:from-purple-500/30 hover:to-purple-400/30 border border-purple-300/30 transition-all duration-200"
+                      title="Question Practice"
+                    >
+                      <HelpCircle className="h-6 w-6 text-purple-300" />
+                    </motion.button>
+                  </Link>
+
+                  {/* Runway Practice (Main Action) */}
+                  <motion.button
+                    whileHover={{ scale: 1.15, y: -10 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="p-4 rounded-xl bg-gradient-to-br from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 border border-pink-200/50 transition-all duration-200 shadow-lg"
+                    onClick={handlePermissionRequest}
+                    title="Runway Practice"
+                  >
+                    <Play className="h-7 w-7 text-white" />
+                  </motion.button>
+
+                  {/* Light/Dark Mode */}
+                  <motion.button
+                    whileHover={{ scale: 1.1, y: -8 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-400/20 hover:from-amber-500/30 hover:to-amber-400/30 border border-amber-300/30 transition-all duration-200"
+                    onClick={toggleDarkMode}
+                    title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
                   >
                     {isDarkMode ? 
-                      <Sun className="h-5 w-5 mr-3 text-pink-200" /> : 
-                      <Moon className="h-5 w-5 mr-3 text-pink-200" />
+                      <Sun className="h-6 w-6 text-amber-300" /> : 
+                      <Moon className="h-6 w-6 text-amber-300" />
                     }
-                    <span className="font-medium">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-                  </Button>
-                </div>
-
-                {/* Session Info */}
-                <div className="border-t border-pink-300/30 pt-6 mb-6">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center text-pink-300">
-                    <Clock className="mr-2 h-5 w-5" />
-                    Current Session
-                  </h3>
-                  <p className="text-pink-100">
-                    Practice time: <CurrentPageTimer />
-                  </p>
-                  <p className="text-xs text-pink-200/50 mt-1">
-                    Timer resets on page refresh
-                  </p>
-                </div>
-
-                {/* Recordings Log */}
-                <div className="flex-1 border-t border-pink-300/30 pt-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center text-pink-300">
-                    <ListChecks className="mr-2 h-5 w-5" />
-                    Recent Moments
-                  </h3>
-                  <div className="overflow-y-auto max-h-64 pr-2 scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-pink-400">
-                    {isLoadingRecordings && (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin text-pink-400" />
-                        <p className="ml-3 text-pink-200 text-sm">Loading...</p>
-                      </div>
-                    )}
-                    {recordingsError && (
-                      <p className="text-red-400 text-center py-4 text-sm">Error: {recordingsError.message}</p>
-                    )}
-                    {!isLoadingRecordings && recordings && recordings.length > 0 && (
-                      <ul className="space-y-2">
-                        {recordings.slice(-5).reverse().map(rec => (
-                          <li key={rec.id} className="bg-white p-3 rounded-lg border border-pink-100 hover:border-pink-200 transition-all duration-200 shadow-sm">
-                            <p className="text-sm text-pink-100 font-medium truncate">
-                              {rec.title || `Performance ${rec.id}`}
-                            </p>
-                            <p className="text-xs text-pink-300/60 mt-1">
-                              {format(new Date(rec.createdAt), "MMM d, h:mm a")}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {!isLoadingRecordings && (!recordings || recordings.length === 0) && !recordingsError && (
-                      <p className="text-pink-300/50 italic text-center py-8 text-sm">No performances yet. Start practicing to see your moments here.</p>
-                    )}
-                  </div>
+                  </motion.button>
                 </div>
               </motion.div>
             </div>
