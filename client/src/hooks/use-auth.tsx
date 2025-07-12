@@ -53,9 +53,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
+        } else {
+          // If not authenticated, ensure user is null
+          setUser(null);
         }
       } catch (error) {
         console.log('No existing session found');
+        setUser(null);
       } finally {
         setIsLoading(false);
       }

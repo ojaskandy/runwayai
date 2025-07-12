@@ -592,28 +592,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Bottom left flower */}
-                <div className="absolute bottom-32 left-12 transform -rotate-30">
-                  <div className="w-24 h-24 relative">
-                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-60"></div>
-                    <div className="absolute top-3 left-3 w-4 h-4 bg-pink-400 rounded-full"></div>
-                    <div className="absolute bottom-2 right-2 w-6 h-6 bg-pink-200 rounded-full opacity-80"></div>
-                  </div>
-                </div>
 
-                {/* Bottom right flowers */}
-                <div className="absolute bottom-16 right-24 transform rotate-60">
-                  <div className="w-18 h-18 relative">
-                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-50"></div>
-                    <div className="absolute top-2 left-2 w-3 h-3 bg-pink-400 rounded-full"></div>
-                  </div>
-                </div>
-                <div className="absolute bottom-6 right-8 transform -rotate-15">
-                  <div className="w-14 h-14 relative">
-                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-45"></div>
-                    <div className="absolute top-1 left-1 w-2 h-2 bg-pink-400 rounded-full"></div>
-                  </div>
-                </div>
               </div>
 
               <div className="flex h-screen relative z-10">
@@ -1184,25 +1163,7 @@ export default function Home() {
                   repeatCount="indefinite" />
               </path>
               
-              <circle cx="10%" cy="85%" r="5" fill="#ff3366">
-                <animate attributeName="cx" values="10%;90%;10%" dur="20s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.8;0.4;0.8" dur="5s" repeatCount="indefinite" />
-              </circle>
-              
-              <circle cx="20%" cy="75%" r="3" fill="#4f6df5">
-                <animate attributeName="cx" values="20%;70%;20%" dur="15s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.7;0.3;0.7" dur="7s" repeatCount="indefinite" />
-              </circle>
-              
-              <circle cx="80%" cy="80%" r="6" fill="#11d3f3">
-                <animate attributeName="cx" values="80%;30%;80%" dur="25s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.6;0.2;0.6" dur="8s" repeatCount="indefinite" />
-              </circle>
-              
-              <circle cx="65%" cy="90%" r="4" fill="#ff9933">
-                <animate attributeName="cx" values="65%;25%;65%" dur="18s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.5;0.3;0.5" dur="6s" repeatCount="indefinite" />
-              </circle>
+
             </svg>
           </div>
         </div>
