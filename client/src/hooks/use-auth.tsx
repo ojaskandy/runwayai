@@ -14,6 +14,7 @@ type LoginCredentials = {
 
 type RegisterCredentials = {
   username: string;
+  email: string;
   password: string;
 };
 
@@ -154,6 +155,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setShowMobileWarning(true);
         sessionStorage.setItem('mobileWarningShown', 'true');
       }
+      
+      // Navigate to app after successful registration
+      window.location.href = '/app';
     }
   });
 

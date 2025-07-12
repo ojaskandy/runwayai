@@ -24,8 +24,6 @@ const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
-  beltColor: z.string().optional(),
-  experienceTime: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -64,8 +62,6 @@ export default function AuthPage() {
       email: "",
       password: "",
       confirmPassword: "",
-      beltColor: "white",
-      experienceTime: "less_than_1_year",
     },
   });
   
@@ -406,68 +402,6 @@ export default function AuthPage() {
                             </FormItem>
                           )}
                         />
-                        
-                        {/* Belt and Experience - only on desktop */}
-                        {!isMobile && (
-                          <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                              control={registerForm.control}
-                              name="beltColor"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-white">Belt Color</FormLabel>
-                                  <Select
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger className="bg-gray-800/70 border-gray-700/50 text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30">
-                                        <SelectValue placeholder="Select belt" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                                      <SelectItem value="white">White</SelectItem>
-                                      <SelectItem value="yellow">Yellow</SelectItem>
-                                      <SelectItem value="orange">Orange</SelectItem>
-                                      <SelectItem value="green">Green</SelectItem>
-                                      <SelectItem value="blue">Blue</SelectItem>
-                                      <SelectItem value="red">Red</SelectItem>
-                                      <SelectItem value="black">Black</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage className="text-red-400" />
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={registerForm.control}
-                              name="experienceTime"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-white">Experience</FormLabel>
-                                  <Select
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger className="bg-gray-800/70 border-gray-700/50 text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30">
-                                        <SelectValue placeholder="Select experience" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                                      <SelectItem value="less_than_1_year">Less than 1 year</SelectItem>
-                                      <SelectItem value="1_to_3_years">1-3 years</SelectItem>
-                                      <SelectItem value="3_to_5_years">3-5 years</SelectItem>
-                                      <SelectItem value="5_plus_years">5+ years</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage className="text-red-400" />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                        )}
                       </form>
                     </Form>
                   </CardContent>
