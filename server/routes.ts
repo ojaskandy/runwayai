@@ -15,6 +15,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Resend } from 'resend';
 import { Request, Response, NextFunction } from "express";
+import OpenAI from 'openai';
 
 // Initialize Resend with the API key from environment variables
 // IMPORTANT: In a production environment, use an environment variable for the API key.
@@ -28,6 +29,19 @@ try {
   }
 } catch (error) {
   console.error("Failed to initialize Resend:", error);
+}
+
+// Initialize OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Interface for feedback response
+interface FeedbackResponse {
+  score: number;
+  strengths: string[];
+  improvements: string[];
+  overall: string;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -480,6 +494,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json({ 
         message: "Email sending soon. Excited to have you here!"
       });
+    }
+  });
+
+  // AI Feedback for Question Practice
+  app.post("/api/analyze-response", async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    try {
+      const { question, response, timeTaken } = req.body;
+      
+      if (!question || !response) {
+        return res.status(400).json({ error: "Question and response are required" });
+      }
+
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert pageant coach and interview trainer. Analyze the following pageant interview response and provide specific, actionable feedback. Focus on:
+            1. Content quality and relevance
+            2. Structure and organization
+            3. Confidence and authenticity
+            4. Areas for improvement
+            5. Specific strengths to build upon
+            
+            Provide a score from 1-10 and detailed feedback in JSON format with these fields:
+            - score: number (1-10)
+            - strengths: array of 2-3 specific strengths
+            - improvements: array of 2-3 specific areas for improvement
+            - overall: string with overall feedback summary
+            
+            Be encouraging but constructive, focusing on actionable advice for pageant interviews.`
+          },
+          {
+            role: "user",
+            content: `Question: "${question}"
+            Response: "${response}"
+            Time taken: ${timeTaken} seconds
+            
+            Please analyze this pageant interview response and provide specific feedback.`
+          }
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 500,
+        temperature: 0.7
+      });
+
+      const feedbackContent = completion.choices[0].message.content;
+      if (!feedbackContent) {
+        throw new Error("No feedback received from AI");
+      }
+
+      const feedback: FeedbackResponse = JSON.parse(feedbackContent);
+      
+      // Ensure score is within valid range
+      feedback.score = Math.max(1, Math.min(10, feedback.score));
+      
+      res.json(feedback);
+    } catch (error) {
+      console.error('AI feedback error:', error);
+      res.status(500).json({ error: "Failed to analyze response" });
     }
   });
 

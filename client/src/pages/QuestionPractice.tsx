@@ -51,6 +51,7 @@ export default function QuestionPractice() {
   const [textResponse, setTextResponse] = useState<string>('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentFeedback, setCurrentFeedback] = useState<any>(null);
   
   const recognition = useRef<any>(null);
   const timerRef = useRef<number>();
@@ -166,6 +167,10 @@ export default function QuestionPractice() {
   const startRecording = async () => {
     try {
       setError('');
+      
+      // Request microphone permission first
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      
       setIsRecording(true);
       setRecordingTime(0);
       setTranscription('');
@@ -185,7 +190,7 @@ export default function QuestionPractice() {
       
     } catch (err) {
       console.error('Error starting recording:', err);
-      setError('Could not start recording. Please ensure microphone access is granted.');
+      setError('Could not access microphone. Please ensure microphone permissions are granted and try again.');
       setIsRecording(false);
     }
   };
@@ -221,9 +226,27 @@ export default function QuestionPractice() {
         throw new Error('Please provide a response before submitting');
       }
       
-      // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call AI feedback API
+      const apiResponse = await fetch('/api/analyze-response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: currentQuestion,
+          response: response,
+          timeTaken: recordingTime
+        })
+      });
+
+      if (!apiResponse.ok) {
+        throw new Error('Failed to analyze response');
+      }
+
+      const feedback = await apiResponse.json();
       
+      // Store feedback for display
+      setCurrentFeedback(feedback);
       setHasSubmitted(true);
       
     } catch (err) {
@@ -402,9 +425,9 @@ export default function QuestionPractice() {
             )}
           </div>
         ) : (
-          /* Success State */
-          <div className="bg-white rounded-2xl shadow-xl p-8 mt-8 text-center">
-            <div className="mb-6">
+          /* AI Feedback Display */
+          <div className="bg-white rounded-2xl shadow-xl p-8 mt-8">
+            <div className="text-center mb-6">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,9 +435,68 @@ export default function QuestionPractice() {
                   </svg>
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Response Submitted!</h3>
-              <p className="text-gray-600">Great job practicing your interview skills.</p>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">AI Feedback</h3>
+              <p className="text-gray-600">Your personalized pageant interview analysis</p>
             </div>
+
+            {/* Score Display */}
+            {currentFeedback && (
+              <div className="mb-6">
+                <div className="text-center mb-4">
+                  <div className="inline-block bg-pink-100 text-pink-800 px-4 py-2 rounded-full text-lg font-bold">
+                    Score: {currentFeedback.score}/10
+                  </div>
+                </div>
+
+                {/* Strengths */}
+                <div className="mb-4">
+                  <h4 className="font-semibold text-green-800 mb-2 flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Strengths
+                  </h4>
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <ul className="space-y-1">
+                      {currentFeedback.strengths.map((strength: string, index: number) => (
+                        <li key={index} className="text-green-700 flex items-start">
+                          <span className="text-green-500 mr-2">•</span>
+                          {strength}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Areas for Improvement */}
+                <div className="mb-4">
+                  <h4 className="font-semibold text-orange-800 mb-2 flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Areas for Improvement
+                  </h4>
+                  <div className="bg-orange-50 rounded-lg p-4">
+                    <ul className="space-y-1">
+                      {currentFeedback.improvements.map((improvement: string, index: number) => (
+                        <li key={index} className="text-orange-700 flex items-start">
+                          <span className="text-orange-500 mr-2">•</span>
+                          {improvement}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Overall Feedback */}
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-800 mb-2">Overall Feedback</h4>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-gray-700">{currentFeedback.overall}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="bg-gray-50 rounded-lg p-6 mb-6">
               <h4 className="font-semibold text-gray-800 mb-2">Your Response:</h4>
@@ -423,13 +505,15 @@ export default function QuestionPractice() {
               </p>
             </div>
 
-            <Button
-              onClick={getRandomQuestion}
-              className="bg-pink-600 hover:bg-pink-700 px-8 py-3"
-            >
-              <RefreshCw className="h-5 w-5 mr-2" />
-              Practice Another Question
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                onClick={getRandomQuestion}
+                className="bg-pink-600 hover:bg-pink-700 px-8 py-3"
+              >
+                <RefreshCw className="h-5 w-5 mr-2" />
+                Practice Another Question
+              </Button>
+            </div>
           </div>
         )}
       </div>

@@ -42,14 +42,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [showMobileWarning, setShowMobileWarning] = useState<boolean>(false);
   const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false);
   
-  // Initialize loading state
+  // Initialize loading state and check for existing session
   useEffect(() => {
-    // Simulate checking for existing session
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 100);
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/me', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.log('No existing session found');
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    return () => clearTimeout(timer);
+    checkSession();
   }, []);
 
   // Check if device is mobile
@@ -76,18 +88,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => window.removeEventListener("resize", checkMobileDevice);
   }, []);
   
-  // Simulated login mutation
+  // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      console.log('Login attempt:', credentials);
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+        credentials: 'include'
+      });
       
-      // Simple mock validation
-      if (credentials.username.length >= 3 && credentials.password.length >= 6) {
-        return { id: 1, username: credentials.username };
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
       }
-      throw new Error('Invalid credentials');
+      
+      return response.json();
     },
     onSuccess: (data: User) => {
       setUser(data);
@@ -103,14 +119,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   });
   
-  // Simulated register mutation
+  // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterCredentials) => {
-      console.log('Register attempt:', credentials);
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+        credentials: 'include'
+      });
       
-      return { id: 1, username: credentials.username };
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Registration failed');
+      }
+      
+      return response.json();
     },
     onSuccess: (data: User) => {
       setUser(data);
@@ -129,8 +153,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+      
       return true;
     },
     onSuccess: () => {

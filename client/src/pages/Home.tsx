@@ -396,7 +396,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-white overflow-hidden">
       {/* Enhanced Header with belt display, app title and user menu */}
-      <header className="bg-gradient-to-r from-pink-50 to-pink-100 border-b border-pink-200 px-6 py-4 flex justify-between items-center shadow-sm">
+      <header className="bg-gradient-to-r from-pink-700 to-pink-600 border-b border-pink-200 px-6 py-4 flex justify-between items-center shadow-lg">
         <div className="flex items-center gap-4">
           <Link to="/welcome" className="cursor-pointer">
             <h1 className="text-2xl font-bold flex items-center group z-50 relative">
@@ -407,14 +407,14 @@ export default function Home() {
               >
                 emoji_people
               </motion.span>
-              <span className="bg-gradient-to-r from-pink-600 to-pink-400 bg-clip-text text-transparent group-hover:from-pink-700 group-hover:to-pink-500 transition-all duration-300 font-bold text-2xl">Runway AI</span>
+              <span className="text-white group-hover:text-pink-100 transition-all duration-300 font-bold text-2xl">Runway AI</span>
             </h1>
           </Link>
           
           <div className="h-8 w-px bg-pink-300/30 mx-2"></div>
           
           {/* Current time */}
-          <CurrentTime className="ml-2 text-pink-100" showSeconds={false} />
+          <CurrentTime className="ml-2 text-white" showSeconds={false} />
         </div>
 
         {/* Pageant Title Display */}
@@ -453,10 +453,10 @@ export default function Home() {
             >
               <Button 
                 variant="outline" 
-                className="h-8 rounded-full border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center px-3 transition-all duration-300 hover:shadow-pink-300/30 hover:shadow-sm"
+                className="h-8 rounded-full border-white/30 bg-transparent hover:bg-white/10 flex items-center px-3 transition-all duration-300 hover:shadow-white/30 hover:shadow-sm"
               >
-                <User className="h-4 w-4 text-pink-200 mr-2" />
-                <span className="text-sm text-pink-100 font-medium">Profile</span>
+                <User className="h-4 w-4 text-white mr-2" />
+                <span className="text-sm text-white font-medium">Profile</span>
               </Button>
             </motion.div>
           </Link>
@@ -466,10 +466,10 @@ export default function Home() {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button 
                   variant="outline" 
-                  className="h-8 rounded-full border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center px-3"
+                  className="h-8 rounded-full border-white/30 bg-transparent hover:bg-white/10 flex items-center px-3"
                 >
-                  <Settings className="h-4 w-4 text-pink-200 mr-2" />
-                  <span className="text-sm text-pink-100 font-medium">Menu</span>
+                  <Settings className="h-4 w-4 text-white mr-2" />
+                  <span className="text-sm text-white font-medium">Menu</span>
                 </Button>
               </motion.div>
             </DropdownMenuTrigger>
