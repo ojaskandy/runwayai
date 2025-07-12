@@ -176,3 +176,72 @@ export const insertUpcomingPageantSchema = createInsertSchema(upcomingPageants).
 
 export type InsertUpcomingPageant = z.infer<typeof insertUpcomingPageantSchema>;
 export type UpcomingPageant = typeof upcomingPageants.$inferSelect;
+
+// Injury prevention and recovery recommendations schema
+export const injuryPreventionRecommendations = pgTable("injury_prevention_recommendations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  recommendationType: text("recommendation_type").notNull(), // 'prevention', 'recovery', 'maintenance'
+  severity: text("severity").notNull(), // 'low', 'medium', 'high', 'critical'
+  bodyPart: text("body_part").notNull(), // 'ankle', 'knee', 'hip', 'spine', 'shoulder', 'neck'
+  riskFactors: jsonb("risk_factors").$type<string[]>().default([]), // Array of detected risk factors
+  recommendation: text("recommendation").notNull(),
+  exerciseRecommendations: jsonb("exercise_recommendations").$type<{
+    name: string;
+    duration: string;
+    frequency: string;
+    description: string;
+    videoUrl?: string;
+  }[]>().default([]),
+  poseAnalysisData: jsonb("pose_analysis_data").$type<{
+    jointAngles: Record<string, number>;
+    stability: number;
+    alignment: number;
+    balance: number;
+    riskScore: number;
+  }>(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertInjuryPreventionRecommendationSchema = createInsertSchema(injuryPreventionRecommendations).pick({
+  userId: true,
+  recommendationType: true,
+  severity: true,
+  bodyPart: true,
+  riskFactors: true,
+  recommendation: true,
+  exerciseRecommendations: true,
+  poseAnalysisData: true,
+});
+
+export type InsertInjuryPreventionRecommendation = z.infer<typeof insertInjuryPreventionRecommendationSchema>;
+export type InjuryPreventionRecommendation = typeof injuryPreventionRecommendations.$inferSelect;
+
+// User injury history schema
+export const userInjuryHistory = pgTable("user_injury_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  injuryType: text("injury_type").notNull(),
+  bodyPart: text("body_part").notNull(),
+  severity: text("severity").notNull(), // 'minor', 'moderate', 'severe'
+  dateOfInjury: timestamp("date_of_injury").notNull(),
+  recoveryStatus: text("recovery_status").notNull().default('recovering'), // 'recovering', 'recovered', 'chronic'
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertUserInjuryHistorySchema = createInsertSchema(userInjuryHistory).pick({
+  userId: true,
+  injuryType: true,
+  bodyPart: true,
+  severity: true,
+  dateOfInjury: true,
+  recoveryStatus: true,
+  notes: true,
+});
+
+export type InsertUserInjuryHistory = z.infer<typeof insertUserInjuryHistorySchema>;
+export type UserInjuryHistory = typeof userInjuryHistory.$inferSelect;
