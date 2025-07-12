@@ -508,102 +508,196 @@ export default function Home() {
           {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
-            // Centered layout for the home screen
-            <div className="flex-1 flex flex-col items-center justify-center text-center relative">
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ delay: 0.1 }} 
-                className="space-y-8 mb-32"
-              >
-                <h1 className="text-4xl md:text-6xl font-bold text-white">
-                  Welcome to <span className="bg-gradient-to-r from-pink-300 to-white bg-clip-text text-transparent">Runway</span>, <span className="bg-gradient-to-r from-pink-400 to-pink-200 bg-clip-text text-transparent">{user?.username || 'Queen'}</span>!
-                </h1>
-                <p className="text-pink-200 text-xl md:text-2xl max-w-2xl">
-                  Perfect your poise. Capture your elegance. Own the stage.
-                </p>
-                
-                <motion.button 
-                  onClick={handlePermissionRequest}
-                  className="py-6 px-12 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg mt-12"
-                  whileTap={{ scale: 0.97 }}
-                  initial={{ opacity: 0, y: 20 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  transition={{ delay: 0.3 }}
-                >
-                  <Play className="mr-3 h-6 w-6" />
-                  Begin Runway Practice
-                </motion.button>
-              </motion.div>
-
-              {/* iOS-style Dock at Bottom */}
-              <motion.div 
-                className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900/80 backdrop-blur-xl border border-pink-300/20 rounded-2xl px-6 py-4 shadow-2xl z-50"
-                initial={{ opacity: 0, y: 100 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ delay: 0.5, type: "spring", stiffness: 100, damping: 15 }}
-              >
-                <div className="flex items-center space-x-4">
-                  {/* Pageant Tips */}
-                  <motion.button
-                    whileHover={{ scale: 1.1, y: -8 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-3 rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-400/20 hover:from-pink-500/30 hover:to-pink-400/30 border border-pink-300/30 transition-all duration-200"
-                    onClick={() => setShowHowItWorksDialog(true)}
-                    title="Pageant Tips"
-                  >
-                    <Crown className="h-6 w-6 text-pink-300" />
-                  </motion.button>
-
-                  {/* Send Feedback */}
-                  <motion.button
-                    whileHover={{ scale: 1.1, y: -8 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-400/20 hover:from-blue-500/30 hover:to-blue-400/30 border border-blue-300/30 transition-all duration-200"
-                    onClick={handleFeedbackSubmit}
-                    title="Send Feedback"
-                  >
-                    <MessageSquare className="h-6 w-6 text-blue-300" />
-                  </motion.button>
-
-                  {/* Question Practice */}
-                  <Link href="/question-practice">
-                    <motion.button
-                      whileHover={{ scale: 1.1, y: -8 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-400/20 hover:from-purple-500/30 hover:to-purple-400/30 border border-purple-300/30 transition-all duration-200"
-                      title="Question Practice"
-                    >
-                      <HelpCircle className="h-6 w-6 text-purple-300" />
-                    </motion.button>
-                  </Link>
-
-                  {/* Runway Practice (Main Action) */}
-                  <motion.button
-                    whileHover={{ scale: 1.15, y: -10 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="p-4 rounded-xl bg-gradient-to-br from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 border border-pink-200/50 transition-all duration-200 shadow-lg"
-                    onClick={handlePermissionRequest}
-                    title="Runway Practice"
-                  >
-                    <Play className="h-7 w-7 text-white" />
-                  </motion.button>
-
-                  {/* Light/Dark Mode */}
-                  <motion.button
-                    whileHover={{ scale: 1.1, y: -8 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-400/20 hover:from-amber-500/30 hover:to-amber-400/30 border border-amber-300/30 transition-all duration-200"
-                    onClick={toggleDarkMode}
-                    title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                  >
-                    {isDarkMode ? 
-                      <Sun className="h-6 w-6 text-amber-300" /> : 
-                      <Moon className="h-6 w-6 text-amber-300" />
-                    }
-                  </motion.button>
+            // New floral design layout
+            <div className="min-h-screen bg-gradient-to-br from-pink-100 via-pink-50 to-pink-100 relative overflow-hidden">
+              {/* Decorative Flowers */}
+              <div className="absolute inset-0 pointer-events-none">
+                {/* Top left flower */}
+                <div className="absolute top-16 left-16 transform rotate-12">
+                  <div className="w-16 h-16 relative">
+                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-60 transform scale-75"></div>
+                    <div className="absolute top-1 left-1 w-3 h-3 bg-pink-400 rounded-full"></div>
+                    <div className="absolute top-2 right-2 w-6 h-6 bg-pink-200 rounded-full opacity-80"></div>
+                    <div className="absolute bottom-1 left-3 w-4 h-4 bg-pink-350 rounded-full opacity-70"></div>
+                  </div>
                 </div>
-              </motion.div>
+
+                {/* Top right flowers */}
+                <div className="absolute top-12 right-20 transform -rotate-12">
+                  <div className="w-20 h-20 relative">
+                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-60"></div>
+                    <div className="absolute top-2 left-2 w-4 h-4 bg-pink-400 rounded-full"></div>
+                    <div className="absolute top-3 right-3 w-6 h-6 bg-pink-200 rounded-full opacity-80"></div>
+                  </div>
+                </div>
+                <div className="absolute top-6 right-8 transform rotate-45">
+                  <div className="w-12 h-12 relative">
+                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-50"></div>
+                    <div className="absolute top-1 left-1 w-2 h-2 bg-pink-400 rounded-full"></div>
+                  </div>
+                </div>
+
+                {/* Right side small flower */}
+                <div className="absolute top-48 right-16 transform rotate-30">
+                  <div className="w-10 h-10 relative">
+                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-40"></div>
+                    <div className="absolute top-1 left-1 w-2 h-2 bg-pink-400 rounded-full"></div>
+                  </div>
+                </div>
+
+                {/* Bottom left flower */}
+                <div className="absolute bottom-32 left-12 transform -rotate-30">
+                  <div className="w-24 h-24 relative">
+                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-60"></div>
+                    <div className="absolute top-3 left-3 w-4 h-4 bg-pink-400 rounded-full"></div>
+                    <div className="absolute bottom-2 right-2 w-6 h-6 bg-pink-200 rounded-full opacity-80"></div>
+                  </div>
+                </div>
+
+                {/* Bottom right flowers */}
+                <div className="absolute bottom-16 right-24 transform rotate-60">
+                  <div className="w-18 h-18 relative">
+                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-50"></div>
+                    <div className="absolute top-2 left-2 w-3 h-3 bg-pink-400 rounded-full"></div>
+                  </div>
+                </div>
+                <div className="absolute bottom-6 right-8 transform -rotate-15">
+                  <div className="w-14 h-14 relative">
+                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-45"></div>
+                    <div className="absolute top-1 left-1 w-2 h-2 bg-pink-400 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex h-screen relative z-10">
+                {/* Left Sidebar - Upcoming Pageants */}
+                <div className="w-80 p-6 bg-white/30 backdrop-blur-sm border-r border-pink-200/50">
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-pink-700 mb-4">Upcoming Pageants</h3>
+                    <div className="space-y-3">
+                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                        <h4 className="font-medium text-pink-800">Miss Universe USA</h4>
+                        <p className="text-sm text-pink-600">March 15, 2025</p>
+                        <p className="text-xs text-pink-500 mt-1">Los Angeles, CA</p>
+                      </div>
+                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                        <h4 className="font-medium text-pink-800">Miss America</h4>
+                        <p className="text-sm text-pink-600">April 22, 2025</p>
+                        <p className="text-xs text-pink-500 mt-1">Atlantic City, NJ</p>
+                      </div>
+                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                        <h4 className="font-medium text-pink-800">State Pageant Qualifier</h4>
+                        <p className="text-sm text-pink-600">February 10, 2025</p>
+                        <p className="text-xs text-pink-500 mt-1">Local venue</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Center Content */}
+                <div className="flex-1 flex flex-col items-center justify-center px-8">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.1 }} 
+                    className="text-center space-y-8"
+                  >
+                    {/* Username in cursive style */}
+                    <motion.h1 
+                      className="text-6xl md:text-7xl font-bold text-pink-500 mb-12"
+                      style={{ fontFamily: 'Brush Script MT, cursive' }}
+                      initial={{ opacity: 0, scale: 0.8 }} 
+                      animate={{ opacity: 1, scale: 1 }} 
+                      transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
+                    >
+                      {user?.username || 'ojaskandy'}
+                    </motion.h1>
+                    
+                    {/* Main Practice Buttons */}
+                    <div className="space-y-4">
+                      <motion.button 
+                        onClick={handlePermissionRequest}
+                        className="w-96 py-6 px-8 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:scale-105"
+                        whileTap={{ scale: 0.97 }}
+                        initial={{ opacity: 0, y: 20 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        transition={{ delay: 0.3 }}
+                      >
+                        <div className="flex items-center justify-center">
+                          <Play className="mr-3 h-6 w-6" />
+                          Begin Runway Practice
+                        </div>
+                      </motion.button>
+                      
+                      <Link href="/question-practice">
+                        <motion.button 
+                          className="w-96 py-6 px-8 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:scale-105"
+                          whileTap={{ scale: 0.97 }}
+                          initial={{ opacity: 0, y: 20 }} 
+                          animate={{ opacity: 1, y: 0 }} 
+                          transition={{ delay: 0.4 }}
+                        >
+                          Begin Interview Practice
+                        </motion.button>
+                      </Link>
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Right Sidebar - Activity */}
+                <div className="w-80 p-6 bg-white/30 backdrop-blur-sm border-l border-pink-200/50">
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-pink-700 mb-4">Recent Activity</h3>
+                    <div className="space-y-3">
+                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                        <h4 className="font-medium text-pink-800 text-sm">Runway Practice</h4>
+                        <p className="text-xs text-pink-600">Completed 15 min session</p>
+                        <p className="text-xs text-pink-500 mt-1">2 hours ago</p>
+                      </div>
+                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                        <h4 className="font-medium text-pink-800 text-sm">Interview Questions</h4>
+                        <p className="text-xs text-pink-600">Practiced 10 questions</p>
+                        <p className="text-xs text-pink-500 mt-1">Yesterday</p>
+                      </div>
+                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                        <h4 className="font-medium text-pink-800 text-sm">Pose Analysis</h4>
+                        <p className="text-xs text-pink-600">Improved by 12%</p>
+                        <p className="text-xs text-pink-500 mt-1">3 days ago</p>
+                      </div>
+                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                        <h4 className="font-medium text-pink-800 text-sm">Goal Update</h4>
+                        <p className="text-xs text-pink-600">Updated pageant goals</p>
+                        <p className="text-xs text-pink-500 mt-1">1 week ago</p>
+                      </div>
+                    </div>
+                    
+                    {/* Quick Actions */}
+                    <div className="pt-6 border-t border-pink-200/50">
+                      <h4 className="text-md font-medium text-pink-700 mb-3">Quick Actions</h4>
+                      <div className="space-y-2">
+                        <button 
+                          onClick={() => setShowHowItWorksDialog(true)}
+                          className="w-full text-left p-2 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors"
+                        >
+                          📖 Pageant Guide
+                        </button>
+                        <button 
+                          onClick={handleFeedbackSubmit}
+                          className="w-full text-left p-2 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors"
+                        >
+                          💌 Send Feedback
+                        </button>
+                        <button 
+                          onClick={toggleDarkMode}
+                          className="w-full text-left p-2 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors"
+                        >
+                          {isDarkMode ? '☀️' : '🌙'} {isDarkMode ? 'Light' : 'Dark'} Mode
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
