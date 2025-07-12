@@ -62,8 +62,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use port 4000 for local development
-  const port = process.env.PORT || 4000;
+  // Use port 5000 for local development
+  const port = process.env.PORT || 5000;
   server.listen({
     port,
     host: "0.0.0.0" // Listen on all interfaces to make it accessible in deployment

@@ -602,10 +602,9 @@ export default function Home() {
                     transition={{ delay: 0.1 }} 
                     className="text-center space-y-8"
                   >
-                    {/* Username in cursive style */}
+                    {/* Username in elegant style */}
                     <motion.h1 
-                      className="text-6xl md:text-7xl font-bold text-pink-500 mb-12"
-                      style={{ fontFamily: 'Brush Script MT, cursive' }}
+                      className="text-6xl md:text-7xl font-bold text-pink-500 mb-12 tracking-wide"
                       initial={{ opacity: 0, scale: 0.8 }} 
                       animate={{ opacity: 1, scale: 1 }} 
                       transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
