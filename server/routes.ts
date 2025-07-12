@@ -8,7 +8,9 @@ import {
   insertRecordingSchema, 
   type InsertRecording,
   insertEarlyAccessSchema,
-  type InsertEarlyAccess 
+  type InsertEarlyAccess,
+  insertUpcomingPageantSchema,
+  type InsertUpcomingPageant 
 } from "@shared/schema";
 import { z } from "zod";
 import * as fs from 'fs';
@@ -559,6 +561,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('AI feedback error:', error);
       res.status(500).json({ error: "Failed to analyze response" });
+    }
+  });
+
+  // Pageant API routes
+  app.get("/api/pageants", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+    try {
+      const pageants = await storage.getUpcomingPageants(req.user.id);
+      res.json(pageants);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  app.post("/api/pageants", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+    try {
+      const schema = z.object({
+        name: z.string(),
+        location: z.string(),
+        date: z.string().refine(date => !isNaN(Date.parse(date)), "Invalid date"),
+        specialNote: z.string().optional(),
+      });
+      
+      const result = schema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.message });
+      }
+      
+      const pageantData: InsertUpcomingPageant = {
+        userId: req.user.id,
+        name: result.data.name,
+        location: result.data.location,
+        date: new Date(result.data.date),
+        specialNote: result.data.specialNote || null,
+      };
+      
+      const pageant = await storage.saveUpcomingPageant(pageantData);
+      res.status(201).json(pageant);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+  
+  app.delete("/api/pageants/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+    try {
+      const pageantId = parseInt(req.params.id);
+      if (isNaN(pageantId)) {
+        return res.status(400).json({ error: "Invalid pageant ID" });
+      }
+      
+      const deleted = await storage.deleteUpcomingPageant(pageantId, req.user.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Pageant not found" });
+      }
+      
+      res.json({ message: "Pageant deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
     }
   });
 

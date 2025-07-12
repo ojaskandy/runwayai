@@ -1,12 +1,13 @@
 import { 
-  users, trackingSettings, userProfiles, recordings, earlyAccessSignups, referenceMoves, emailRecords,
+  users, trackingSettings, userProfiles, recordings, earlyAccessSignups, referenceMoves, emailRecords, upcomingPageants,
   type User, type InsertUser, 
   type TrackingSettings, type InsertTrackingSettings,
   type UserProfile, type InsertUserProfile,
   type Recording, type InsertRecording,
   type EarlyAccessSignup, type InsertEarlyAccess,
   type ReferenceMove, type InsertReferenceMove,
-  type EmailRecord, type InsertEmailRecord
+  type EmailRecord, type InsertEmailRecord,
+  type UpcomingPageant, type InsertUpcomingPageant
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc } from "drizzle-orm";
@@ -52,6 +53,11 @@ export interface IStorage {
   // Email record methods
   saveEmailRecord(record: InsertEmailRecord): Promise<EmailRecord>;
   getEmailRecords(): Promise<EmailRecord[]>;
+  
+  // Pageant methods
+  getUpcomingPageants(userId: number): Promise<UpcomingPageant[]>;
+  saveUpcomingPageant(pageant: InsertUpcomingPageant): Promise<UpcomingPageant>;
+  deleteUpcomingPageant(id: number, userId: number): Promise<boolean>;
   
   // Session store
   sessionStore: session.Store;
@@ -295,7 +301,7 @@ export class DatabaseStorage implements IStorage {
   async deleteRecording(id: number, userId: number): Promise<boolean> {
     const result = await db
       .delete(recordings)
-      .where(eq(recordings.id, id) && eq(recordings.userId, userId));
+      .where(sql`${recordings.id} = ${id} AND ${recordings.userId} = ${userId}`);
     
     return result.rowCount !== null && result.rowCount > 0;
   }
@@ -390,6 +396,30 @@ export class DatabaseStorage implements IStorage {
       .from(emailRecords)
       .orderBy(desc(emailRecords.sentAt));
     return records;
+  }
+
+  // Pageant methods
+  async getUpcomingPageants(userId: number): Promise<UpcomingPageant[]> {
+    return await db
+      .select()
+      .from(upcomingPageants)
+      .where(eq(upcomingPageants.userId, userId))
+      .orderBy(upcomingPageants.date);
+  }
+
+  async saveUpcomingPageant(pageant: InsertUpcomingPageant): Promise<UpcomingPageant> {
+    const [savedPageant] = await db
+      .insert(upcomingPageants)
+      .values(pageant)
+      .returning();
+    return savedPageant;
+  }
+
+  async deleteUpcomingPageant(id: number, userId: number): Promise<boolean> {
+    const result = await db
+      .delete(upcomingPageants)
+      .where(sql`${upcomingPageants.id} = ${id} AND ${upcomingPageants.userId} = ${userId}`);
+    return result.rowCount !== null && result.rowCount > 0;
   }
 }
 

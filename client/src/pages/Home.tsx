@@ -9,11 +9,13 @@ import { requestCameraPermission, getCameraStream } from '@/lib/cameraUtils';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Sun, Moon, User, LogOut, Settings, Clock, Calendar, Award, Play, 
   Dumbbell, HelpCircle, MessageSquare, BarChart, Info, RefreshCw, Trash2,
   Home as HomeIcon, ListChecks, Loader2, PanelRightOpen, PanelRightClose, Palette,
-  ChevronDown, ChevronUp, ScrollText, Smartphone, Crown, Trophy
+  ChevronDown, ChevronUp, ScrollText, Smartphone, Crown, Trophy, Plus, X
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -35,7 +37,7 @@ import BeltDisplay from '@/components/BeltDisplay';
 import SessionTimer from '@/components/SessionTimer';
 import CurrentTime from '@/components/CurrentTime';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest, getQueryFn } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import {
@@ -58,6 +60,16 @@ interface Recording {
   notes: string | null;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
+}
+
+interface UpcomingPageant {
+  id: number;
+  userId: number;
+  name: string;
+  location: string;
+  date: string; // ISO date string
+  specialNote: string | null;
+  createdAt: string; // ISO date string
 }
 
 // Timer component specifically for the current session view on this page
@@ -83,6 +95,7 @@ export default function Home() {
   // Auth and theme contexts
   const { user, logoutMutation } = useAuth();
   const { theme, setTheme } = useTheme();
+  const queryClient = useQueryClient();
   
   // State for application flow
   const [trackingStatus, setTrackingStatus] = useState<TrackingStatus>('inactive');
@@ -155,6 +168,40 @@ export default function Home() {
     queryKey: ['/api/recordings', user?.id],
     queryFn: () => apiRequest("GET", "/api/recordings").then(res => res.json()),
     enabled: !!user,
+  });
+
+  // Pageant data management
+  const [showAddPageantDialog, setShowAddPageantDialog] = useState(false);
+  const [pageantForm, setPageantForm] = useState({
+    name: '',
+    location: '',
+    date: '',
+    specialNote: ''
+  });
+  
+  // Pageant data query
+  const { data: pageants = [], isLoading: isPageantsLoading } = useQuery<UpcomingPageant[]>({
+    queryKey: ['/api/pageants'],
+    queryFn: getQueryFn,
+    enabled: !!user,
+  });
+
+  // Pageant mutations
+  const addPageantMutation = useMutation({
+    mutationFn: (data: { name: string; location: string; date: string; specialNote?: string }) =>
+      apiRequest('/api/pageants', 'POST', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/pageants'] });
+      setShowAddPageantDialog(false);
+      setPageantForm({ name: '', location: '', date: '', specialNote: '' });
+    },
+  });
+
+  const deletePageantMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/pageants/${id}`, 'DELETE'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/pageants'] });
+    },
   });
 
   // Load routine notes from localStorage when component mounts
@@ -573,23 +620,52 @@ export default function Home() {
                 {/* Left Sidebar - Upcoming Pageants */}
                 <div className="w-80 p-6 bg-white/30 backdrop-blur-sm border-r border-pink-200/50">
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-pink-700 mb-4">Upcoming Pageants</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-pink-700">Upcoming Pageants</h3>
+                      <button
+                        onClick={() => setShowAddPageantDialog(true)}
+                        className="p-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                    
                     <div className="space-y-3">
-                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
-                        <h4 className="font-medium text-pink-800">Miss Universe USA</h4>
-                        <p className="text-sm text-pink-600">March 15, 2025</p>
-                        <p className="text-xs text-pink-500 mt-1">Los Angeles, CA</p>
-                      </div>
-                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
-                        <h4 className="font-medium text-pink-800">Miss America</h4>
-                        <p className="text-sm text-pink-600">April 22, 2025</p>
-                        <p className="text-xs text-pink-500 mt-1">Atlantic City, NJ</p>
-                      </div>
-                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
-                        <h4 className="font-medium text-pink-800">State Pageant Qualifier</h4>
-                        <p className="text-sm text-pink-600">February 10, 2025</p>
-                        <p className="text-xs text-pink-500 mt-1">Local venue</p>
-                      </div>
+                      {isPageantsLoading ? (
+                        <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                          <div className="animate-pulse space-y-2">
+                            <div className="h-4 bg-pink-200 rounded w-3/4"></div>
+                            <div className="h-3 bg-pink-200 rounded w-1/2"></div>
+                            <div className="h-3 bg-pink-200 rounded w-2/3"></div>
+                          </div>
+                        </div>
+                      ) : pageants.length === 0 ? (
+                        <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50 text-center">
+                          <p className="text-pink-600 text-sm">No upcoming pageants</p>
+                          <p className="text-pink-500 text-xs mt-1">Click the + button to add your first pageant!</p>
+                        </div>
+                      ) : (
+                        pageants.map((pageant) => (
+                          <div key={pageant.id} className="bg-white/60 rounded-lg p-4 border border-pink-200/50 group">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-pink-800">{pageant.name}</h4>
+                                <p className="text-sm text-pink-600">{format(new Date(pageant.date), 'MMM d, yyyy')}</p>
+                                <p className="text-xs text-pink-500 mt-1">{pageant.location}</p>
+                                {pageant.specialNote && (
+                                  <p className="text-xs text-pink-500 mt-1 italic">{pageant.specialNote}</p>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => deletePageantMutation.mutate(pageant.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-pink-200 transition-all"
+                              >
+                                <X className="h-3 w-3 text-pink-600" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
@@ -643,56 +719,40 @@ export default function Home() {
                   </motion.div>
                 </div>
 
-                {/* Right Sidebar - Activity */}
+                {/* Right Sidebar - Quick Actions */}
                 <div className="w-80 p-6 bg-white/30 backdrop-blur-sm border-l border-pink-200/50">
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-pink-700 mb-4">Recent Activity</h3>
-                    <div className="space-y-3">
-                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
-                        <h4 className="font-medium text-pink-800 text-sm">Runway Practice</h4>
-                        <p className="text-xs text-pink-600">Completed 15 min session</p>
-                        <p className="text-xs text-pink-500 mt-1">2 hours ago</p>
-                      </div>
-                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
-                        <h4 className="font-medium text-pink-800 text-sm">Interview Questions</h4>
-                        <p className="text-xs text-pink-600">Practiced 10 questions</p>
-                        <p className="text-xs text-pink-500 mt-1">Yesterday</p>
-                      </div>
-                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
-                        <h4 className="font-medium text-pink-800 text-sm">Pose Analysis</h4>
-                        <p className="text-xs text-pink-600">Improved by 12%</p>
-                        <p className="text-xs text-pink-500 mt-1">3 days ago</p>
-                      </div>
-                      <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
-                        <h4 className="font-medium text-pink-800 text-sm">Goal Update</h4>
-                        <p className="text-xs text-pink-600">Updated pageant goals</p>
-                        <p className="text-xs text-pink-500 mt-1">1 week ago</p>
-                      </div>
-                    </div>
-                    
-                    {/* Quick Actions */}
-                    <div className="pt-6 border-t border-pink-200/50">
-                      <h4 className="text-md font-medium text-pink-700 mb-3">Quick Actions</h4>
-                      <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-pink-700 mb-4">Quick Actions</h3>
+                    <div className="space-y-2">
+                      <button 
+                        onClick={() => setShowTips(true)}
+                        className="w-full text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
+                      >
+                        <Info className="h-4 w-4 mr-2" />
+                        Pageant Tips
+                      </button>
+                      <Link href="/profile">
                         <button 
-                          onClick={() => setShowHowItWorksDialog(true)}
-                          className="w-full text-left p-2 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors"
+                          className="w-full text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
                         >
-                          📖 Pageant Guide
+                          <User className="h-4 w-4 mr-2" />
+                          View Profile
                         </button>
-                        <button 
-                          onClick={handleFeedbackSubmit}
-                          className="w-full text-left p-2 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors"
-                        >
-                          💌 Send Feedback
-                        </button>
-                        <button 
-                          onClick={toggleDarkMode}
-                          className="w-full text-left p-2 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors"
-                        >
-                          {isDarkMode ? '☀️' : '🌙'} {isDarkMode ? 'Light' : 'Dark'} Mode
-                        </button>
-                      </div>
+                      </Link>
+                      <button 
+                        onClick={() => setShowCustomizeDialog(true)}
+                        className="w-full text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
+                      >
+                        <Palette className="h-4 w-4 mr-2" />
+                        Customize Theme
+                      </button>
+                      <button 
+                        onClick={() => logoutMutation.mutate()}
+                        className="w-full text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1147,6 +1207,104 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Add Pageant Dialog */}
+      <Dialog open={showAddPageantDialog} onOpenChange={setShowAddPageantDialog}>
+        <DialogContent className="bg-white border border-pink-200 text-pink-900 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center text-pink-700">
+              <Crown className="mr-2 h-5 w-5" />
+              Add Upcoming Pageant
+            </DialogTitle>
+            <DialogDescription className="text-pink-600">
+              Keep track of your pageant competitions and deadlines
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium text-pink-700 block mb-2">
+                Pageant Name
+              </label>
+              <Input
+                placeholder="e.g., Miss Universe USA"
+                value={pageantForm.name}
+                onChange={(e) => setPageantForm({ ...pageantForm, name: e.target.value })}
+                className="border-pink-200 focus:border-pink-500"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-pink-700 block mb-2">
+                Location
+              </label>
+              <Input
+                placeholder="e.g., Los Angeles, CA"
+                value={pageantForm.location}
+                onChange={(e) => setPageantForm({ ...pageantForm, location: e.target.value })}
+                className="border-pink-200 focus:border-pink-500"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-pink-700 block mb-2">
+                Date
+              </label>
+              <Input
+                type="date"
+                value={pageantForm.date}
+                onChange={(e) => setPageantForm({ ...pageantForm, date: e.target.value })}
+                className="border-pink-200 focus:border-pink-500"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-pink-700 block mb-2">
+                Special Note (Optional)
+              </label>
+              <Textarea
+                placeholder="e.g., Need to practice evening gown segment"
+                value={pageantForm.specialNote}
+                onChange={(e) => setPageantForm({ ...pageantForm, specialNote: e.target.value })}
+                className="border-pink-200 focus:border-pink-500 min-h-[60px]"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              onClick={() => setShowAddPageantDialog(false)}
+              variant="outline"
+              className="border-pink-200 text-pink-700 hover:bg-pink-50"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (pageantForm.name && pageantForm.location && pageantForm.date) {
+                  addPageantMutation.mutate({
+                    name: pageantForm.name,
+                    location: pageantForm.location,
+                    date: pageantForm.date,
+                    specialNote: pageantForm.specialNote || undefined
+                  });
+                }
+              }}
+              disabled={!pageantForm.name || !pageantForm.location || !pageantForm.date || addPageantMutation.isPending}
+              className="bg-pink-500 hover:bg-pink-600 text-white"
+            >
+              {addPageantMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Pageant'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

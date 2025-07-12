@@ -152,3 +152,25 @@ export const insertEmailRecordSchema = createInsertSchema(emailRecords).pick({
 
 export type InsertEmailRecord = z.infer<typeof insertEmailRecordSchema>;
 export type EmailRecord = typeof emailRecords.$inferSelect;
+
+// Schema for upcoming pageants
+export const upcomingPageants = pgTable("upcoming_pageants", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  name: text("name").notNull(),
+  location: text("location").notNull(),
+  date: timestamp("date").notNull(),
+  specialNote: text("special_note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertUpcomingPageantSchema = createInsertSchema(upcomingPageants).pick({
+  userId: true,
+  name: true,
+  location: true,
+  date: true,
+  specialNote: true,
+});
+
+export type InsertUpcomingPageant = z.infer<typeof insertUpcomingPageantSchema>;
+export type UpcomingPageant = typeof upcomingPageants.$inferSelect;
