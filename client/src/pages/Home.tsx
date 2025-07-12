@@ -414,7 +414,7 @@ export default function Home() {
           <div className="h-8 w-px bg-pink-300/30 mx-2"></div>
           
           {/* Current time */}
-          <CurrentTime className="ml-2 text-pink-100" showSeconds={false} />
+          <CurrentTime className="ml-2 text-gray-600 font-medium" showSeconds={false} />
         </div>
 
         {/* Pageant Title Display */}
@@ -455,8 +455,8 @@ export default function Home() {
                 variant="outline" 
                 className="h-8 rounded-full border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center px-3 transition-all duration-300 hover:shadow-pink-300/30 hover:shadow-sm"
               >
-                <User className="h-4 w-4 text-pink-200 mr-2" />
-                <span className="text-sm text-pink-100 font-medium">Profile</span>
+                <User className="h-4 w-4 text-gray-600 mr-2" />
+                <span className="text-sm text-gray-700 font-medium">Profile</span>
               </Button>
             </motion.div>
           </Link>
@@ -468,8 +468,8 @@ export default function Home() {
                   variant="outline" 
                   className="h-8 rounded-full border-pink-300 bg-transparent hover:bg-pink-400/10 flex items-center px-3"
                 >
-                  <Settings className="h-4 w-4 text-pink-200 mr-2" />
-                  <span className="text-sm text-pink-100 font-medium">Menu</span>
+                  <Settings className="h-4 w-4 text-gray-600 mr-2" />
+                  <span className="text-sm text-gray-700 font-medium">Menu</span>
                 </Button>
               </motion.div>
             </DropdownMenuTrigger>
@@ -508,102 +508,49 @@ export default function Home() {
           {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
-            // Centered layout for the home screen
-            <div className="flex-1 flex flex-col items-center justify-center text-center relative">
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ delay: 0.1 }} 
-                className="space-y-8 mb-32"
-              >
-                <h1 className="text-4xl md:text-6xl font-bold text-white">
-                  Welcome to <span className="bg-gradient-to-r from-pink-300 to-white bg-clip-text text-transparent">Runway</span>, <span className="bg-gradient-to-r from-pink-400 to-pink-200 bg-clip-text text-transparent">{user?.username || 'Queen'}</span>!
-                </h1>
-                <p className="text-pink-200 text-xl md:text-2xl max-w-2xl">
-                  Perfect your poise. Capture your elegance. Own the stage.
-                </p>
-                
-                <motion.button 
-                  onClick={handlePermissionRequest}
-                  className="py-6 px-12 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg mt-12"
-                  whileTap={{ scale: 0.97 }}
+            // Main layout with sidebar for pageants
+            <div className="flex-1 flex">
+              {/* Left Sidebar - Upcoming Pageants */}
+              <div className="w-80 bg-gray-50 border-r border-gray-200 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Upcoming Pageants</h3>
+                <div className="text-center py-12">
+                  <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 font-medium">No pageants scheduled</p>
+                  <p className="text-sm text-gray-400 mt-2">Add your upcoming competitions to track your preparation progress</p>
+                  <button className="mt-4 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-medium">
+                    Add Pageant
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Content Area */}
+              <div className="flex-1 flex flex-col items-center justify-center text-center relative">
+                <motion.div 
                   initial={{ opacity: 0, y: 20 }} 
                   animate={{ opacity: 1, y: 0 }} 
-                  transition={{ delay: 0.3 }}
+                  transition={{ delay: 0.1 }} 
+                  className="space-y-8 mb-32"
                 >
-                  <Play className="mr-3 h-6 w-6" />
-                  Begin Runway Practice
-                </motion.button>
-              </motion.div>
-
-              {/* iOS-style Dock at Bottom */}
-              <motion.div 
-                className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900/80 backdrop-blur-xl border border-pink-300/20 rounded-2xl px-6 py-4 shadow-2xl z-50"
-                initial={{ opacity: 0, y: 100 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ delay: 0.5, type: "spring", stiffness: 100, damping: 15 }}
-              >
-                <div className="flex items-center space-x-4">
-                  {/* Pageant Tips */}
-                  <motion.button
-                    whileHover={{ scale: 1.1, y: -8 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-3 rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-400/20 hover:from-pink-500/30 hover:to-pink-400/30 border border-pink-300/30 transition-all duration-200"
-                    onClick={() => setShowHowItWorksDialog(true)}
-                    title="Pageant Tips"
-                  >
-                    <Crown className="h-6 w-6 text-pink-300" />
-                  </motion.button>
-
-                  {/* Send Feedback */}
-                  <motion.button
-                    whileHover={{ scale: 1.1, y: -8 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-400/20 hover:from-blue-500/30 hover:to-blue-400/30 border border-blue-300/30 transition-all duration-200"
-                    onClick={handleFeedbackSubmit}
-                    title="Send Feedback"
-                  >
-                    <MessageSquare className="h-6 w-6 text-blue-300" />
-                  </motion.button>
-
-                  {/* Question Practice */}
-                  <Link href="/question-practice">
-                    <motion.button
-                      whileHover={{ scale: 1.1, y: -8 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-400/20 hover:from-purple-500/30 hover:to-purple-400/30 border border-purple-300/30 transition-all duration-200"
-                      title="Question Practice"
-                    >
-                      <HelpCircle className="h-6 w-6 text-purple-300" />
-                    </motion.button>
-                  </Link>
-
-                  {/* Runway Practice (Main Action) */}
-                  <motion.button
-                    whileHover={{ scale: 1.15, y: -10 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="p-4 rounded-xl bg-gradient-to-br from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 border border-pink-200/50 transition-all duration-200 shadow-lg"
+                  <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">
+                    Welcome to <span className="bg-gradient-to-r from-pink-600 to-pink-800 bg-clip-text text-transparent">Runway</span>, <span className="bg-gradient-to-r from-pink-600 to-pink-800 bg-clip-text text-transparent">{user?.username || 'Queen'}</span>!
+                  </h1>
+                  <p className="text-gray-700 text-xl md:text-2xl max-w-2xl font-medium leading-relaxed">
+                    Perfect your poise. Capture your elegance. Own the stage.
+                  </p>
+                  
+                  <motion.button 
                     onClick={handlePermissionRequest}
-                    title="Runway Practice"
+                    className="py-6 px-12 text-xl font-bold rounded-full bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-opacity-50 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg mt-12"
+                    whileTap={{ scale: 0.97 }}
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.3 }}
                   >
-                    <Play className="h-7 w-7 text-white" />
+                    <Play className="mr-3 h-6 w-6" />
+                    Begin Runway Practice
                   </motion.button>
-
-                  {/* Light/Dark Mode */}
-                  <motion.button
-                    whileHover={{ scale: 1.1, y: -8 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-400/20 hover:from-amber-500/30 hover:to-amber-400/30 border border-amber-300/30 transition-all duration-200"
-                    onClick={toggleDarkMode}
-                    title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                  >
-                    {isDarkMode ? 
-                      <Sun className="h-6 w-6 text-amber-300" /> : 
-                      <Moon className="h-6 w-6 text-amber-300" />
-                    }
-                  </motion.button>
-                </div>
-              </motion.div>
+                </motion.div>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
@@ -1053,6 +1000,77 @@ export default function Home() {
             </svg>
           </div>
         </div>
+      )}
+      
+      {/* iOS-style Dock at Bottom - Always visible */}
+      {(!hasPermission || trackingStatus === 'inactive') && !isTracking && (
+        <motion.div 
+          className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900/80 backdrop-blur-xl border border-pink-300/20 rounded-2xl px-6 py-4 shadow-2xl z-50"
+          initial={{ opacity: 0, y: 100 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.5, type: "spring", stiffness: 100, damping: 15 }}
+        >
+          <div className="flex items-center space-x-4">
+            {/* Pageant Tips */}
+            <motion.button
+              whileHover={{ scale: 1.1, y: -8 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-3 rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-400/20 hover:from-pink-500/30 hover:to-pink-400/30 border border-pink-300/30 transition-all duration-200"
+              onClick={() => setShowHowItWorksDialog(true)}
+              title="Pageant Tips"
+            >
+              <Crown className="h-6 w-6 text-pink-300" />
+            </motion.button>
+
+            {/* Send Feedback */}
+            <motion.button
+              whileHover={{ scale: 1.1, y: -8 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-400/20 hover:from-blue-500/30 hover:to-blue-400/30 border border-blue-300/30 transition-all duration-200"
+              onClick={handleFeedbackSubmit}
+              title="Send Feedback"
+            >
+              <MessageSquare className="h-6 w-6 text-blue-300" />
+            </motion.button>
+
+            {/* Question Practice */}
+            <Link href="/question-practice">
+              <motion.button
+                whileHover={{ scale: 1.1, y: -8 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-400/20 hover:from-purple-500/30 hover:to-purple-400/30 border border-purple-300/30 transition-all duration-200"
+                title="Question Practice"
+              >
+                <HelpCircle className="h-6 w-6 text-purple-300" />
+              </motion.button>
+            </Link>
+
+            {/* Runway Practice (Main Action) */}
+            <motion.button
+              whileHover={{ scale: 1.15, y: -10 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-4 rounded-xl bg-gradient-to-br from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 border border-pink-200/50 transition-all duration-200 shadow-lg"
+              onClick={handlePermissionRequest}
+              title="Runway Practice"
+            >
+              <Play className="h-7 w-7 text-white" />
+            </motion.button>
+
+            {/* Light/Dark Mode */}
+            <motion.button
+              whileHover={{ scale: 1.1, y: -8 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-400/20 hover:from-amber-500/30 hover:to-amber-400/30 border border-amber-300/30 transition-all duration-200"
+              onClick={toggleDarkMode}
+              title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+            >
+              {isDarkMode ? 
+                <Sun className="h-6 w-6 text-amber-300" /> : 
+                <Moon className="h-6 w-6 text-amber-300" />
+              }
+            </motion.button>
+          </div>
+        </motion.div>
       )}
     </div>
   );
