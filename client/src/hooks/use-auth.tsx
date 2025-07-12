@@ -46,7 +46,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await fetch('/api/me', {
+        const response = await fetch('/api/user', {
           credentials: 'include'
         });
         
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterCredentials) => {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
@@ -153,7 +153,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/auth/logout', {
+      const response = await fetch('/api/logout', {
         method: 'POST',
         credentials: 'include'
       });
