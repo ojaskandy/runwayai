@@ -130,7 +130,7 @@ export default function AuthPage() {
   };
   
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-8">
       {/* Clean minimal background - no gradients */}
       
       {/* Mobile Warning Dialog */}
@@ -161,7 +161,7 @@ export default function AuthPage() {
           
           {/* Enhanced Runway AI text typing with elegant animation */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-            <h1 className="text-6xl md:text-8xl font-bold relative inline-block">
+            <h1 className="text-5xl sm:text-6xl md:text-8xl font-bold relative inline-block">
               <span className={`relative bg-gradient-to-r from-black to-pink-900 bg-clip-text text-transparent transition-all duration-500 ${logoContrast ? 'blur-[0.5px]' : 'blur-0'}`}>
                 {typedText}
                 <span className="inline-block h-[0.8em] w-[3px] ml-[2px] align-middle bg-pink-400 animate-blink"></span>
@@ -178,12 +178,12 @@ export default function AuthPage() {
         <>
           {/* Minimal Logo */}
           <motion.div
-            className="mb-12"
+            className="mb-8 sm:mb-12 text-center"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
               Runway AI
             </h1>
             <p className="text-gray-500 text-sm mt-2 font-medium">
@@ -193,7 +193,7 @@ export default function AuthPage() {
           
           {/* Minimal Auth Card */}
           <motion.div
-            className="w-full max-w-sm"
+            className="w-full max-w-sm mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
@@ -202,16 +202,16 @@ export default function AuthPage() {
               {/* No background gradients for minimal look */}
               
               <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-2 bg-gray-50 rounded-lg w-full h-auto p-1 mb-6">
+                <TabsList className="grid grid-cols-2 bg-gray-50 rounded-lg w-full h-auto p-1 mb-4 sm:mb-6">
                   <TabsTrigger 
                     value="login" 
-                    className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md py-2 text-gray-600 font-semibold text-sm"
+                    className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md py-2.5 sm:py-2 text-gray-600 font-semibold text-sm"
                   >
                     Login
                   </TabsTrigger>
                   <TabsTrigger 
                     value="register" 
-                    className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md py-2 text-gray-600 font-semibold text-sm"
+                    className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md py-2.5 sm:py-2 text-gray-600 font-semibold text-sm"
                   >
                     Register
                   </TabsTrigger>
@@ -219,8 +219,8 @@ export default function AuthPage() {
                 
                 {/* Login Form */}
                 <TabsContent value="login" className="m-0">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-xl font-black text-gray-900 mb-1">
+                  <CardHeader className="pb-4 px-4 sm:px-6">
+                    <CardTitle className="text-lg sm:text-xl font-black text-gray-900 mb-1">
                       Welcome Back
                     </CardTitle>
                     <CardDescription className="text-sm text-gray-600 font-medium">
@@ -228,7 +228,7 @@ export default function AuthPage() {
                     </CardDescription>
                   </CardHeader>
                   
-                  <CardContent>
+                  <CardContent className="px-4 sm:px-6">
                     <Form {...loginForm}>
                       <form id="login-form" onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                         <FormField
@@ -241,7 +241,7 @@ export default function AuthPage() {
                                 <Input 
                                   placeholder="Enter your username" 
                                   {...field} 
-                                  className="bg-gray-50 border-gray-300 text-gray-900 font-medium placeholder:text-gray-400 focus:bg-white focus:border-gray-400 focus:ring-0 h-11 rounded-lg"
+                                  className="bg-gray-50 border-gray-300 text-gray-900 font-medium placeholder:text-gray-400 focus:bg-white focus:border-gray-400 focus:ring-0 h-12 sm:h-11 rounded-lg text-base sm:text-sm"
                                 />
                               </FormControl>
                               <FormMessage className="text-red-400" />
@@ -261,7 +261,7 @@ export default function AuthPage() {
                                     type={showLoginPassword ? "text" : "password"}
                                     placeholder="Enter your password" 
                                     {...field}
-                                    className="bg-gray-50 border-gray-300 text-gray-900 font-medium placeholder:text-gray-400 focus:bg-white focus:border-gray-400 focus:ring-0 h-11 rounded-lg pr-10"
+                                    className="bg-gray-50 border-gray-300 text-gray-900 font-medium placeholder:text-gray-400 focus:bg-white focus:border-gray-400 focus:ring-0 h-12 sm:h-11 rounded-lg pr-10 text-base sm:text-sm"
                                   />
                                 </FormControl>
                                 <button 
@@ -282,11 +282,11 @@ export default function AuthPage() {
                     </Form>
                   </CardContent>
                   
-                  <CardFooter className="pt-6">
+                  <CardFooter className="pt-6 px-4 sm:px-6">
                     <Button 
                       type="submit"
                       form="login-form"
-                      className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold h-11 rounded-lg transition-colors"
+                      className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold h-12 sm:h-11 rounded-lg transition-colors text-base sm:text-sm"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
@@ -303,18 +303,16 @@ export default function AuthPage() {
                 
                 {/* Register Form */}
                 <TabsContent value="register" className="m-0">
-                  <CardHeader>
-                    <CardTitle className="text-xl sm:text-2xl font-bold">
-                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-pink-400">
-                        Create an Account
-                      </span>
+                  <CardHeader className="pb-4 px-4 sm:px-6">
+                    <CardTitle className="text-lg sm:text-xl font-black text-gray-900 mb-1">
+                      Create an Account
                     </CardTitle>
-                    <CardDescription className="text-sm sm:text-base text-gray-600">
+                    <CardDescription className="text-sm text-gray-600 font-medium">
                       Register to save your pageant training sessions and settings
                     </CardDescription>
                   </CardHeader>
                   
-                  <CardContent>
+                  <CardContent className="px-4 sm:px-6">
                     <Form {...registerForm}>
                       <form id="register-form" onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                         <FormField
@@ -322,12 +320,12 @@ export default function AuthPage() {
                           name="username"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Username</FormLabel>
+                              <FormLabel className="text-gray-900 font-bold text-sm mb-2">Username</FormLabel>
                               <FormControl>
                                 <Input 
                                   placeholder="Choose a username" 
                                   {...field} 
-                                  className="bg-gray-800/70 border-gray-700/50 text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
+                                  className="bg-gray-50 border-gray-300 text-gray-900 font-medium placeholder:text-gray-400 focus:bg-white focus:border-gray-400 focus:ring-0 h-12 sm:h-11 rounded-lg text-base sm:text-sm"
                                 />
                               </FormControl>
                               <FormMessage className="text-red-400" />
@@ -340,13 +338,13 @@ export default function AuthPage() {
                           name="email"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Email Address</FormLabel>
+                              <FormLabel className="text-gray-900 font-bold text-sm mb-2">Email Address</FormLabel>
                               <FormControl>
                                 <Input 
                                   type="email"
                                   placeholder="Enter your email address" 
                                   {...field} 
-                                  className="bg-gray-800/70 border-gray-700/50 text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
+                                  className="bg-gray-50 border-gray-300 text-gray-900 font-medium placeholder:text-gray-400 focus:bg-white focus:border-gray-400 focus:ring-0 h-12 sm:h-11 rounded-lg text-base sm:text-sm"
                                 />
                               </FormControl>
                               <FormMessage className="text-red-400" />
@@ -359,20 +357,20 @@ export default function AuthPage() {
                           name="password"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Password</FormLabel>
+                              <FormLabel className="text-gray-900 font-bold text-sm mb-2">Password</FormLabel>
                               <div className="relative">
                                 <FormControl>
                                   <Input 
                                     type={showRegisterPassword ? "text" : "password"}
                                     placeholder="Create a password" 
                                     {...field}
-                                    className="bg-gray-800/70 border-gray-700/50 text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 pr-10"
+                                    className="bg-gray-50 border-gray-300 text-gray-900 font-medium placeholder:text-gray-400 focus:bg-white focus:border-gray-400 focus:ring-0 h-12 sm:h-11 rounded-lg pr-10 text-base sm:text-sm"
                                   />
                                 </FormControl>
                                 <button 
                                   type="button"
                                   onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                                 >
                                   <span className="material-icons text-xl">
                                     {showRegisterPassword ? "visibility_off" : "visibility"}
@@ -389,13 +387,13 @@ export default function AuthPage() {
                           name="confirmPassword"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Confirm Password</FormLabel>
+                              <FormLabel className="text-gray-900 font-bold text-sm mb-2">Confirm Password</FormLabel>
                               <FormControl>
                                 <Input 
                                   type="password"
                                   placeholder="Confirm your password" 
                                   {...field}
-                                  className="bg-gray-800/70 border-gray-700/50 text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
+                                  className="bg-gray-50 border-gray-300 text-gray-900 font-medium placeholder:text-gray-400 focus:bg-white focus:border-gray-400 focus:ring-0 h-12 sm:h-11 rounded-lg text-base sm:text-sm"
                                 />
                               </FormControl>
                               <FormMessage className="text-red-400" />
@@ -406,23 +404,20 @@ export default function AuthPage() {
                     </Form>
                   </CardContent>
                   
-                  <CardFooter className="flex flex-col gap-4">
+                  <CardFooter className="pt-6 px-4 sm:px-6">
                     <Button 
                       type="submit"
                       form="register-form"
-                      className="w-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white py-5"
+                      className="w-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white font-bold h-12 sm:h-11 rounded-lg transition-colors text-base sm:text-sm"
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending ? (
                         <div className="flex items-center">
-                          <span className="material-icons animate-spin mr-2">autorenew</span>
+                          <span className="material-icons animate-spin mr-2 text-sm">autorenew</span>
                           Creating Account...
                         </div>
                       ) : (
-                        <>
-                          <span className="material-icons mr-2">person_add</span>
-                          Create Account
-                        </>
+                        "Create Account"
                       )}
                     </Button>
                   </CardFooter>

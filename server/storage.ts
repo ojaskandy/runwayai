@@ -160,12 +160,15 @@ export class DatabaseStorage implements IStorage {
     // Make sure galleryImages is a proper string array
     const galleryImages = Array.isArray(profile.galleryImages) ? 
       profile.galleryImages : 
-      (profile.galleryImages ? [profile.galleryImages.toString()] : []);
+      (profile.galleryImages ? [String(profile.galleryImages)] : []);
     
     const [newProfile] = await db
       .insert(userProfiles)
       .values({
-        ...profile,
+        userId: profile.userId,
+        goal: profile.goal,
+        goalDueDate: profile.goalDueDate,
+        profileImageUrl: profile.profileImageUrl,
         galleryImages
       })
       .returning();
@@ -192,7 +195,7 @@ export class DatabaseStorage implements IStorage {
     if (profile.galleryImages !== undefined) {
       const galleryImages = Array.isArray(profile.galleryImages) 
         ? profile.galleryImages 
-        : (profile.galleryImages ? [profile.galleryImages.toString()] : []);
+        : (profile.galleryImages ? [String(profile.galleryImages)] : []);
       
       // Only update galleryImages if it's a valid array
       safeProfile.galleryImages = galleryImages;
@@ -203,7 +206,7 @@ export class DatabaseStorage implements IStorage {
     
     const [updatedProfile] = await db
       .update(userProfiles)
-      .set(updateData)
+      .set(updateData as any)
       .where(eq(userProfiles.userId, userId))
       .returning();
     return updatedProfile;
