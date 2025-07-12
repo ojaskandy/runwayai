@@ -38,7 +38,7 @@ import SessionTimer from '@/components/SessionTimer';
 import CurrentTime from '@/components/CurrentTime';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest, getQueryFn } from '@/lib/queryClient';
+import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import {
   Accordion,
@@ -182,7 +182,7 @@ export default function Home() {
   // Pageant data query
   const { data: pageants = [], isLoading: isPageantsLoading } = useQuery<UpcomingPageant[]>({
     queryKey: ['/api/pageants'],
-    queryFn: getQueryFn,
+    queryFn: () => apiRequest('/api/pageants', 'GET'),
     enabled: !!user,
   });
 

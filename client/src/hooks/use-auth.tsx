@@ -116,6 +116,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setShowMobileWarning(true);
         sessionStorage.setItem('mobileWarningShown', 'true');
       }
+      
+      // Force navigation to app after successful login
+      window.location.href = '/app';
     }
   });
   
