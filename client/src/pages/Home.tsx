@@ -627,144 +627,140 @@ export default function Home() {
 
               </div>
 
-              <div className="flex flex-col lg:flex-row min-h-screen relative z-10">
-                {/* Mobile-First Layout - Upcoming Pageants */}
-                <div className="w-full lg:w-80 p-3 lg:p-4 bg-white/30 backdrop-blur-sm border-b lg:border-b-0 lg:border-r border-pink-200/50">
-                  <div className="space-y-3 lg:space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm lg:text-base font-semibold text-pink-700">Upcoming Pageants</h3>
-                      <button
-                        onClick={() => setShowAddPageantDialog(true)}
-                        className="p-1.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors"
-                      >
-                        <Plus className="h-3 w-3 lg:h-4 lg:w-4" />
-                      </button>
+              {/* Mobile-First Card Layout */}
+              <div className="min-h-screen relative z-10 px-4 py-6 space-y-6">
+                
+                {/* Header Card */}
+                <div className="bg-gradient-to-r from-pink-500 to-pink-400 rounded-3xl p-6 text-white shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <h1 className="text-2xl font-bold">Runway</h1>
+                        <h2 className="text-2xl font-bold">AI</h2>
+                      </div>
                     </div>
-                    
-                    <div className="space-y-2 lg:space-y-3 max-h-32 lg:max-h-none overflow-y-auto">
-                      {isPageantsLoading ? (
-                        <div className="bg-white/60 rounded-lg p-3 lg:p-4 border border-pink-200/50">
-                          <div className="animate-pulse space-y-2">
-                            <div className="h-3 lg:h-4 bg-pink-200 rounded w-3/4"></div>
-                            <div className="h-2 lg:h-3 bg-pink-200 rounded w-1/2"></div>
-                            <div className="h-2 lg:h-3 bg-pink-200 rounded w-2/3"></div>
-                          </div>
-                        </div>
-                      ) : pageants.length === 0 ? (
-                        <div className="bg-white/60 rounded-lg p-3 lg:p-4 border border-pink-200/50 text-center">
-                          <p className="text-pink-600 text-xs lg:text-sm">No upcoming pageants</p>
-                          <p className="text-pink-500 text-xs mt-1">Click the + button to add your first pageant!</p>
-                        </div>
-                      ) : (
-                        pageants.map((pageant) => (
-                          <div key={pageant.id} className="bg-white/60 rounded-lg p-3 lg:p-4 border border-pink-200/50 group">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h4 className="font-medium text-pink-800 text-sm lg:text-base">{pageant.name}</h4>
-                                <p className="text-xs lg:text-sm text-pink-600">{format(new Date(pageant.date), 'MMM d, yyyy')}</p>
-                                <p className="text-xs text-pink-500 mt-1">{pageant.location}</p>
-                                {pageant.specialNote && (
-                                  <p className="text-xs text-pink-500 mt-1 italic">{pageant.specialNote}</p>
-                                )}
-                              </div>
-                              <button
-                                onClick={() => deletePageantMutation.mutate(pageant.id)}
-                                className="opacity-0 group-hover:opacity-100 lg:opacity-100 p-1 rounded-full hover:bg-pink-200 transition-all"
-                              >
-                                <X className="h-3 w-3 text-pink-600" />
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      )}
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-sm font-medium">{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Center Content - Mobile Optimized */}
-                <div className="flex-1 flex flex-col items-center justify-center px-3 lg:px-6 py-4 lg:py-0">
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    transition={{ delay: 0.1 }} 
-                    className="text-center space-y-4 lg:space-y-6 w-full max-w-xs lg:max-w-none"
-                  >
-                    {/* Username in elegant style - Mobile responsive */}
-                    <motion.h1 
-                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-pink-500 mb-4 lg:mb-8 tracking-wide"
-                      initial={{ opacity: 0, scale: 0.8 }} 
-                      animate={{ opacity: 1, scale: 1 }} 
-                      transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
+                {/* Upcoming Pageants Card */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-pink-700">Upcoming Pageants</h3>
+                    <button
+                      onClick={() => setShowAddPageantDialog(true)}
+                      className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors flex items-center justify-center"
                     >
-                      {user?.username || 'ojaskandy'}
-                    </motion.h1>
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3 mb-6">
+                    {isPageantsLoading ? (
+                      <div className="animate-pulse space-y-2">
+                        <div className="h-4 bg-pink-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-pink-200 rounded w-1/2"></div>
+                        <div className="h-3 bg-pink-200 rounded w-2/3"></div>
+                      </div>
+                    ) : pageants.length === 0 ? (
+                      <div className="text-center py-4">
+                        <p className="text-pink-600 text-sm">No upcoming pageants</p>
+                        <p className="text-pink-500 text-xs mt-1">Click the + button to add your first pageant!</p>
+                      </div>
+                    ) : (
+                      pageants.map((pageant) => (
+                        <div key={pageant.id} className="group">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-bold text-pink-800 text-base">{pageant.name}</h4>
+                              <p className="text-sm text-pink-600">{format(new Date(pageant.date), 'MMM d, yyyy')}</p>
+                              <p className="text-sm text-pink-500">{pageant.location}</p>
+                              {pageant.specialNote && (
+                                <p className="text-sm text-pink-400 italic mt-1">{pageant.specialNote}</p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => deletePageantMutation.mutate(pageant.id)}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-pink-200 transition-all"
+                            >
+                              <X className="h-3 w-3 text-pink-600" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  {/* Main Practice Buttons */}
+                  <div className="space-y-3">
+                    <motion.button 
+                      onClick={handlePermissionRequest}
+                      className="w-full py-4 px-6 text-base font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+                      whileTap={{ scale: 0.97 }}
+                      initial={{ opacity: 0, y: 20 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      transition={{ delay: 0.3 }}
+                    >
+                      <div className="flex items-center justify-center">
+                        <Play className="mr-2 h-5 w-5" />
+                        Begin Runway Practice
+                      </div>
+                    </motion.button>
                     
-                    {/* Main Practice Buttons - Mobile responsive */}
-                    <div className="space-y-3 w-full">
+                    <Link href="/question-practice">
                       <motion.button 
-                        onClick={handlePermissionRequest}
-                        className="w-full max-w-xs lg:max-w-md py-3 lg:py-4 px-4 lg:px-6 text-sm lg:text-base font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+                        className="w-full py-4 px-6 text-base font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
                         whileTap={{ scale: 0.97 }}
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
-                        transition={{ delay: 0.3 }}
+                        transition={{ delay: 0.4 }}
                       >
-                        <div className="flex items-center justify-center">
-                          <Play className="mr-2 h-4 lg:h-5 w-4 lg:w-5" />
-                          Begin Runway Practice
-                        </div>
+                        Begin Interview Practice
                       </motion.button>
-                      
-                      <Link href="/question-practice">
-                        <motion.button 
-                          className="w-full max-w-xs lg:max-w-md py-3 lg:py-4 px-4 lg:px-6 text-sm lg:text-base font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
-                          whileTap={{ scale: 0.97 }}
-                          initial={{ opacity: 0, y: 20 }} 
-                          animate={{ opacity: 1, y: 0 }} 
-                          transition={{ delay: 0.4 }}
-                        >
-                          Begin Interview Practice
-                        </motion.button>
-                      </Link>
-                    </div>
-                  </motion.div>
+                    </Link>
+                  </div>
                 </div>
 
-                {/* Right Sidebar - Quick Actions - Mobile responsive */}
-                <div className="w-full lg:w-80 p-3 lg:p-4 bg-white/30 backdrop-blur-sm border-t lg:border-t-0 lg:border-l border-pink-200/50">
-                  <div className="space-y-3 lg:space-y-4">
-                    <h3 className="text-sm lg:text-base font-semibold text-pink-700 mb-2 lg:mb-3">Quick Actions</h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:space-y-1">
-                      <button 
-                        onClick={() => setShowTips(true)}
-                        className="w-full text-left p-2 lg:p-3 text-xs lg:text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
-                      >
-                        <Info className="h-3 lg:h-4 w-3 lg:w-4 mr-1 lg:mr-2" />
-                        Pageant Tips
-                      </button>
-                      <Link href="/profile">
-                        <button 
-                          className="w-full text-left p-2 lg:p-3 text-xs lg:text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
-                        >
-                          <User className="h-3 lg:h-4 w-3 lg:w-4 mr-1 lg:mr-2" />
-                          View Profile
-                        </button>
-                      </Link>
-                      <button 
-                        onClick={() => setShowCustomizeDialog(true)}
-                        className="w-full text-left p-2 lg:p-3 text-xs lg:text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
-                      >
-                        <Palette className="h-3 lg:h-4 w-3 lg:w-4 mr-1 lg:mr-2" />
-                        Customize Theme
-                      </button>
-                      <button 
-                        onClick={handleLogout}
-                        className="w-full text-left p-2 lg:p-3 text-xs lg:text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
-                      >
-                        <LogOut className="h-3 lg:h-4 w-3 lg:w-4 mr-1 lg:mr-2" />
-                        Logout
-                      </button>
-                    </div>
+                {/* Quick Actions Card */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 shadow-lg">
+                  <h3 className="text-lg font-semibold text-pink-700 mb-4">Quick Actions</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => setShowTips(true)}
+                      className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                    >
+                      <Info className="h-4 w-4 mr-2" />
+                      Pageant Tips
+                    </button>
+                    <button 
+                      onClick={() => setShowProfile(true)}
+                      className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      View Profile
+                    </button>
+                    <button 
+                      onClick={() => setShowCustomization(true)}
+                      className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Customize Theme
+                    </button>
+                    <button 
+                      onClick={handleLogout}
+                      className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </button>
                   </div>
                 </div>
               </div>
