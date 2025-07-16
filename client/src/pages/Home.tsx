@@ -474,116 +474,13 @@ export default function Home() {
   // Render main component
   return (
     <div className="min-h-screen flex flex-col bg-white overflow-hidden">
-      {/* Enhanced Header with belt display, app title and user menu */}
-      <header className="bg-gradient-to-r from-pink-700 to-pink-600 border-b border-pink-200 px-6 py-4 flex justify-between items-center shadow-lg">
-        <div className="flex items-center gap-4">
-          <Link to="/welcome" className="cursor-pointer">
-            <h1 className="text-2xl font-bold flex items-center group z-50 relative">
-              <motion.span 
-                className="material-icons text-pink-400 mr-2"
-                whileHover={{ rotate: 360 }}
-                transition={{ duration: 0.5 }}
-              >
-                emoji_people
-              </motion.span>
-              <span className="text-white group-hover:text-pink-100 transition-all duration-300 font-bold text-2xl">Runway AI</span>
-            </h1>
-          </Link>
-          
-          <div className="h-8 w-px bg-pink-300/30 mx-2"></div>
-          
-          {/* Current time */}
-          <CurrentTime className="ml-2 text-white" showSeconds={false} />
-        </div>
 
-        {/* Pageant Title Display */}
-        <div className="flex-1 mx-4 max-w-lg">
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 100, damping: 15 }}
-            className="bg-white/80 backdrop-blur-sm border border-pink-200 shadow-sm rounded-lg py-2 px-6 flex items-center justify-center"
-          >
-            <div className="flex flex-col items-center">
-              <span className="text-xs text-pink-600 uppercase tracking-widest font-medium">Presented by</span>
-              <span className="text-pink-800 font-bold text-xl">Arshia Kathpalia</span>
-              <span className="text-pink-600 text-sm font-medium">Miss Teen India USA 2024</span>
-            </div>
-          </motion.div>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          {/* Animated Session timer with pulsing effect */}
-          <motion.div 
-            className="relative group"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          >
-            <SessionTimer className="transition-transform duration-300" />
-            <div className="absolute inset-0 bg-pink-400/10 rounded-md scale-105 animate-pulse -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </motion.div>
-          
-          {/* Profile button */}
-          <Link href="/profile">
-            <motion.div 
-              whileHover={{ scale: 1.05 }} 
-              whileTap={{ scale: 0.95 }} 
-              className="relative group"
-            >
-              <Button 
-                variant="outline" 
-                className="h-8 rounded-full border-white/30 bg-transparent hover:bg-white/10 flex items-center px-3 transition-all duration-300 hover:shadow-white/30 hover:shadow-sm"
-              >
-                <User className="h-4 w-4 text-white mr-2" />
-                <span className="text-sm text-white font-medium">Profile</span>
-              </Button>
-            </motion.div>
-          </Link>
-            
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  variant="outline" 
-                  className="h-8 rounded-full border-white/30 bg-transparent hover:bg-white/10 flex items-center px-3"
-                >
-                  <Settings className="h-4 w-4 text-white mr-2" />
-                  <span className="text-sm text-white font-medium">Menu</span>
-                </Button>
-              </motion.div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40 border border-pink-200 bg-white shadow-lg">
-              <DropdownMenuItem 
-                className="cursor-pointer flex items-center text-pink-900 hover:bg-pink-100"
-              >
-                <Settings className="mr-2 h-4 w-4 text-pink-600" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="cursor-pointer flex items-center text-pink-900 hover:bg-pink-100"
-                onClick={() => setShowTips(true)}
-              >
-                <Info className="mr-2 h-4 w-4 text-pink-600" />
-                <span>Pageant Tips</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-pink-200" />
-              <DropdownMenuItem 
-                className="cursor-pointer flex items-center text-pink-900 hover:bg-pink-100" 
-                onClick={handleLogout}
-              >
-                <LogOut className="mr-2 h-4 w-4 text-pink-600" />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
       
 
       
       <main className="flex-1 flex flex-col">
         {/* Adjusted padding for the main content area */}
-        <div className="flex-1 p-8 md:p-10">
+        <div className="flex-1 p-0">
           {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
