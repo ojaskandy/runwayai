@@ -215,14 +215,13 @@ export default function Home() {
   // Pageant data query
   const { data: pageants = [], isLoading: isPageantsLoading } = useQuery<UpcomingPageant[]>({
     queryKey: ['/api/pageants'],
-    queryFn: () => apiRequest('/api/pageants', 'GET'),
     enabled: !!user,
   });
 
   // Pageant mutations
   const addPageantMutation = useMutation({
     mutationFn: (data: { name: string; location: string; date: string; specialNote?: string }) =>
-      apiRequest('/api/pageants', 'POST', data),
+      apiRequest('POST', '/api/pageants', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/pageants'] });
       setShowAddPageantDialog(false);
@@ -231,7 +230,7 @@ export default function Home() {
   });
 
   const deletePageantMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/pageants/${id}`, 'DELETE'),
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/pageants/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/pageants'] });
     },
