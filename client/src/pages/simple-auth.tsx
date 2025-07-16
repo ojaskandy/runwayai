@@ -90,7 +90,7 @@ export default function SimpleAuthPage() {
           description: `Welcome back, ${userData.username}!`,
         });
         setTimeout(() => {
-          navigate('/app');
+          window.location.href = '/app';
         }, 1000);
       } else {
         const error = await response.json();
@@ -129,7 +129,7 @@ export default function SimpleAuthPage() {
           description: `Account created for ${userData.username}! Redirecting...`,
         });
         setTimeout(() => {
-          navigate('/app');
+          window.location.href = '/app';
         }, 1000);
       } else {
         const error = await response.json();

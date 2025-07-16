@@ -6,7 +6,7 @@ import LoadingState from '@/components/LoadingState';
 import ScreenshotModal from '@/components/ScreenshotModal';
 import { initPoseDetection, getModels } from '@/lib/poseDetection';
 import { requestCameraPermission, getCameraStream } from '@/lib/cameraUtils';
-import { useAuth } from '@/hooks/use-auth';
+// import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,9 +93,42 @@ function CurrentPageTimer() {
 
 export default function Home() {
   // Auth and theme contexts
-  const { user, logoutMutation } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const [user, setUser] = useState<any>(null);
+  const { theme } = useTheme();
   const queryClient = useQueryClient();
+
+  // Fetch user data on component mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('/api/user', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Simple logout function
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (response.ok) {
+        window.location.href = '/auth';
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
   
   // State for application flow
   const [trackingStatus, setTrackingStatus] = useState<TrackingStatus>('inactive');
@@ -537,7 +570,7 @@ export default function Home() {
               <DropdownMenuSeparator className="bg-pink-200" />
               <DropdownMenuItem 
                 className="cursor-pointer flex items-center text-pink-900 hover:bg-pink-100" 
-                onClick={() => logoutMutation.mutate()}
+                onClick={handleLogout}
               >
                 <LogOut className="mr-2 h-4 w-4 text-pink-600" />
                 <span>Logout</span>
@@ -595,12 +628,12 @@ export default function Home() {
 
               </div>
 
-              <div className="flex h-screen relative z-10">
-                {/* Left Sidebar - Upcoming Pageants */}
-                <div className="w-80 p-6 bg-white/30 backdrop-blur-sm border-r border-pink-200/50">
-                  <div className="space-y-6">
+              <div className="flex flex-col lg:flex-row h-screen relative z-10">
+                {/* Mobile-First Layout - Upcoming Pageants */}
+                <div className="w-full lg:w-80 p-4 lg:p-6 bg-white/30 backdrop-blur-sm border-b lg:border-b-0 lg:border-r border-pink-200/50">
+                  <div className="space-y-4 lg:space-y-6">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-pink-700">Upcoming Pageants</h3>
+                      <h3 className="text-base lg:text-lg font-semibold text-pink-700">Upcoming Pageants</h3>
                       <button
                         onClick={() => setShowAddPageantDialog(true)}
                         className="p-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors"
@@ -609,27 +642,27 @@ export default function Home() {
                       </button>
                     </div>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-2 lg:space-y-3 max-h-48 lg:max-h-none overflow-y-auto">
                       {isPageantsLoading ? (
-                        <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                        <div className="bg-white/60 rounded-lg p-3 lg:p-4 border border-pink-200/50">
                           <div className="animate-pulse space-y-2">
-                            <div className="h-4 bg-pink-200 rounded w-3/4"></div>
-                            <div className="h-3 bg-pink-200 rounded w-1/2"></div>
-                            <div className="h-3 bg-pink-200 rounded w-2/3"></div>
+                            <div className="h-3 lg:h-4 bg-pink-200 rounded w-3/4"></div>
+                            <div className="h-2 lg:h-3 bg-pink-200 rounded w-1/2"></div>
+                            <div className="h-2 lg:h-3 bg-pink-200 rounded w-2/3"></div>
                           </div>
                         </div>
                       ) : pageants.length === 0 ? (
-                        <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50 text-center">
-                          <p className="text-pink-600 text-sm">No upcoming pageants</p>
+                        <div className="bg-white/60 rounded-lg p-3 lg:p-4 border border-pink-200/50 text-center">
+                          <p className="text-pink-600 text-xs lg:text-sm">No upcoming pageants</p>
                           <p className="text-pink-500 text-xs mt-1">Click the + button to add your first pageant!</p>
                         </div>
                       ) : (
                         pageants.map((pageant) => (
-                          <div key={pageant.id} className="bg-white/60 rounded-lg p-4 border border-pink-200/50 group">
+                          <div key={pageant.id} className="bg-white/60 rounded-lg p-3 lg:p-4 border border-pink-200/50 group">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <h4 className="font-medium text-pink-800">{pageant.name}</h4>
-                                <p className="text-sm text-pink-600">{format(new Date(pageant.date), 'MMM d, yyyy')}</p>
+                                <h4 className="font-medium text-pink-800 text-sm lg:text-base">{pageant.name}</h4>
+                                <p className="text-xs lg:text-sm text-pink-600">{format(new Date(pageant.date), 'MMM d, yyyy')}</p>
                                 <p className="text-xs text-pink-500 mt-1">{pageant.location}</p>
                                 {pageant.specialNote && (
                                   <p className="text-xs text-pink-500 mt-1 italic">{pageant.specialNote}</p>
@@ -637,7 +670,7 @@ export default function Home() {
                               </div>
                               <button
                                 onClick={() => deletePageantMutation.mutate(pageant.id)}
-                                className="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-pink-200 transition-all"
+                                className="opacity-0 group-hover:opacity-100 lg:opacity-100 p-1 rounded-full hover:bg-pink-200 transition-all"
                               >
                                 <X className="h-3 w-3 text-pink-600" />
                               </button>
@@ -649,17 +682,17 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Center Content */}
-                <div className="flex-1 flex flex-col items-center justify-center px-8">
+                {/* Center Content - Mobile Optimized */}
+                <div className="flex-1 flex flex-col items-center justify-center px-4 lg:px-8 py-8 lg:py-0">
                   <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     transition={{ delay: 0.1 }} 
-                    className="text-center space-y-8"
+                    className="text-center space-y-6 lg:space-y-8 w-full max-w-md lg:max-w-none"
                   >
-                    {/* Username in elegant style */}
+                    {/* Username in elegant style - Mobile responsive */}
                     <motion.h1 
-                      className="text-6xl md:text-7xl font-bold text-pink-500 mb-12 tracking-wide"
+                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-pink-500 mb-6 lg:mb-12 tracking-wide"
                       initial={{ opacity: 0, scale: 0.8 }} 
                       animate={{ opacity: 1, scale: 1 }} 
                       transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
@@ -667,25 +700,25 @@ export default function Home() {
                       {user?.username || 'ojaskandy'}
                     </motion.h1>
                     
-                    {/* Main Practice Buttons */}
-                    <div className="space-y-4">
+                    {/* Main Practice Buttons - Mobile responsive */}
+                    <div className="space-y-4 w-full">
                       <motion.button 
                         onClick={handlePermissionRequest}
-                        className="w-96 py-6 px-8 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:scale-105"
+                        className="w-full max-w-sm lg:max-w-md xl:max-w-lg py-4 lg:py-6 px-6 lg:px-8 text-base lg:text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
                         whileTap={{ scale: 0.97 }}
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ delay: 0.3 }}
                       >
                         <div className="flex items-center justify-center">
-                          <Play className="mr-3 h-6 w-6" />
+                          <Play className="mr-2 lg:mr-3 h-5 lg:h-6 w-5 lg:w-6" />
                           Begin Runway Practice
                         </div>
                       </motion.button>
                       
                       <Link href="/question-practice">
                         <motion.button 
-                          className="w-96 py-6 px-8 text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:scale-105"
+                          className="w-full max-w-sm lg:max-w-md xl:max-w-lg py-4 lg:py-6 px-6 lg:px-8 text-base lg:text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
                           whileTap={{ scale: 0.97 }}
                           initial={{ opacity: 0, y: 20 }} 
                           animate={{ opacity: 1, y: 0 }} 
@@ -698,38 +731,38 @@ export default function Home() {
                   </motion.div>
                 </div>
 
-                {/* Right Sidebar - Quick Actions */}
-                <div className="w-80 p-6 bg-white/30 backdrop-blur-sm border-l border-pink-200/50">
-                  <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-pink-700 mb-4">Quick Actions</h3>
-                    <div className="space-y-2">
+                {/* Right Sidebar - Quick Actions - Mobile responsive */}
+                <div className="w-full lg:w-80 p-4 lg:p-6 bg-white/30 backdrop-blur-sm border-t lg:border-t-0 lg:border-l border-pink-200/50">
+                  <div className="space-y-4 lg:space-y-6">
+                    <h3 className="text-base lg:text-lg font-semibold text-pink-700 mb-2 lg:mb-4">Quick Actions</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:space-y-2">
                       <button 
                         onClick={() => setShowTips(true)}
-                        className="w-full text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
+                        className="w-full text-left p-2 lg:p-3 text-xs lg:text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
                       >
-                        <Info className="h-4 w-4 mr-2" />
+                        <Info className="h-3 lg:h-4 w-3 lg:w-4 mr-1 lg:mr-2" />
                         Pageant Tips
                       </button>
                       <Link href="/profile">
                         <button 
-                          className="w-full text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
+                          className="w-full text-left p-2 lg:p-3 text-xs lg:text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
                         >
-                          <User className="h-4 w-4 mr-2" />
+                          <User className="h-3 lg:h-4 w-3 lg:w-4 mr-1 lg:mr-2" />
                           View Profile
                         </button>
                       </Link>
                       <button 
                         onClick={() => setShowCustomizeDialog(true)}
-                        className="w-full text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
+                        className="w-full text-left p-2 lg:p-3 text-xs lg:text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
                       >
-                        <Palette className="h-4 w-4 mr-2" />
+                        <Palette className="h-3 lg:h-4 w-3 lg:w-4 mr-1 lg:mr-2" />
                         Customize Theme
                       </button>
                       <button 
-                        onClick={() => logoutMutation.mutate()}
-                        className="w-full text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
+                        onClick={handleLogout}
+                        className="w-full text-left p-2 lg:p-3 text-xs lg:text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
                       >
-                        <LogOut className="h-4 w-4 mr-2" />
+                        <LogOut className="h-3 lg:h-4 w-3 lg:w-4 mr-1 lg:mr-2" />
                         Logout
                       </button>
                     </div>

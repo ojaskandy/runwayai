@@ -11,7 +11,7 @@ import Practice from "@/pages/Practice";
 import EarlyAccess from "@/pages/EarlyAccess";
 import Profile from "@/pages/Profile";
 import { AuthProvider } from "@/hooks/use-auth";
-import { ProtectedRoute } from "@/lib/protected-route";
+import { SimpleProtectedRoute } from "@/lib/simple-protected-route";
 // Use our custom ThemeProvider instead of the shadcn one
 import { ThemeProvider } from "./hooks/use-theme";
 import MarketingLanding from "@/pages/MarketingLanding";
@@ -38,16 +38,16 @@ function Router() {
       <Route path="/dashboard" component={Landing} />
       
       {/* Main application with camera tracking */}
-      <ProtectedRoute path="/app" component={Home} />
+      <SimpleProtectedRoute path="/app" component={Home} />
       
       {/* Practice page with moves library */}
-      <ProtectedRoute path="/practice" component={Practice} />
+      <SimpleProtectedRoute path="/practice" component={Practice} />
       
       {/* Question practice page */}
-      <ProtectedRoute path="/question-practice" component={QuestionPractice} />
+      <SimpleProtectedRoute path="/question-practice" component={QuestionPractice} />
 
       {/* User profile page */}
-      <ProtectedRoute path="/profile" component={Profile} />
+      <SimpleProtectedRoute path="/profile" component={Profile} />
       
       {/* Authentication page */}
       <Route path="/auth" component={SimpleAuthPage} />
