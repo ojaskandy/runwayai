@@ -627,21 +627,21 @@ export default function Home() {
 
               </div>
 
-              <div className="flex flex-col lg:flex-row h-screen relative z-10">
+              <div className="flex flex-col lg:flex-row min-h-screen relative z-10">
                 {/* Mobile-First Layout - Upcoming Pageants */}
-                <div className="w-full lg:w-80 p-4 lg:p-6 bg-white/30 backdrop-blur-sm border-b lg:border-b-0 lg:border-r border-pink-200/50">
-                  <div className="space-y-4 lg:space-y-6">
+                <div className="w-full lg:w-80 p-3 lg:p-4 bg-white/30 backdrop-blur-sm border-b lg:border-b-0 lg:border-r border-pink-200/50">
+                  <div className="space-y-3 lg:space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-base lg:text-lg font-semibold text-pink-700">Upcoming Pageants</h3>
+                      <h3 className="text-sm lg:text-base font-semibold text-pink-700">Upcoming Pageants</h3>
                       <button
                         onClick={() => setShowAddPageantDialog(true)}
-                        className="p-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors"
+                        className="p-1.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3 w-3 lg:h-4 lg:w-4" />
                       </button>
                     </div>
                     
-                    <div className="space-y-2 lg:space-y-3 max-h-48 lg:max-h-none overflow-y-auto">
+                    <div className="space-y-2 lg:space-y-3 max-h-32 lg:max-h-none overflow-y-auto">
                       {isPageantsLoading ? (
                         <div className="bg-white/60 rounded-lg p-3 lg:p-4 border border-pink-200/50">
                           <div className="animate-pulse space-y-2">
@@ -682,16 +682,16 @@ export default function Home() {
                 </div>
 
                 {/* Center Content - Mobile Optimized */}
-                <div className="flex-1 flex flex-col items-center justify-center px-4 lg:px-8 py-8 lg:py-0">
+                <div className="flex-1 flex flex-col items-center justify-center px-3 lg:px-6 py-4 lg:py-0">
                   <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     transition={{ delay: 0.1 }} 
-                    className="text-center space-y-6 lg:space-y-8 w-full max-w-md lg:max-w-none"
+                    className="text-center space-y-4 lg:space-y-6 w-full max-w-xs lg:max-w-none"
                   >
                     {/* Username in elegant style - Mobile responsive */}
                     <motion.h1 
-                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-pink-500 mb-6 lg:mb-12 tracking-wide"
+                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-pink-500 mb-4 lg:mb-8 tracking-wide"
                       initial={{ opacity: 0, scale: 0.8 }} 
                       animate={{ opacity: 1, scale: 1 }} 
                       transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
@@ -700,24 +700,24 @@ export default function Home() {
                     </motion.h1>
                     
                     {/* Main Practice Buttons - Mobile responsive */}
-                    <div className="space-y-4 w-full">
+                    <div className="space-y-3 w-full">
                       <motion.button 
                         onClick={handlePermissionRequest}
-                        className="w-full max-w-sm lg:max-w-md xl:max-w-lg py-4 lg:py-6 px-6 lg:px-8 text-base lg:text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+                        className="w-full max-w-xs lg:max-w-md py-3 lg:py-4 px-4 lg:px-6 text-sm lg:text-base font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
                         whileTap={{ scale: 0.97 }}
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ delay: 0.3 }}
                       >
                         <div className="flex items-center justify-center">
-                          <Play className="mr-2 lg:mr-3 h-5 lg:h-6 w-5 lg:w-6" />
+                          <Play className="mr-2 h-4 lg:h-5 w-4 lg:w-5" />
                           Begin Runway Practice
                         </div>
                       </motion.button>
                       
                       <Link href="/question-practice">
                         <motion.button 
-                          className="w-full max-w-sm lg:max-w-md xl:max-w-lg py-4 lg:py-6 px-6 lg:px-8 text-base lg:text-xl font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+                          className="w-full max-w-xs lg:max-w-md py-3 lg:py-4 px-4 lg:px-6 text-sm lg:text-base font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-300 hover:from-pink-300 hover:to-pink-200 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
                           whileTap={{ scale: 0.97 }}
                           initial={{ opacity: 0, y: 20 }} 
                           animate={{ opacity: 1, y: 0 }} 
@@ -731,10 +731,10 @@ export default function Home() {
                 </div>
 
                 {/* Right Sidebar - Quick Actions - Mobile responsive */}
-                <div className="w-full lg:w-80 p-4 lg:p-6 bg-white/30 backdrop-blur-sm border-t lg:border-t-0 lg:border-l border-pink-200/50">
-                  <div className="space-y-4 lg:space-y-6">
-                    <h3 className="text-base lg:text-lg font-semibold text-pink-700 mb-2 lg:mb-4">Quick Actions</h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:space-y-2">
+                <div className="w-full lg:w-80 p-3 lg:p-4 bg-white/30 backdrop-blur-sm border-t lg:border-t-0 lg:border-l border-pink-200/50">
+                  <div className="space-y-3 lg:space-y-4">
+                    <h3 className="text-sm lg:text-base font-semibold text-pink-700 mb-2 lg:mb-3">Quick Actions</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:space-y-1">
                       <button 
                         onClick={() => setShowTips(true)}
                         className="w-full text-left p-2 lg:p-3 text-xs lg:text-sm text-pink-600 hover:bg-white/40 rounded-md transition-colors flex items-center"
