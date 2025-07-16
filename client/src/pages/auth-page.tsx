@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MobileWarningDialog from "@/components/MobileWarningDialog";
+import { useToast } from "@/hooks/use-toast";
 
 // Schemas for form validation
 const loginSchema = z.object({
@@ -44,6 +45,7 @@ export default function AuthPage() {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("login");
   const [isMobile, setIsMobile] = useState(false);
+  const { toast } = useToast();
   
   // Loading animation states
   const [loading, setLoading] = useState(true);
@@ -127,13 +129,41 @@ export default function AuthPage() {
     return () => clearInterval(typingInterval);
   }, []);
   
-  // Form submission
+  // Form submission with user feedback
   const onLoginSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(data);
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        toast({
+          title: "Login Successful",
+          description: "Welcome back! Redirecting to app...",
+        });
+      },
+      onError: (error: Error) => {
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    });
   };
   
   const onRegisterSubmit = (data: RegisterFormValues) => {
-    registerMutation.mutate(data);
+    registerMutation.mutate(data, {
+      onSuccess: () => {
+        toast({
+          title: "Registration Successful",
+          description: "Account created! Redirecting to app...",
+        });
+      },
+      onError: (error: Error) => {
+        toast({
+          title: "Registration Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    });
   };
   
   return (

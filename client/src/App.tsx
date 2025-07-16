@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
-import AuthPage from "@/pages/auth-page";
+import SimpleAuthPage from "@/pages/simple-auth";
 import Practice from "@/pages/Practice";
 import EarlyAccess from "@/pages/EarlyAccess";
 import Profile from "@/pages/Profile";
@@ -50,7 +50,7 @@ function Router() {
       <ProtectedRoute path="/profile" component={Profile} />
       
       {/* Authentication page */}
-      <Route path="/auth" component={AuthPage} />
+      <Route path="/auth" component={SimpleAuthPage} />
       
       {/* Early access signup page */}
       <Route path="/early-access" component={EarlyAccess} />

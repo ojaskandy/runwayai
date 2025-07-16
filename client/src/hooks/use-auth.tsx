@@ -123,7 +123,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       // Force navigation to app after successful login
-      window.location.href = '/app';
+      setTimeout(() => {
+        window.location.href = '/app';
+      }, 500);
+    },
+    onError: (error: Error) => {
+      console.error('Login failed:', error.message);
     }
   });
   
@@ -157,7 +162,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       // Navigate to app after successful registration
-      window.location.href = '/app';
+      setTimeout(() => {
+        window.location.href = '/app';
+      }, 500);
+    },
+    onError: (error: Error) => {
+      console.error('Registration failed:', error.message);
     }
   });
 
