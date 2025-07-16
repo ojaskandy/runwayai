@@ -33,7 +33,14 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation, showMobileWarning, setShowMobileWarning } = useAuth();
+  const authContext = useAuth();
+  
+  // Handle auth context not being ready
+  if (!authContext) {
+    return <div>Loading...</div>;
+  }
+  
+  const { user, loginMutation, registerMutation, showMobileWarning, setShowMobileWarning } = authContext;
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("login");
   const [isMobile, setIsMobile] = useState(false);

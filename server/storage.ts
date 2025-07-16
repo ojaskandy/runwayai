@@ -166,9 +166,9 @@ export class DatabaseStorage implements IStorage {
       .insert(userProfiles)
       .values({
         userId: profile.userId,
-        goal: profile.goal,
-        goalDueDate: profile.goalDueDate,
-        profileImageUrl: profile.profileImageUrl,
+        goal: profile.goal || null,
+        goalDueDate: profile.goalDueDate || null,
+        profileImageUrl: profile.profileImageUrl || null,
         galleryImages
       })
       .returning();
