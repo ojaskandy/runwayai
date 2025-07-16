@@ -587,83 +587,51 @@ export default function Home() {
           {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
-            // New floral design layout
-            <div className="min-h-screen bg-gradient-to-br from-pink-100 via-pink-50 to-pink-100 relative overflow-hidden">
-              {/* Decorative Flowers */}
-              <div className="absolute inset-0 pointer-events-none">
-                {/* Top left flower */}
-                <div className="absolute top-16 left-16 transform rotate-12">
-                  <div className="w-16 h-16 relative">
-                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-60 transform scale-75"></div>
-                    <div className="absolute top-1 left-1 w-3 h-3 bg-pink-400 rounded-full"></div>
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-pink-200 rounded-full opacity-80"></div>
-                    <div className="absolute bottom-1 left-3 w-4 h-4 bg-pink-350 rounded-full opacity-70"></div>
-                  </div>
-                </div>
-
-                {/* Top right flowers */}
-                <div className="absolute top-12 right-20 transform -rotate-12">
-                  <div className="w-20 h-20 relative">
-                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-60"></div>
-                    <div className="absolute top-2 left-2 w-4 h-4 bg-pink-400 rounded-full"></div>
-                    <div className="absolute top-3 right-3 w-6 h-6 bg-pink-200 rounded-full opacity-80"></div>
-                  </div>
-                </div>
-                <div className="absolute top-6 right-8 transform rotate-45">
-                  <div className="w-12 h-12 relative">
-                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-50"></div>
-                    <div className="absolute top-1 left-1 w-2 h-2 bg-pink-400 rounded-full"></div>
-                  </div>
-                </div>
-
-                {/* Right side small flower */}
-                <div className="absolute top-48 right-16 transform rotate-30">
-                  <div className="w-10 h-10 relative">
-                    <div className="absolute inset-0 bg-pink-300 rounded-full opacity-40"></div>
-                    <div className="absolute top-1 left-1 w-2 h-2 bg-pink-400 rounded-full"></div>
-                  </div>
-                </div>
-
-
-              </div>
-
+            <div className="h-screen bg-gradient-to-br from-pink-100 via-pink-50 to-pink-100 relative overflow-hidden">
               {/* Mobile-First Card Layout */}
-              <div className="min-h-screen relative z-10 px-4 py-6 space-y-6">
+              <div className="h-screen relative z-10 px-4 py-4 space-y-4 overflow-hidden">
                 
-                {/* Header Card */}
-                <div className="bg-gradient-to-r from-pink-500 to-pink-400 rounded-3xl p-6 text-white shadow-lg">
+                {/* Header Card with Arshia Credit */}
+                <div className="bg-gradient-to-r from-pink-500 to-pink-400 rounded-3xl p-4 text-white shadow-lg">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z"/>
                         </svg>
                       </div>
                       <div>
-                        <h1 className="text-2xl font-bold">Runway</h1>
-                        <h2 className="text-2xl font-bold">AI</h2>
+                        <h1 className="text-xl font-bold">Runway</h1>
+                        <h2 className="text-xl font-bold">AI</h2>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-sm font-medium">{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <div className="text-right">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <Clock className="w-3 h-3" />
+                        <span className="text-xs font-medium">{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                      </div>
+                      <div className="bg-white/20 rounded-xl px-3 py-1">
+                        <p className="text-xs font-medium">PRESENTED BY</p>
+                        <p className="text-sm font-bold">Arshia Kathpalia</p>
+                        <p className="text-xs">Miss Teen India USA 2024</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Upcoming Pageants Card */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 shadow-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-pink-700">Upcoming Pageants</h3>
+                <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg flex-1">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-semibold text-pink-700">Upcoming Pageants</h3>
                     <button
                       onClick={() => setShowAddPageantDialog(true)}
-                      className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors flex items-center justify-center"
+                      className="w-7 h-7 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors flex items-center justify-center"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3 w-3" />
                     </button>
                   </div>
                   
-                  <div className="space-y-3 mb-6">
+                  <div className="space-y-2 mb-4 max-h-24 overflow-y-auto">
                     {isPageantsLoading ? (
                       <div className="animate-pulse space-y-2">
                         <div className="h-4 bg-pink-200 rounded w-3/4"></div>
@@ -700,24 +668,24 @@ export default function Home() {
                   </div>
                   
                   {/* Main Practice Buttons */}
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <motion.button 
                       onClick={handlePermissionRequest}
-                      className="w-full py-4 px-6 text-base font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+                      className="w-full py-3 px-4 text-sm font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
                       whileTap={{ scale: 0.97 }}
                       initial={{ opacity: 0, y: 20 }} 
                       animate={{ opacity: 1, y: 0 }} 
                       transition={{ delay: 0.3 }}
                     >
                       <div className="flex items-center justify-center">
-                        <Play className="mr-2 h-5 w-5" />
+                        <Play className="mr-2 h-4 w-4" />
                         Begin Runway Practice
                       </div>
                     </motion.button>
                     
                     <Link href="/question-practice">
                       <motion.button 
-                        className="w-full py-4 px-6 text-base font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+                        className="w-full py-3 px-4 text-sm font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
                         whileTap={{ scale: 0.97 }}
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
@@ -730,35 +698,35 @@ export default function Home() {
                 </div>
 
                 {/* Quick Actions Card */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 shadow-lg">
-                  <h3 className="text-lg font-semibold text-pink-700 mb-4">Quick Actions</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg">
+                  <h3 className="text-base font-semibold text-pink-700 mb-3">Quick Actions</h3>
+                  <div className="grid grid-cols-2 gap-2">
                     <button 
                       onClick={() => setShowTips(true)}
-                      className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                      className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
                     >
-                      <Info className="h-4 w-4 mr-2" />
+                      <Info className="h-3 w-3 mr-1" />
                       Pageant Tips
                     </button>
                     <button 
                       onClick={() => setShowProfile(true)}
-                      className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                      className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
                     >
-                      <User className="h-4 w-4 mr-2" />
+                      <User className="h-3 w-3 mr-1" />
                       View Profile
                     </button>
                     <button 
-                      onClick={() => setShowCustomization(true)}
-                      className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                      onClick={() => setShowCustomizeDialog(true)}
+                      className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
                     >
-                      <Settings className="h-4 w-4 mr-2" />
+                      <Settings className="h-3 w-3 mr-1" />
                       Customize Theme
                     </button>
                     <button 
                       onClick={handleLogout}
-                      className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                      className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
                     >
-                      <LogOut className="h-4 w-4 mr-2" />
+                      <LogOut className="h-3 w-3 mr-1" />
                       Logout
                     </button>
                   </div>
