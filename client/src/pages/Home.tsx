@@ -94,7 +94,7 @@ function CurrentPageTimer() {
 export default function Home() {
   // Auth and theme contexts
   const [user, setUser] = useState<any>(null);
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
 
   // Fetch user data on component mount
@@ -185,6 +185,8 @@ export default function Home() {
   // Customize background state
   const [backgroundImages, setBackgroundImages] = useState<string[]>([]);
   const [selectedBackground, setSelectedBackground] = useState<string | null>(null);
+  
+
   
   // Mock user belt data - to be replaced with API call
   const [userBelt, setUserBelt] = useState({
@@ -473,9 +475,15 @@ export default function Home() {
 
   // Render main component
   return (
-    <div className="h-screen w-full flex flex-col bg-white overflow-hidden">
+    <div className={`h-screen w-full flex flex-col overflow-hidden transition-colors duration-300 ${
+      theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+    }`}>
       {/* Sticky Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-pink-500 to-pink-400 shadow-lg">
+      <header className={`fixed top-0 left-0 right-0 z-50 shadow-lg transition-colors duration-300 ${
+        theme === 'dark' 
+          ? 'bg-gradient-to-r from-pink-700 to-pink-600' 
+          : 'bg-gradient-to-r from-pink-500 to-pink-400'
+      }`}>
         <div className="flex items-center justify-between p-4 text-white">
           <div className="flex items-center space-x-3">
             <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -495,16 +503,26 @@ export default function Home() {
       </header>
       
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-gradient-to-br from-pink-100 via-pink-50 to-pink-100 pt-20 pb-16">
+      <main className={`flex-1 overflow-y-auto pt-20 pb-16 transition-colors duration-300 ${
+        theme === 'dark' 
+          ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800' 
+          : 'bg-gradient-to-br from-pink-100 via-pink-50 to-pink-100'
+      }`}>
         <div className="p-4">
           {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
             <div className="flex flex-col h-full">
               {/* Upcoming Pageants Card - Expanded */}
-              <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg flex-1 mb-4">
+              <div className={`backdrop-blur-sm rounded-3xl p-4 shadow-lg flex-1 mb-4 transition-colors duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-gray-800/60 border border-gray-700' 
+                  : 'bg-white/60'
+              }`}>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-pink-700">Upcoming Pageants</h3>
+                  <h3 className={`text-lg font-semibold transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-pink-300' : 'text-pink-700'
+                  }`}>Upcoming Pageants</h3>
                   <button
                     onClick={() => setShowAddPageantDialog(true)}
                     className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors flex items-center justify-center"
@@ -522,19 +540,31 @@ export default function Home() {
                       </div>
                     ) : pageants.length === 0 ? (
                       <div className="text-center py-4">
-                        <p className="text-pink-600 text-sm">No upcoming pageants</p>
-                        <p className="text-pink-500 text-xs mt-1">Click the + button to add your first pageant!</p>
+                        <p className={`text-sm transition-colors duration-300 ${
+                          theme === 'dark' ? 'text-pink-300' : 'text-pink-600'
+                        }`}>No upcoming pageants</p>
+                        <p className={`text-xs mt-1 transition-colors duration-300 ${
+                          theme === 'dark' ? 'text-pink-400' : 'text-pink-500'
+                        }`}>Click the + button to add your first pageant!</p>
                       </div>
                     ) : (
                       pageants.map((pageant) => (
                         <div key={pageant.id} className="group">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className="font-bold text-pink-800 text-base">{pageant.name}</h4>
-                              <p className="text-sm text-pink-600">{format(new Date(pageant.date), 'MMM d, yyyy')}</p>
-                              <p className="text-sm text-pink-500">{pageant.location}</p>
+                              <h4 className={`font-bold text-base transition-colors duration-300 ${
+                                theme === 'dark' ? 'text-pink-200' : 'text-pink-800'
+                              }`}>{pageant.name}</h4>
+                              <p className={`text-sm transition-colors duration-300 ${
+                                theme === 'dark' ? 'text-pink-300' : 'text-pink-600'
+                              }`}>{format(new Date(pageant.date), 'MMM d, yyyy')}</p>
+                              <p className={`text-sm transition-colors duration-300 ${
+                                theme === 'dark' ? 'text-pink-400' : 'text-pink-500'
+                              }`}>{pageant.location}</p>
                               {pageant.specialNote && (
-                                <p className="text-sm text-pink-400 italic mt-1">{pageant.specialNote}</p>
+                                <p className={`text-sm italic mt-1 transition-colors duration-300 ${
+                                  theme === 'dark' ? 'text-pink-500' : 'text-pink-400'
+                                }`}>{pageant.specialNote}</p>
                               )}
                             </div>
                             <button
@@ -580,33 +610,55 @@ export default function Home() {
               </div>
 
               {/* Quick Actions Card - Moved to bottom */}
-              <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg mt-auto">
-                <h3 className="text-lg font-semibold text-pink-700 mb-4">Quick Actions</h3>
+              <div className={`backdrop-blur-sm rounded-3xl p-4 shadow-lg mt-auto transition-colors duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-gray-800/60 border border-gray-700' 
+                  : 'bg-white/60'
+              }`}>
+                <h3 className={`text-lg font-semibold mb-4 transition-colors duration-300 ${
+                  theme === 'dark' ? 'text-pink-300' : 'text-pink-700'
+                }`}>Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     onClick={() => setShowTips(true)}
-                    className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                    className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center ${
+                      theme === 'dark' 
+                        ? 'text-pink-300 hover:bg-gray-700/40' 
+                        : 'text-pink-600 hover:bg-white/40'
+                    }`}
                   >
                     <Info className="h-4 w-4 mr-2" />
                     Pageant Tips
                   </button>
                   <button 
                     onClick={() => setShowProfile(true)}
-                    className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                    className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center ${
+                      theme === 'dark' 
+                        ? 'text-pink-300 hover:bg-gray-700/40' 
+                        : 'text-pink-600 hover:bg-white/40'
+                    }`}
                   >
                     <User className="h-4 w-4 mr-2" />
                     View Profile
                   </button>
                   <button 
-                    onClick={() => setShowCustomizeDialog(true)}
-                    className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                    onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                    className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center ${
+                      theme === 'dark' 
+                        ? 'text-pink-300 hover:bg-gray-700/40' 
+                        : 'text-pink-600 hover:bg-white/40'
+                    }`}
                   >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Customize Theme
+                    {theme === 'light' ? <Moon className="h-4 w-4 mr-2" /> : <Sun className="h-4 w-4 mr-2" />}
+                    {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
                   </button>
                   <button 
                     onClick={handleLogout}
-                    className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
+                    className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center ${
+                      theme === 'dark' 
+                        ? 'text-pink-300 hover:bg-gray-700/40' 
+                        : 'text-pink-600 hover:bg-white/40'
+                    }`}
                   >
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
@@ -614,10 +666,18 @@ export default function Home() {
                 </div>
                 
                 {/* Presented by Credit */}
-                <div className="mt-4 pt-3 border-t border-pink-200">
-                  <p className="text-center text-xs text-pink-500 font-medium">PRESENTED BY</p>
-                  <p className="text-center text-sm text-pink-600 font-bold">Arshia Kathpalia</p>
-                  <p className="text-center text-xs text-pink-500">Miss Teen India USA 2024</p>
+                <div className={`mt-4 pt-3 border-t transition-colors duration-300 ${
+                  theme === 'dark' ? 'border-gray-600' : 'border-pink-200'
+                }`}>
+                  <p className={`text-center text-xs font-medium transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-pink-400' : 'text-pink-500'
+                  }`}>PRESENTED BY</p>
+                  <p className={`text-center text-sm font-bold transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-pink-300' : 'text-pink-600'
+                  }`}>Arshia Kathpalia</p>
+                  <p className={`text-center text-xs transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-pink-400' : 'text-pink-500'
+                  }`}>Miss Teen India USA 2024</p>
                 </div>
               </div>
             </div>
@@ -736,21 +796,37 @@ export default function Home() {
       
       {/* Pageant Tips Dialog */}
       <Dialog open={showTips} onOpenChange={setShowTips}>
-        <DialogContent className="bg-white border border-pink-200 text-gray-900 shadow-xl">
+        <DialogContent className={`shadow-xl border transition-colors duration-300 ${
+          theme === 'dark' 
+            ? 'bg-gray-800 border-gray-600 text-gray-100' 
+            : 'bg-white border-pink-200 text-gray-900'
+        }`}>
           <DialogHeader>
-            <DialogTitle className="text-2xl flex items-center text-pink-600">
+            <DialogTitle className={`text-2xl flex items-center transition-colors duration-300 ${
+              theme === 'dark' ? 'text-pink-400' : 'text-pink-600'
+            }`}>
               <Crown className="mr-2 h-5 w-5" /> 
               Pageant Tips
             </DialogTitle>
-            <DialogDescription className="text-gray-600">
+            <DialogDescription className={`transition-colors duration-300 ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+            }`}>
               Expert advice to help you shine on stage
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            <div className="bg-pink-50 p-4 rounded-lg border border-pink-200 shadow-sm">
-              <h3 className="text-lg font-semibold text-pink-900 mb-2">Walking & Posture</h3>
-              <ul className="list-disc pl-5 space-y-1 text-gray-700">
+            <div className={`p-4 rounded-lg border shadow-sm transition-colors duration-300 ${
+              theme === 'dark' 
+                ? 'bg-gray-700 border-gray-600' 
+                : 'bg-pink-50 border-pink-200'
+            }`}>
+              <h3 className={`text-lg font-semibold mb-2 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-pink-300' : 'text-pink-900'
+              }`}>Walking & Posture</h3>
+              <ul className={`list-disc pl-5 space-y-1 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
                 <li>Keep your shoulders back and chest open</li>
                 <li>Maintain a straight spine and elongated neck</li>
                 <li>Take confident, measured steps with purpose</li>
@@ -758,9 +834,17 @@ export default function Home() {
               </ul>
             </div>
             
-            <div className="bg-pink-50 p-4 rounded-lg border border-pink-200 shadow-sm">
-              <h3 className="text-lg font-semibold text-pink-900 mb-2">Stage Presence</h3>
-              <ul className="list-disc pl-5 space-y-1 text-gray-700">
+            <div className={`p-4 rounded-lg border shadow-sm transition-colors duration-300 ${
+              theme === 'dark' 
+                ? 'bg-gray-700 border-gray-600' 
+                : 'bg-pink-50 border-pink-200'
+            }`}>
+              <h3 className={`text-lg font-semibold mb-2 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-pink-300' : 'text-pink-900'
+              }`}>Stage Presence</h3>
+              <ul className={`list-disc pl-5 space-y-1 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
                 <li>Make eye contact with judges and audience</li>
                 <li>Smile genuinely and let your personality shine</li>
                 <li>Use graceful hand gestures and poses</li>
@@ -768,9 +852,17 @@ export default function Home() {
               </ul>
             </div>
             
-            <div className="bg-pink-50 p-4 rounded-lg border border-pink-200 shadow-sm">
-              <h3 className="text-lg font-semibold text-pink-900 mb-2">Competition Prep</h3>
-              <ul className="list-disc pl-5 space-y-1 text-gray-700">
+            <div className={`p-4 rounded-lg border shadow-sm transition-colors duration-300 ${
+              theme === 'dark' 
+                ? 'bg-gray-700 border-gray-600' 
+                : 'bg-pink-50 border-pink-200'
+            }`}>
+              <h3 className={`text-lg font-semibold mb-2 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-pink-300' : 'text-pink-900'
+              }`}>Competition Prep</h3>
+              <ul className={`list-disc pl-5 space-y-1 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
                 <li>Practice in your competition heels daily</li>
                 <li>Record yourself to review and improve</li>
                 <li>Work on your interview skills and current events</li>
@@ -782,7 +874,11 @@ export default function Home() {
           <DialogFooter>
             <Button 
               onClick={() => setShowTips(false)}
-              className="bg-pink-600 hover:bg-pink-700 text-white"
+              className={`text-white transition-colors duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-pink-700 hover:bg-pink-800' 
+                  : 'bg-pink-600 hover:bg-pink-700'
+              }`}
             >
               Got it
             </Button>
