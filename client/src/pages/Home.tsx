@@ -727,26 +727,15 @@ export default function Home() {
                 <div className="mt-4 flex justify-center">
                   <button
                     onClick={() => setShowAIChat(true)}
-                    className={`relative w-16 h-16 rounded-full transition-all duration-300 ${
+                    className={`w-16 h-16 rounded-full transition-all duration-200 ${
                       theme === 'dark' 
-                        ? 'bg-gradient-to-br from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700' 
-                        : 'bg-gradient-to-br from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600'
-                    } shadow-lg hover:shadow-xl transform hover:scale-105 animate-pulse`}
-                    style={{
-                      boxShadow: theme === 'dark' 
-                        ? '0 0 20px rgba(236, 72, 153, 0.5), 0 0 40px rgba(236, 72, 153, 0.3)' 
-                        : '0 0 20px rgba(236, 72, 153, 0.4), 0 0 40px rgba(236, 72, 153, 0.2)'
-                    }}
+                        ? 'bg-pink-600 hover:bg-pink-700' 
+                        : 'bg-pink-500 hover:bg-pink-600'
+                    } shadow-lg hover:shadow-xl transform hover:scale-105`}
                   >
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent"></div>
                     <div className="flex items-center justify-center h-full">
                       <Sparkles className="h-8 w-8 text-white" />
                     </div>
-                    <div className={`absolute -inset-1 rounded-full opacity-75 blur-sm ${
-                      theme === 'dark' 
-                        ? 'bg-gradient-to-br from-pink-500 to-purple-600' 
-                        : 'bg-gradient-to-br from-pink-400 to-purple-500'
-                    }`} style={{ zIndex: -1 }}></div>
                   </button>
                 </div>
               </div>
