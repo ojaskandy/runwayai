@@ -550,7 +550,7 @@ export default function Home() {
                   </div>
                   
                 {/* Main Practice Buttons */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <motion.button 
                     onClick={handlePermissionRequest}
                     className="w-full py-4 px-6 text-base font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
@@ -611,6 +611,13 @@ export default function Home() {
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
                   </button>
+                </div>
+                
+                {/* Presented by Credit */}
+                <div className="mt-4 pt-3 border-t border-pink-200">
+                  <p className="text-center text-xs text-pink-500 font-medium">PRESENTED BY</p>
+                  <p className="text-center text-sm text-pink-600 font-bold">Arshia Kathpalia</p>
+                  <p className="text-center text-xs text-pink-500">Miss Teen India USA 2024</p>
                 </div>
               </div>
             </div>
