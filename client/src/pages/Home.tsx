@@ -642,12 +642,18 @@ export default function Home() {
                     View Profile
                   </button>
                   <button 
-                    onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                    className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center ${
+                    onClick={() => {
+                      console.log('Dark mode button clicked, current theme:', theme);
+                      const newTheme = theme === 'light' ? 'dark' : 'light';
+                      console.log('Setting theme to:', newTheme);
+                      setTheme(newTheme);
+                    }}
+                    className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center cursor-pointer ${
                       theme === 'dark' 
                         ? 'text-pink-300 hover:bg-gray-700/40' 
                         : 'text-pink-600 hover:bg-white/40'
                     }`}
+                    style={{ pointerEvents: 'auto' }}
                   >
                     {theme === 'light' ? <Moon className="h-4 w-4 mr-2" /> : <Sun className="h-4 w-4 mr-2" />}
                     {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
