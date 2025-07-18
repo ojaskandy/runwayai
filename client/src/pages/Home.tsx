@@ -500,22 +500,20 @@ export default function Home() {
           {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
-            <div className="space-y-4">
-
-
-              {/* Upcoming Pageants Card */}
-              <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-semibold text-pink-700">Upcoming Pageants</h3>
+            <div className="flex flex-col h-full">
+              {/* Upcoming Pageants Card - Expanded */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg flex-1 mb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-pink-700">Upcoming Pageants</h3>
                   <button
                     onClick={() => setShowAddPageantDialog(true)}
-                    className="w-7 h-7 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors flex items-center justify-center"
+                    className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors flex items-center justify-center"
                   >
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-4 w-4" />
                   </button>
                 </div>
                 
-                <div className="space-y-2 mb-4 max-h-24 overflow-y-auto">
+                <div className="space-y-3 mb-6 flex-1 min-h-32">
                     {isPageantsLoading ? (
                       <div className="animate-pulse space-y-2">
                         <div className="h-4 bg-pink-200 rounded w-3/4"></div>
@@ -552,24 +550,24 @@ export default function Home() {
                   </div>
                   
                 {/* Main Practice Buttons */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <motion.button 
                     onClick={handlePermissionRequest}
-                    className="w-full py-3 px-4 text-sm font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+                    className="w-full py-4 px-6 text-base font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
                     whileTap={{ scale: 0.97 }}
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     transition={{ delay: 0.3 }}
                   >
                     <div className="flex items-center justify-center">
-                      <Play className="mr-2 h-4 w-4" />
+                      <Play className="mr-2 h-5 w-5" />
                       Begin Runway Practice
                     </div>
                   </motion.button>
                   
                   <Link href="/question-practice">
                     <motion.button 
-                      className="w-full py-3 px-4 text-sm font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+                      className="w-full py-4 px-6 text-base font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
                       whileTap={{ scale: 0.97 }}
                       initial={{ opacity: 0, y: 20 }} 
                       animate={{ opacity: 1, y: 0 }} 
@@ -581,36 +579,36 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Quick Actions Card */}
-              <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg">
-                <h3 className="text-base font-semibold text-pink-700 mb-3">Quick Actions</h3>
-                <div className="grid grid-cols-2 gap-2">
+              {/* Quick Actions Card - Moved to bottom */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg mt-auto">
+                <h3 className="text-lg font-semibold text-pink-700 mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-2 gap-3">
                   <button 
                     onClick={() => setShowTips(true)}
-                    className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
+                    className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
                   >
-                    <Info className="h-3 w-3 mr-1" />
+                    <Info className="h-4 w-4 mr-2" />
                     Pageant Tips
                   </button>
                   <button 
                     onClick={() => setShowProfile(true)}
-                    className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
+                    className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
                   >
-                    <User className="h-3 w-3 mr-1" />
+                    <User className="h-4 w-4 mr-2" />
                     View Profile
                   </button>
                   <button 
                     onClick={() => setShowCustomizeDialog(true)}
-                    className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
+                    className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
                   >
-                    <Settings className="h-3 w-3 mr-1" />
+                    <Settings className="h-4 w-4 mr-2" />
                     Customize Theme
                   </button>
                   <button 
                     onClick={handleLogout}
-                    className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
+                    className="text-left p-3 text-sm text-pink-600 hover:bg-white/40 rounded-xl transition-colors flex items-center"
                   >
-                    <LogOut className="h-3 w-3 mr-1" />
+                    <LogOut className="h-4 w-4 mr-2" />
                     Logout
                   </button>
                 </div>
