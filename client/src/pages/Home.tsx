@@ -15,7 +15,7 @@ import {
   Sun, Moon, User, LogOut, Settings, Clock, Calendar, Award, Play, 
   Dumbbell, HelpCircle, MessageSquare, BarChart, Info, RefreshCw, Trash2,
   Home as HomeIcon, ListChecks, Loader2, PanelRightOpen, PanelRightClose, Palette,
-  ChevronDown, ChevronUp, ScrollText, Smartphone, Crown, Trophy, Plus, X
+  ChevronDown, ChevronUp, ScrollText, Smartphone, Crown, Trophy, Plus, X, MessageCircle
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -175,6 +175,8 @@ export default function Home() {
   const [showCustomizeDialog, setShowCustomizeDialog] = useState(false);
   const [showLeaderboardDialog, setShowLeaderboardDialog] = useState(false);
   const [showTips, setShowTips] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   
   // Added for Record button
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -642,21 +644,15 @@ export default function Home() {
                     View Profile
                   </button>
                   <button 
-                    onClick={() => {
-                      console.log('Dark mode button clicked, current theme:', theme);
-                      const newTheme = theme === 'light' ? 'dark' : 'light';
-                      console.log('Setting theme to:', newTheme);
-                      setTheme(newTheme);
-                    }}
+                    onClick={() => setShowFeedback(true)}
                     className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center cursor-pointer ${
                       theme === 'dark' 
                         ? 'text-pink-300 hover:bg-gray-700/40' 
                         : 'text-pink-600 hover:bg-white/40'
                     }`}
-                    style={{ pointerEvents: 'auto' }}
                   >
-                    {theme === 'light' ? <Moon className="h-4 w-4 mr-2" /> : <Sun className="h-4 w-4 mr-2" />}
-                    {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Feedback
                   </button>
                   <button 
                     onClick={handleLogout}
@@ -1251,6 +1247,192 @@ export default function Home() {
               ) : (
                 'Add Pageant'
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Feedback Dialog */}
+      <Dialog open={showFeedback} onOpenChange={setShowFeedback}>
+        <DialogContent className={`shadow-xl border transition-colors duration-300 ${
+          theme === 'dark' 
+            ? 'bg-gray-800 border-gray-600 text-gray-100' 
+            : 'bg-white border-pink-200 text-gray-900'
+        }`}>
+          <DialogHeader>
+            <DialogTitle className={`text-2xl flex items-center transition-colors duration-300 ${
+              theme === 'dark' ? 'text-pink-300' : 'text-pink-700'
+            }`}>
+              <MessageCircle className="mr-2 h-5 w-5" />
+              Send Feedback
+            </DialogTitle>
+            <DialogDescription className={`transition-colors duration-300 ${
+              theme === 'dark' ? 'text-gray-300' : 'text-pink-600'
+            }`}>
+              Help us improve Runway AI by sharing your thoughts and suggestions
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <label className={`text-sm font-medium block mb-2 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-pink-300' : 'text-pink-700'
+              }`}>
+                What's your feedback about?
+              </label>
+              <select className={`w-full p-2 border rounded-md transition-colors duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-pink-200 text-gray-900'
+              }`}>
+                <option value="">Select a topic...</option>
+                <option value="features">Feature Request</option>
+                <option value="bug">Bug Report</option>
+                <option value="pageant">Pageant Content</option>
+                <option value="ui">User Interface</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className={`text-sm font-medium block mb-2 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-pink-300' : 'text-pink-700'
+              }`}>
+                Your Message
+              </label>
+              <Textarea
+                placeholder="Share your thoughts, suggestions, or report any issues you've encountered..."
+                className={`min-h-[100px] transition-colors duration-300 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400' 
+                    : 'bg-white border-pink-200 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              onClick={() => setShowFeedback(false)}
+              variant="outline"
+              className={`transition-colors duration-300 ${
+                theme === 'dark' 
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  : 'border-pink-200 text-pink-700 hover:bg-pink-50'
+              }`}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className={`text-white transition-colors duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-pink-700 hover:bg-pink-800' 
+                  : 'bg-pink-600 hover:bg-pink-700'
+              }`}
+            >
+              Send Feedback
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile Dialog */}
+      <Dialog open={showProfile} onOpenChange={setShowProfile}>
+        <DialogContent className={`shadow-xl border transition-colors duration-300 ${
+          theme === 'dark' 
+            ? 'bg-gray-800 border-gray-600 text-gray-100' 
+            : 'bg-white border-pink-200 text-gray-900'
+        }`}>
+          <DialogHeader>
+            <DialogTitle className={`text-2xl flex items-center transition-colors duration-300 ${
+              theme === 'dark' ? 'text-pink-300' : 'text-pink-700'
+            }`}>
+              <User className="mr-2 h-5 w-5" />
+              Profile Information
+            </DialogTitle>
+            <DialogDescription className={`transition-colors duration-300 ${
+              theme === 'dark' ? 'text-gray-300' : 'text-pink-600'
+            }`}>
+              View and manage your profile details
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className={`p-4 rounded-lg border transition-colors duration-300 ${
+              theme === 'dark' 
+                ? 'bg-gray-700 border-gray-600' 
+                : 'bg-pink-50 border-pink-200'
+            }`}>
+              <div className="flex items-center space-x-4">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors duration-300 ${
+                  theme === 'dark' ? 'bg-pink-700' : 'bg-pink-500'
+                }`}>
+                  <User className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h3 className={`text-lg font-semibold transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-pink-300' : 'text-pink-900'
+                  }`}>
+                    {user?.username || 'User'}
+                  </h3>
+                  <p className={`text-sm transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    {user?.email || 'user@example.com'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className={`p-4 rounded-lg border transition-colors duration-300 ${
+              theme === 'dark' 
+                ? 'bg-gray-700 border-gray-600' 
+                : 'bg-pink-50 border-pink-200'
+            }`}>
+              <h4 className={`font-medium mb-2 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-pink-300' : 'text-pink-900'
+              }`}>
+                Account Stats
+              </h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className={`transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Recordings
+                  </p>
+                  <p className={`font-semibold transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-pink-300' : 'text-pink-800'
+                  }`}>
+                    {recordings?.length || 0}
+                  </p>
+                </div>
+                <div>
+                  <p className={`transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Pageants
+                  </p>
+                  <p className={`font-semibold transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-pink-300' : 'text-pink-800'
+                  }`}>
+                    {pageants?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              onClick={() => setShowProfile(false)}
+              className={`text-white transition-colors duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-pink-700 hover:bg-pink-800' 
+                  : 'bg-pink-600 hover:bg-pink-700'
+              }`}
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
