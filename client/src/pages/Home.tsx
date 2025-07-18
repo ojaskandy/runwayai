@@ -473,62 +473,59 @@ export default function Home() {
 
   // Render main component
   return (
-    <div className="min-h-screen flex flex-col bg-white overflow-hidden">
-
+    <div className="h-screen w-full flex flex-col bg-white overflow-hidden">
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-pink-500 to-pink-400 shadow-lg">
+        <div className="p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z"/>
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Runway</h1>
+                <h2 className="text-xl font-bold">AI</h2>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="flex items-center space-x-2 mb-1">
+                <Clock className="w-3 h-3" />
+                <span className="text-xs font-medium">{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+              </div>
+              <div className="bg-white/20 rounded-xl px-3 py-1">
+                <p className="text-xs font-medium">PRESENTED BY</p>
+                <p className="text-sm font-bold">Arshia Kathpalia</p>
+                <p className="text-xs">Miss Teen India USA 2024</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
       
-
-      
-      <main className="flex-1 flex flex-col">
-        {/* Adjusted padding for the main content area */}
-        <div className="flex-1 p-0">
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto bg-gradient-to-br from-pink-100 via-pink-50 to-pink-100">
+        <div className="p-4">
           {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
           {(!hasPermission || trackingStatus === 'inactive') && !isTracking ? (
-            <div className="h-screen bg-gradient-to-br from-pink-100 via-pink-50 to-pink-100 relative overflow-hidden">
-              {/* Mobile-First Card Layout */}
-              <div className="h-screen relative z-10 px-4 py-4 space-y-4 overflow-hidden">
-                
-                {/* Header Card with Arshia Credit */}
-                <div className="bg-gradient-to-r from-pink-500 to-pink-400 rounded-3xl p-4 text-white shadow-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <h1 className="text-xl font-bold">Runway</h1>
-                        <h2 className="text-xl font-bold">AI</h2>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <Clock className="w-3 h-3" />
-                        <span className="text-xs font-medium">{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                      </div>
-                      <div className="bg-white/20 rounded-xl px-3 py-1">
-                        <p className="text-xs font-medium">PRESENTED BY</p>
-                        <p className="text-sm font-bold">Arshia Kathpalia</p>
-                        <p className="text-xs">Miss Teen India USA 2024</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <div className="space-y-4">
 
-                {/* Upcoming Pageants Card */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg flex-1">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-base font-semibold text-pink-700">Upcoming Pageants</h3>
-                    <button
-                      onClick={() => setShowAddPageantDialog(true)}
-                      className="w-7 h-7 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors flex items-center justify-center"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-2 mb-4 max-h-24 overflow-y-auto">
+
+              {/* Upcoming Pageants Card */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-semibold text-pink-700">Upcoming Pageants</h3>
+                  <button
+                    onClick={() => setShowAddPageantDialog(true)}
+                    className="w-7 h-7 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition-colors flex items-center justify-center"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+                
+                <div className="space-y-2 mb-4 max-h-24 overflow-y-auto">
                     {isPageantsLoading ? (
                       <div className="animate-pulse space-y-2">
                         <div className="h-4 bg-pink-200 rounded w-3/4"></div>
@@ -564,69 +561,68 @@ export default function Home() {
                     )}
                   </div>
                   
-                  {/* Main Practice Buttons */}
-                  <div className="space-y-2">
+                {/* Main Practice Buttons */}
+                <div className="space-y-2">
+                  <motion.button 
+                    onClick={handlePermissionRequest}
+                    className="w-full py-3 px-4 text-sm font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
+                    whileTap={{ scale: 0.97 }}
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div className="flex items-center justify-center">
+                      <Play className="mr-2 h-4 w-4" />
+                      Begin Runway Practice
+                    </div>
+                  </motion.button>
+                  
+                  <Link href="/question-practice">
                     <motion.button 
-                      onClick={handlePermissionRequest}
                       className="w-full py-3 px-4 text-sm font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
                       whileTap={{ scale: 0.97 }}
                       initial={{ opacity: 0, y: 20 }} 
                       animate={{ opacity: 1, y: 0 }} 
-                      transition={{ delay: 0.3 }}
+                      transition={{ delay: 0.4 }}
                     >
-                      <div className="flex items-center justify-center">
-                        <Play className="mr-2 h-4 w-4" />
-                        Begin Runway Practice
-                      </div>
+                      Begin Interview Practice
                     </motion.button>
-                    
-                    <Link href="/question-practice">
-                      <motion.button 
-                        className="w-full py-3 px-4 text-sm font-bold rounded-full bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-400 hover:to-pink-300 text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95"
-                        whileTap={{ scale: 0.97 }}
-                        initial={{ opacity: 0, y: 20 }} 
-                        animate={{ opacity: 1, y: 0 }} 
-                        transition={{ delay: 0.4 }}
-                      >
-                        Begin Interview Practice
-                      </motion.button>
-                    </Link>
-                  </div>
+                  </Link>
                 </div>
+              </div>
 
-                {/* Quick Actions Card */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg">
-                  <h3 className="text-base font-semibold text-pink-700 mb-3">Quick Actions</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={() => setShowTips(true)}
-                      className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
-                    >
-                      <Info className="h-3 w-3 mr-1" />
-                      Pageant Tips
-                    </button>
-                    <button 
-                      onClick={() => setShowProfile(true)}
-                      className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
-                    >
-                      <User className="h-3 w-3 mr-1" />
-                      View Profile
-                    </button>
-                    <button 
-                      onClick={() => setShowCustomizeDialog(true)}
-                      className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
-                    >
-                      <Settings className="h-3 w-3 mr-1" />
-                      Customize Theme
-                    </button>
-                    <button 
-                      onClick={handleLogout}
-                      className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
-                    >
-                      <LogOut className="h-3 w-3 mr-1" />
-                      Logout
-                    </button>
-                  </div>
+              {/* Quick Actions Card */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-4 shadow-lg">
+                <h3 className="text-base font-semibold text-pink-700 mb-3">Quick Actions</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => setShowTips(true)}
+                    className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
+                  >
+                    <Info className="h-3 w-3 mr-1" />
+                    Pageant Tips
+                  </button>
+                  <button 
+                    onClick={() => setShowProfile(true)}
+                    className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
+                  >
+                    <User className="h-3 w-3 mr-1" />
+                    View Profile
+                  </button>
+                  <button 
+                    onClick={() => setShowCustomizeDialog(true)}
+                    className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
+                  >
+                    <Settings className="h-3 w-3 mr-1" />
+                    Customize Theme
+                  </button>
+                  <button 
+                    onClick={handleLogout}
+                    className="text-left p-2 text-xs text-pink-600 hover:bg-white/40 rounded-lg transition-colors flex items-center"
+                  >
+                    <LogOut className="h-3 w-3 mr-1" />
+                    Logout
+                  </button>
                 </div>
               </div>
             </div>
