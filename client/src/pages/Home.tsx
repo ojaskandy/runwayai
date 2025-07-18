@@ -177,8 +177,6 @@ export default function Home() {
   const [showTips, setShowTips] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [showArshiaClone, setShowArshiaClone] = useState(false);
-  const [showQuickMenu, setShowQuickMenu] = useState(false);
   
   // Added for Record button
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -613,7 +611,77 @@ export default function Home() {
                 </div>
               </div>
 
-
+              {/* Quick Actions Card - Moved to bottom */}
+              <div className={`backdrop-blur-sm rounded-3xl p-4 shadow-lg mt-auto transition-colors duration-300 ${
+                theme === 'dark' 
+                  ? 'bg-gray-800/60 border border-gray-700' 
+                  : 'bg-white/60'
+              }`}>
+                <h3 className={`text-lg font-semibold mb-4 transition-colors duration-300 ${
+                  theme === 'dark' ? 'text-pink-300' : 'text-pink-700'
+                }`}>Quick Actions</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => setShowTips(true)}
+                    className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center ${
+                      theme === 'dark' 
+                        ? 'text-pink-300 hover:bg-gray-700/40' 
+                        : 'text-pink-600 hover:bg-white/40'
+                    }`}
+                  >
+                    <Info className="h-4 w-4 mr-2" />
+                    Pageant Tips
+                  </button>
+                  <button 
+                    onClick={() => setShowProfile(true)}
+                    className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center ${
+                      theme === 'dark' 
+                        ? 'text-pink-300 hover:bg-gray-700/40' 
+                        : 'text-pink-600 hover:bg-white/40'
+                    }`}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    View Profile
+                  </button>
+                  <button 
+                    onClick={() => setShowFeedback(true)}
+                    className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center cursor-pointer ${
+                      theme === 'dark' 
+                        ? 'text-pink-300 hover:bg-gray-700/40' 
+                        : 'text-pink-600 hover:bg-white/40'
+                    }`}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Feedback
+                  </button>
+                  <button 
+                    onClick={handleLogout}
+                    className={`text-left p-3 text-sm rounded-xl transition-colors flex items-center ${
+                      theme === 'dark' 
+                        ? 'text-pink-300 hover:bg-gray-700/40' 
+                        : 'text-pink-600 hover:bg-white/40'
+                    }`}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </button>
+                </div>
+                
+                {/* Presented by Credit */}
+                <div className={`mt-4 pt-3 border-t transition-colors duration-300 ${
+                  theme === 'dark' ? 'border-gray-600' : 'border-pink-200'
+                }`}>
+                  <p className={`text-center text-xs font-medium transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-pink-400' : 'text-pink-500'
+                  }`}>PRESENTED BY</p>
+                  <p className={`text-center text-sm font-bold transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-pink-300' : 'text-pink-600'
+                  }`}>Arshia Kathpalia</p>
+                  <p className={`text-center text-xs transition-colors duration-300 ${
+                    theme === 'dark' ? 'text-pink-400' : 'text-pink-500'
+                  }`}>Miss Teen India USA 2024</p>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6">
@@ -1358,274 +1426,6 @@ export default function Home() {
           <DialogFooter>
             <Button 
               onClick={() => setShowProfile(false)}
-              className={`text-white transition-colors duration-300 ${
-                theme === 'dark' 
-                  ? 'bg-pink-700 hover:bg-pink-800' 
-                  : 'bg-pink-600 hover:bg-pink-700'
-              }`}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Floating AI Menu Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        {/* Quick Actions Menu */}
-        <AnimatePresence>
-          {showQuickMenu && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 20 }}
-              transition={{ duration: 0.2 }}
-              className="absolute bottom-20 right-0 w-48 mb-2"
-            >
-              <div className={`backdrop-blur-md rounded-2xl p-2 shadow-2xl border transition-colors duration-300 ${
-                theme === 'dark' 
-                  ? 'bg-gray-800/90 border-gray-600' 
-                  : 'bg-white/90 border-pink-200'
-              }`}>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => {
-                      setShowTips(true);
-                      setShowQuickMenu(false);
-                    }}
-                    className={`w-full p-3 rounded-xl transition-colors flex items-center text-left ${
-                      theme === 'dark' 
-                        ? 'text-pink-300 hover:bg-gray-700/40' 
-                        : 'text-pink-600 hover:bg-pink-50'
-                    }`}
-                  >
-                    <Info className="h-4 w-4 mr-3" />
-                    Pageant Tips
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowProfile(true);
-                      setShowQuickMenu(false);
-                    }}
-                    className={`w-full p-3 rounded-xl transition-colors flex items-center text-left ${
-                      theme === 'dark' 
-                        ? 'text-pink-300 hover:bg-gray-700/40' 
-                        : 'text-pink-600 hover:bg-pink-50'
-                    }`}
-                  >
-                    <User className="h-4 w-4 mr-3" />
-                    Profile
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowArshiaClone(true);
-                      setShowQuickMenu(false);
-                    }}
-                    className={`w-full p-3 rounded-xl transition-colors flex items-center text-left ${
-                      theme === 'dark' 
-                        ? 'text-pink-300 hover:bg-gray-700/40' 
-                        : 'text-pink-600 hover:bg-pink-50'
-                    }`}
-                  >
-                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mr-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-white/90"></div>
-                    </div>
-                    Arshia Clone
-                  </button>
-                  <button
-                    onClick={() => {
-                      const subject = "Runway AI - User Feedback";
-                      const body = `Hi Arshia and Team,
-
-I'd like to share some feedback about Runway AI:
-
-[Please add your feedback here]
-
-Best regards,
-${user?.username || 'User'}`;
-                      
-                      const mailtoLink = `mailto:arshia.x.kathpalia@gmail.com,okandy@uw.edu?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                      window.location.href = mailtoLink;
-                      setShowQuickMenu(false);
-                    }}
-                    className={`w-full p-3 rounded-xl transition-colors flex items-center text-left ${
-                      theme === 'dark' 
-                        ? 'text-pink-300 hover:bg-gray-700/40' 
-                        : 'text-pink-600 hover:bg-pink-50'
-                    }`}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-3" />
-                    Feedback
-                  </button>
-                  <div className={`border-t my-1 ${theme === 'dark' ? 'border-gray-600' : 'border-pink-200'}`}></div>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setShowQuickMenu(false);
-                    }}
-                    className={`w-full p-3 rounded-xl transition-colors flex items-center text-left ${
-                      theme === 'dark' 
-                        ? 'text-pink-300 hover:bg-gray-700/40' 
-                        : 'text-pink-600 hover:bg-pink-50'
-                    }`}
-                  >
-                    <LogOut className="h-4 w-4 mr-3" />
-                    Logout
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Main floating button */}
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1, duration: 0.5, type: "spring" }}
-        >
-          <motion.button
-            onClick={() => setShowQuickMenu(!showQuickMenu)}
-            className={`w-16 h-16 rounded-full shadow-2xl backdrop-blur-md border-2 overflow-hidden relative transition-all duration-300 ${
-              theme === 'dark' 
-                ? 'bg-gradient-to-br from-pink-500/20 to-purple-600/20 border-pink-400/30' 
-                : 'bg-gradient-to-br from-pink-500/80 to-purple-600/80 border-pink-300/50'
-            }`}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            animate={{
-              boxShadow: [
-                "0 0 20px rgba(236, 72, 153, 0.4)",
-                "0 0 30px rgba(147, 51, 234, 0.6)",
-                "0 0 20px rgba(236, 72, 153, 0.4)"
-              ]
-            }}
-            transition={{
-              boxShadow: {
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }
-            }}
-          >
-            {/* Animated gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-pink-400 via-purple-500 to-pink-600 animate-pulse opacity-80"></div>
-            
-            {/* Rotating ring */}
-            <motion.div
-              className="absolute inset-1 rounded-full border-2 border-white/30"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            />
-            
-            {/* Inner pulsing dot */}
-            <motion.div
-              className="absolute inset-4 rounded-full bg-white/90 flex items-center justify-center"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.8, 1, 0.8]
-              }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <div className="w-3 h-3 rounded-full bg-gradient-to-br from-pink-500 to-purple-600"></div>
-            </motion.div>
-            
-            {/* Sparkle effects */}
-            <motion.div
-              className="absolute top-1 right-1 w-2 h-2 rounded-full bg-white/80"
-              animate={{
-                scale: [0, 1, 0],
-                opacity: [0, 1, 0]
-              }}
-              transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-            />
-            <motion.div
-              className="absolute bottom-1 left-1 w-1.5 h-1.5 rounded-full bg-white/60"
-              animate={{
-                scale: [0, 1, 0],
-                opacity: [0, 1, 0]
-              }}
-              transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
-            />
-          </motion.button>
-        </motion.div>
-      </div>
-
-      {/* Arshia Clone Chatbot Dialog */}
-      <Dialog open={showArshiaClone} onOpenChange={setShowArshiaClone}>
-        <DialogContent className={`shadow-xl border transition-colors duration-300 max-w-md ${
-          theme === 'dark' 
-            ? 'bg-gray-800 border-gray-600 text-gray-100' 
-            : 'bg-white border-pink-200 text-gray-900'
-        }`}>
-          <DialogHeader>
-            <DialogTitle className={`text-2xl flex items-center transition-colors duration-300 ${
-              theme === 'dark' ? 'text-pink-300' : 'text-pink-700'
-            }`}>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mr-3">
-                <div className="w-3 h-3 rounded-full bg-white/90"></div>
-              </div>
-              Arshia Clone
-            </DialogTitle>
-            <DialogDescription className={`transition-colors duration-300 ${
-              theme === 'dark' ? 'text-gray-300' : 'text-pink-600'
-            }`}>
-              Your AI pageant coach powered by Arshia's expertise
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className={`p-4 rounded-lg border transition-colors duration-300 ${
-              theme === 'dark' 
-                ? 'bg-gray-700 border-gray-600' 
-                : 'bg-pink-50 border-pink-200'
-            }`}>
-              <p className={`text-sm transition-colors duration-300 ${
-                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                👋 Hi! I'm Arshia Clone, your AI pageant coach. I can help you with:
-              </p>
-              <ul className={`mt-2 space-y-1 text-sm transition-colors duration-300 ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                <li>• Runway walking techniques</li>
-                <li>• Interview preparation</li>
-                <li>• Pageant tips and strategies</li>
-                <li>• Confidence building</li>
-              </ul>
-            </div>
-            
-            <div className={`p-3 rounded-lg border transition-colors duration-300 ${
-              theme === 'dark' 
-                ? 'bg-gray-700 border-gray-600' 
-                : 'bg-pink-50 border-pink-200'
-            }`}>
-              <p className={`text-xs text-center transition-colors duration-300 ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-              }`}>
-                💡 Chat feature coming soon! For now, use the feedback button to reach out directly.
-              </p>
-            </div>
-            
-            {/* Presented by Credit */}
-            <div className={`pt-3 border-t transition-colors duration-300 ${
-              theme === 'dark' ? 'border-gray-600' : 'border-pink-200'
-            }`}>
-              <p className={`text-center text-xs font-medium transition-colors duration-300 ${
-                theme === 'dark' ? 'text-pink-400' : 'text-pink-500'
-              }`}>PRESENTED BY</p>
-              <p className={`text-center text-sm font-bold transition-colors duration-300 ${
-                theme === 'dark' ? 'text-pink-300' : 'text-pink-600'
-              }`}>Arshia Kathpalia</p>
-              <p className={`text-center text-xs transition-colors duration-300 ${
-                theme === 'dark' ? 'text-pink-400' : 'text-pink-500'
-              }`}>Miss Teen India USA 2024</p>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              onClick={() => setShowArshiaClone(false)}
               className={`text-white transition-colors duration-300 ${
                 theme === 'dark' 
                   ? 'bg-pink-700 hover:bg-pink-800' 
