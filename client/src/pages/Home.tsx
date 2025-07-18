@@ -734,44 +734,47 @@ export default function Home() {
         </DialogContent>
       </Dialog>
       
-      {/* Training Tips Dialog */}
+      {/* Pageant Tips Dialog */}
       <Dialog open={showTips} onOpenChange={setShowTips}>
-        <DialogContent className={`bg-gray-950 border text-white ${getButtonClasses(buttonTheme, 'outline').split(' ').find(c => c.startsWith('border-')) || 'border-sky-800'}`}>
+        <DialogContent className="bg-white border border-pink-200 text-gray-900 shadow-xl">
           <DialogHeader>
-            <DialogTitle className={`text-2xl flex items-center ${buttonTheme === 'sky' ? 'text-sky-400' : buttonTheme === 'crimson' ? 'text-red-400' : buttonTheme === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
-              <Info className="mr-2 h-5 w-5" /> 
-              Training Tips
+            <DialogTitle className="text-2xl flex items-center text-pink-600">
+              <Crown className="mr-2 h-5 w-5" /> 
+              Pageant Tips
             </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Expert advice to help improve your technique
+            <DialogDescription className="text-gray-600">
+              Expert advice to help you shine on stage
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            <div className="bg-white/90 p-4 rounded-lg border border-pink-200 shadow-sm">
-              <h3 className="text-lg font-semibold text-pink-900 mb-2">Stance Tips</h3>
+            <div className="bg-pink-50 p-4 rounded-lg border border-pink-200 shadow-sm">
+              <h3 className="text-lg font-semibold text-pink-900 mb-2">Walking & Posture</h3>
               <ul className="list-disc pl-5 space-y-1 text-gray-700">
-                <li>Keep your knees bent at the proper angle</li>
-                <li>Distribute weight evenly between feet</li>
-                <li>Maintain straight back and proper posture</li>
+                <li>Keep your shoulders back and chest open</li>
+                <li>Maintain a straight spine and elongated neck</li>
+                <li>Take confident, measured steps with purpose</li>
+                <li>Practice your signature walk daily</li>
               </ul>
             </div>
             
-            <div className="bg-white/90 p-4 rounded-lg border border-pink-200 shadow-sm">
-              <h3 className="text-lg font-semibold text-pink-900 mb-2">Kick Techniques</h3>
+            <div className="bg-pink-50 p-4 rounded-lg border border-pink-200 shadow-sm">
+              <h3 className="text-lg font-semibold text-pink-900 mb-2">Stage Presence</h3>
               <ul className="list-disc pl-5 space-y-1 text-gray-700">
-                <li>Chamber your knee properly before extending</li>
-                <li>Keep your supporting foot firmly planted</li>
-                <li>Focus on hip rotation for power</li>
+                <li>Make eye contact with judges and audience</li>
+                <li>Smile genuinely and let your personality shine</li>
+                <li>Use graceful hand gestures and poses</li>
+                <li>Practice your turns and pivots smoothly</li>
               </ul>
             </div>
             
-            <div className="bg-white/90 p-4 rounded-lg border border-pink-200 shadow-sm">
-              <h3 className="text-lg font-semibold text-pink-900 mb-2">Training Consistency</h3>
+            <div className="bg-pink-50 p-4 rounded-lg border border-pink-200 shadow-sm">
+              <h3 className="text-lg font-semibold text-pink-900 mb-2">Competition Prep</h3>
               <ul className="list-disc pl-5 space-y-1 text-gray-700">
-                <li>Train at least 3-4 times per week</li>
-                <li>Balance technical practice with conditioning</li>
-                <li>Record and review your movements regularly</li>
+                <li>Practice in your competition heels daily</li>
+                <li>Record yourself to review and improve</li>
+                <li>Work on your interview skills and current events</li>
+                <li>Maintain physical fitness and proper nutrition</li>
               </ul>
             </div>
           </div>
@@ -779,7 +782,7 @@ export default function Home() {
           <DialogFooter>
             <Button 
               onClick={() => setShowTips(false)}
-              className={`text-white ${getButtonClasses(buttonTheme, 'primary')}`}
+              className="bg-pink-600 hover:bg-pink-700 text-white"
             >
               Got it
             </Button>
