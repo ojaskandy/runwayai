@@ -392,6 +392,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Chat endpoint 
+  app.post("/api/ai-chat", async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert pageant coach with years of experience helping contestants win major beauty pageants. You are knowledgeable about all aspects of pageant competition including:
+            - Runway walking techniques and stage presence
+            - Interview preparation and public speaking
+            - Talent performance and presentation
+            - Evening gown and swimsuit presentation
+            - Pageant etiquette and competition strategy
+            - Fitness, nutrition, and wellness for pageants
+            - Mental preparation and confidence building
+            - Hair, makeup, and styling tips
+            - Community service and platform development
+            
+            Your responses should be:
+            - Expert-level advice based on proven pageant success strategies
+            - Encouraging and supportive while being practical
+            - Concise and actionable (2-3 sentences maximum)
+            - Professional but warm in tone
+            - Focus on specific techniques and tips
+            
+            You speak with the authority of someone who has either won major pageants or coached many winners. Keep responses brief but valuable.`
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        max_tokens: 200,
+        temperature: 0.7,
+      });
+
+      const aiResponse = response.choices[0].message.content;
+      res.json({ response: aiResponse });
+    } catch (error) {
+      console.error("AI Chat error:", error);
+      res.status(500).json({ error: "Failed to get AI response" });
+    }
+  });
+
   // New endpoint for sending the setup guide email
   app.post("/api/send-guide", async (req: Request, res: Response, next: NextFunction) => {
     const { email } = req.body;

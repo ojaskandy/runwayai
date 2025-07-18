@@ -15,7 +15,8 @@ import {
   Sun, Moon, User, LogOut, Settings, Clock, Calendar, Award, Play, 
   Dumbbell, HelpCircle, MessageSquare, BarChart, Info, RefreshCw, Trash2,
   Home as HomeIcon, ListChecks, Loader2, PanelRightOpen, PanelRightClose, Palette,
-  ChevronDown, ChevronUp, ScrollText, Smartphone, Crown, Trophy, Plus, X, MessageCircle
+  ChevronDown, ChevronUp, ScrollText, Smartphone, Crown, Trophy, Plus, X, MessageCircle,
+  Bot, Send, Sparkles
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -177,6 +178,46 @@ export default function Home() {
   const [showTips, setShowTips] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
+  
+  // AI Chat state
+  const [chatMessages, setChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [isAIResponding, setIsAIResponding] = useState(false);
+
+  // AI Chat function
+  const sendAIMessage = async (message: string) => {
+    if (!message.trim()) return;
+    
+    const userMessage = { role: 'user' as const, content: message };
+    setChatMessages(prev => [...prev, userMessage]);
+    setCurrentMessage('');
+    setIsAIResponding(true);
+
+    try {
+      const response = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+      const aiMessage = { role: 'assistant' as const, content: data.response };
+      setChatMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error sending AI message:', error);
+      const errorMessage = { role: 'assistant' as const, content: 'Sorry, I encountered an issue. Please try again.' };
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsAIResponding(false);
+    }
+  };
   
   // Added for Record button
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -680,6 +721,33 @@ export default function Home() {
                   <p className={`text-center text-xs transition-colors duration-300 ${
                     theme === 'dark' ? 'text-pink-400' : 'text-pink-500'
                   }`}>Miss Teen India USA 2024</p>
+                </div>
+
+                {/* AI Chat Button */}
+                <div className="mt-4 flex justify-center">
+                  <button
+                    onClick={() => setShowAIChat(true)}
+                    className={`relative w-16 h-16 rounded-full transition-all duration-300 ${
+                      theme === 'dark' 
+                        ? 'bg-gradient-to-br from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700' 
+                        : 'bg-gradient-to-br from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600'
+                    } shadow-lg hover:shadow-xl transform hover:scale-105 animate-pulse`}
+                    style={{
+                      boxShadow: theme === 'dark' 
+                        ? '0 0 20px rgba(236, 72, 153, 0.5), 0 0 40px rgba(236, 72, 153, 0.3)' 
+                        : '0 0 20px rgba(236, 72, 153, 0.4), 0 0 40px rgba(236, 72, 153, 0.2)'
+                    }}
+                  >
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent"></div>
+                    <div className="flex items-center justify-center h-full">
+                      <Sparkles className="h-8 w-8 text-white" />
+                    </div>
+                    <div className={`absolute -inset-1 rounded-full opacity-75 blur-sm ${
+                      theme === 'dark' 
+                        ? 'bg-gradient-to-br from-pink-500 to-purple-600' 
+                        : 'bg-gradient-to-br from-pink-400 to-purple-500'
+                    }`} style={{ zIndex: -1 }}></div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1430,6 +1498,119 @@ export default function Home() {
                 theme === 'dark' 
                   ? 'bg-pink-700 hover:bg-pink-800' 
                   : 'bg-pink-600 hover:bg-pink-700'
+              }`}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Chat Dialog */}
+      <Dialog open={showAIChat} onOpenChange={setShowAIChat}>
+        <DialogContent className={`shadow-xl border transition-colors duration-300 max-w-2xl max-h-[600px] ${
+          theme === 'dark' 
+            ? 'bg-gray-800 border-gray-600 text-gray-100' 
+            : 'bg-white border-pink-200 text-gray-900'
+        }`}>
+          <DialogHeader>
+            <DialogTitle className={`text-2xl flex items-center transition-colors duration-300 ${
+              theme === 'dark' ? 'text-pink-300' : 'text-pink-700'
+            }`}>
+              <Sparkles className="mr-2 h-6 w-6" />
+              AI Pageant Coach
+            </DialogTitle>
+            <DialogDescription className={`transition-colors duration-300 ${
+              theme === 'dark' ? 'text-gray-300' : 'text-pink-600'
+            }`}>
+              Get expert pageant advice from your AI coach
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col h-96">
+            {/* Chat Messages */}
+            <div className={`flex-1 overflow-y-auto p-4 space-y-3 border rounded-lg transition-colors duration-300 ${
+              theme === 'dark' 
+                ? 'bg-gray-900 border-gray-600' 
+                : 'bg-gray-50 border-pink-100'
+            }`}>
+              {chatMessages.length === 0 ? (
+                <div className={`text-center text-sm transition-colors duration-300 ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  <Sparkles className="h-12 w-12 mx-auto mb-2 text-pink-400" />
+                  <p>Hello! I'm your AI pageant coach. Ask me anything about:</p>
+                  <p className="mt-2 text-xs">
+                    • Walking techniques • Interview tips • Stage presence • Competition prep
+                  </p>
+                </div>
+              ) : (
+                chatMessages.map((message, index) => (
+                  <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-xs rounded-lg p-3 ${
+                      message.role === 'user' 
+                        ? (theme === 'dark' ? 'bg-pink-600 text-white' : 'bg-pink-500 text-white')
+                        : (theme === 'dark' ? 'bg-gray-700 text-gray-100' : 'bg-white text-gray-900 border border-pink-200')
+                    }`}>
+                      <p className="text-sm">{message.content}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+              {isAIResponding && (
+                <div className="flex justify-start">
+                  <div className={`max-w-xs rounded-lg p-3 ${
+                    theme === 'dark' ? 'bg-gray-700 text-gray-100' : 'bg-white text-gray-900 border border-pink-200'
+                  }`}>
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Message Input */}
+            <div className="mt-4 flex space-x-2">
+              <Input
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+                placeholder="Ask me about pageant techniques, tips, or advice..."
+                className={`flex-1 transition-colors duration-300 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400' 
+                    : 'bg-white border-pink-200 text-gray-900 placeholder-gray-500'
+                }`}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !isAIResponding) {
+                    sendAIMessage(currentMessage);
+                  }
+                }}
+                disabled={isAIResponding}
+              />
+              <Button
+                onClick={() => sendAIMessage(currentMessage)}
+                disabled={!currentMessage.trim() || isAIResponding}
+                className={`transition-colors duration-300 ${
+                  theme === 'dark' 
+                    ? 'bg-pink-600 hover:bg-pink-700 text-white' 
+                    : 'bg-pink-500 hover:bg-pink-600 text-white'
+                }`}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              onClick={() => setShowAIChat(false)}
+              variant="outline"
+              className={`transition-colors duration-300 ${
+                theme === 'dark' 
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  : 'border-pink-200 text-pink-700 hover:bg-pink-50'
               }`}
             >
               Close
