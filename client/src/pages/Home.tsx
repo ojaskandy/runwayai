@@ -475,37 +475,27 @@ export default function Home() {
   return (
     <div className="h-screen w-full flex flex-col bg-white overflow-hidden">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-pink-500 to-pink-400 shadow-lg">
-        <div className="p-4 text-white">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z"/>
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Runway</h1>
-                <h2 className="text-xl font-bold">AI</h2>
-              </div>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-pink-500 to-pink-400 shadow-lg">
+        <div className="flex items-center justify-between p-4 text-white">
+          <div className="flex items-center space-x-3">
+            <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z"/>
+              </svg>
             </div>
-            <div className="text-right">
-              <div className="flex items-center space-x-2 mb-1">
-                <Clock className="w-3 h-3" />
-                <span className="text-xs font-medium">{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-              </div>
-              <div className="bg-white/20 rounded-xl px-3 py-1">
-                <p className="text-xs font-medium">PRESENTED BY</p>
-                <p className="text-sm font-bold">Arshia Kathpalia</p>
-                <p className="text-xs">Miss Teen India USA 2024</p>
-              </div>
+            <div>
+              <h1 className="text-xl font-bold">Runway AI</h1>
             </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Clock className="w-4 h-4" />
+            <span className="text-sm font-medium">{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
           </div>
         </div>
       </header>
       
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-gradient-to-br from-pink-100 via-pink-50 to-pink-100">
+      <main className="flex-1 overflow-y-auto bg-gradient-to-br from-pink-100 via-pink-50 to-pink-100 pt-20 pb-16">
         <div className="p-4">
           {isLoading && <LoadingState progress={loadingProgress} message="Loading pose detection models..." />}
           
