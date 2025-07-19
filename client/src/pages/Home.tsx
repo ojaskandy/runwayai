@@ -307,14 +307,12 @@ export default function Home() {
     // Skip welcome guide by default
     localStorage.setItem('hasSeenWelcomeGuide', 'true');
 
-    // Check for mobile device after user context is available
-    if (user) {
-      if (isMobileDevice()) {
-        // Optionally, check localStorage here to show only once per session/device
-        // For now, show every time on mobile after login
-        setShowMobileWarningDialog(true);
-      }
-    }
+    // Mobile device detection disabled as requested
+    // if (user) {
+    //   if (isMobileDevice()) {
+    //     setShowMobileWarningDialog(true);
+    //   }
+    // }
   }, [user]); // Add user to dependency array to run when user loads
 
   // Screenshot modal
@@ -729,8 +727,8 @@ export default function Home() {
                     onClick={() => setShowAIChat(true)}
                     className={`w-16 h-16 rounded-full transition-all duration-200 ${
                       theme === 'dark' 
-                        ? 'bg-pink-600 hover:bg-pink-700' 
-                        : 'bg-pink-500 hover:bg-pink-600'
+                        ? 'bg-purple-600 hover:bg-purple-700' 
+                        : 'bg-purple-500 hover:bg-purple-600'
                     } shadow-lg hover:shadow-xl transform hover:scale-105`}
                   >
                     <div className="flex items-center justify-center h-full">
@@ -855,7 +853,7 @@ export default function Home() {
       
       {/* Pageant Tips Dialog */}
       <Dialog open={showTips} onOpenChange={setShowTips}>
-        <DialogContent className={`shadow-xl border transition-colors duration-300 ${
+        <DialogContent className={`shadow-xl border transition-colors duration-300 w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto ${
           theme === 'dark' 
             ? 'bg-gray-800 border-gray-600 text-gray-100' 
             : 'bg-white border-pink-200 text-gray-900'
@@ -930,16 +928,16 @@ export default function Home() {
             </div>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="flex justify-center sm:justify-end mt-6">
             <Button 
               onClick={() => setShowTips(false)}
-              className={`text-white transition-colors duration-300 ${
+              className={`w-full sm:w-auto px-8 py-2 text-white transition-colors duration-300 ${
                 theme === 'dark' 
                   ? 'bg-pink-700 hover:bg-pink-800' 
                   : 'bg-pink-600 hover:bg-pink-700'
               }`}
             >
-              Got it
+              Got it!
             </Button>
           </DialogFooter>
         </DialogContent>
